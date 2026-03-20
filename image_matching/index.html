@@ -218,6 +218,58 @@ body{
   font-size:.82rem;font-weight:600;opacity:0;transition:opacity .3s;z-index:300;pointer-events:none
 }
 .save-toast.show{opacity:1}
+
+/* ===== COMBO POPUP ===== */
+.combo-popup{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+  background:linear-gradient(135deg,#FF6B35,#FFD166);
+  color:#fff;font-size:2.2rem;font-weight:900;padding:18px 36px;
+  border-radius:50px;text-align:center;z-index:400;pointer-events:none;
+  box-shadow:0 8px 32px rgba(255,107,53,.5);white-space:nowrap;
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1),opacity .3s
+}
+.combo-popup.show{transform:translate(-50%,-50%) scale(1)}
+.combo-popup.hide{transform:translate(-50%,-50%) scale(0);opacity:0}
+
+/* ===== TIME LOW ALERT ===== */
+@keyframes timeLow{0%,100%{color:var(--accent)}50%{color:#E74C3C;transform:scale(1.15)}}
+.timer-val.low{animation:timeLow .6s infinite}
+
+/* ===== TIME UP OVERLAY ===== */
+.timeup-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;
+  align-items:center;justify-content:center;z-index:500
+}
+.timeup-box{
+  background:#fff;border-radius:var(--r);box-shadow:var(--sh2);
+  padding:40px 36px;text-align:center;max-width:380px;width:90%
+}
+.timeup-icon{font-size:3.5rem;margin-bottom:12px}
+.timeup-box h2{font-size:1.8rem;color:var(--err);margin-bottom:8px}
+.timeup-box p{color:var(--txt-lt);margin-bottom:24px;font-size:1rem}
+
+/* ===== MOBILE ===== */
+@media(max-width:480px){
+  body{padding:10px 8px 30px}
+  .game-header h1{font-size:1.9rem}
+  .setup-panel{padding:18px 16px}
+  .choice-btn{padding:7px 14px;font-size:.82rem}
+  .card-board{padding:10px;gap:7px}
+  .card-emoji{font-size:1.7rem}
+  .card-name{font-size:.58rem}
+  .game-status-bar{padding:8px 10px;gap:4px}
+  .status-value{font-size:.88rem}
+  .status-label{font-size:.6rem}
+  .btn-primary{padding:12px 24px;font-size:.95rem}
+  .ranking-table{padding:8px 10px}
+  .rank-row{grid-template-columns:40px 1fr 70px 40px;font-size:.85rem}
+  .rank-diff{display:none}
+  .combo-popup{font-size:1.6rem;padding:12px 24px}
+}
+@media(max-width:360px){
+  .card-emoji{font-size:1.4rem}
+  .choice-btn{padding:6px 10px;font-size:.78rem}
+}
 </style>
 </head>
 <body>
@@ -255,6 +307,22 @@ body{
     </div>
 
     <div class="setup-section">
+      <label class="section-label">🎨 카테고리</label>
+      <div class="btn-group" id="category-group">
+        <button class="choice-btn active" data-cat="fruit">🍎 과일</button>
+        <button class="choice-btn" data-cat="animal">🐶 동물</button>
+        <button class="choice-btn" data-cat="vehicle">🚗 탈것</button>
+        <button class="choice-btn" data-cat="food">🍕 음식</button>
+        <button class="choice-btn" data-cat="sports">⚽ 스포츠</button>
+        <button class="choice-btn" data-cat="space">🚀 우주</button>
+        <button class="choice-btn" data-cat="sea">🐟 바다</button>
+        <button class="choice-btn" data-cat="weather">⛅ 날씨</button>
+        <button class="choice-btn" data-cat="magic">🦄 판타지</button>
+        <button class="choice-btn" data-cat="veggie">🥦 채소</button>
+      </div>
+    </div>
+
+    <div class="setup-section">
       <label class="section-label">🃏 카드 수</label>
       <select id="card-count-select" class="card-count-select">
         <option value="8">8장</option><option value="10">10장</option>
@@ -267,6 +335,17 @@ body{
         <option value="36">36장</option>
       </select>
       <span class="diff-preview" id="diff-preview"></span>
+    </div>
+
+    <div class="setup-section">
+      <label class="section-label">⏰ 제한 시간</label>
+      <div class="btn-group" id="timelimit-group">
+        <button class="choice-btn active" data-limit="0">없음</button>
+        <button class="choice-btn" data-limit="60">1분</button>
+        <button class="choice-btn" data-limit="90">1분 30초</button>
+        <button class="choice-btn" data-limit="120">2분</button>
+        <button class="choice-btn" data-limit="180">3분</button>
+      </div>
     </div>
 
     <div class="setup-section setup-row">
@@ -322,6 +401,8 @@ body{
     <div class="status-item"><span class="status-label">시간</span><span class="status-value timer-val" id="stat-timer">00:00</span></div>
     <div class="status-item"><span class="status-label">이동</span><span class="status-value" id="stat-moves">0</span></div>
     <div class="status-item"><span class="status-label">남은 쌍</span><span class="status-value" id="stat-pairs">0</span></div>
+    <div class="status-item" id="stat-timelimit-wrap" style="display:none"><span class="status-label">남은 시간</span><span class="status-value timer-val" id="stat-timeleft">--:--</span></div>
+    <div class="status-item" id="stat-combo-wrap" style="display:none"><span class="status-label">콤보</span><span class="status-value" id="stat-combo" style="color:#FF6B35">0</span></div>
   </div>
   <div id="preview-banner" class="preview-banner hidden">
     <p>🧠 카드를 기억하세요!</p>
@@ -373,6 +454,22 @@ body{
   </div>
 </div>
 
+<!-- ===== COMBO POPUP ===== -->
+<div class="combo-popup hidden" id="combo-popup"></div>
+
+<!-- ===== TIME UP OVERLAY ===== -->
+<div id="timeup-overlay" class="timeup-overlay hidden">
+  <div class="timeup-box">
+    <div class="timeup-icon">⏰</div>
+    <h2>시간 초과!</h2>
+    <p id="timeup-msg">아쉽지만 다음엔 더 빠르게!</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn-primary" id="btn-timeup-retry">🔄 다시 도전</button>
+      <button class="btn-secondary" id="btn-timeup-home">🏠 홈</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== SAVE TOAST ===== -->
 <div class="save-toast" id="save-toast">💾 기록 저장됨</div>
 
@@ -380,28 +477,210 @@ body{
 'use strict';
 
 // =====================================================================
-// FRUIT DATA
+// CARD CATEGORIES
 // =====================================================================
-const FRUIT_CARDS = [
-  {id:'apple',      name:'사과',    emoji:'🍎'},
-  {id:'banana',     name:'바나나',  emoji:'🍌'},
-  {id:'grape',      name:'포도',    emoji:'🍇'},
-  {id:'orange',     name:'오렌지',  emoji:'🍊'},
-  {id:'strawberry', name:'딸기',    emoji:'🍓'},
-  {id:'peach',      name:'복숭아',  emoji:'🍑'},
-  {id:'cherry',     name:'체리',    emoji:'🍒'},
-  {id:'lemon',      name:'레몬',    emoji:'🍋'},
-  {id:'watermelon', name:'수박',    emoji:'🍉'},
-  {id:'pineapple',  name:'파인애플',emoji:'🍍'},
-  {id:'mango',      name:'망고',    emoji:'🥭'},
-  {id:'pear',       name:'배',      emoji:'🍐'},
-  {id:'kiwi',       name:'키위',    emoji:'🥝'},
-  {id:'blueberry',  name:'블루베리',emoji:'🫐'},
-  {id:'melon',      name:'멜론',    emoji:'🍈'},
-  {id:'coconut',    name:'코코넛',  emoji:'🥥'},
-  {id:'green_apple',name:'청사과',  emoji:'🍏'},
-  {id:'tomato',     name:'토마토',  emoji:'🍅'},
-];
+const CARD_CATEGORIES = {
+  fruit: { label:'🍎 과일', cards:[
+    {id:'apple',      name:'사과',    emoji:'🍎'},
+    {id:'banana',     name:'바나나',  emoji:'🍌'},
+    {id:'grape',      name:'포도',    emoji:'🍇'},
+    {id:'orange',     name:'오렌지',  emoji:'🍊'},
+    {id:'strawberry', name:'딸기',    emoji:'🍓'},
+    {id:'peach',      name:'복숭아',  emoji:'🍑'},
+    {id:'cherry',     name:'체리',    emoji:'🍒'},
+    {id:'lemon',      name:'레몬',    emoji:'🍋'},
+    {id:'watermelon', name:'수박',    emoji:'🍉'},
+    {id:'pineapple',  name:'파인애플',emoji:'🍍'},
+    {id:'mango',      name:'망고',    emoji:'🥭'},
+    {id:'pear',       name:'배',      emoji:'🍐'},
+    {id:'kiwi',       name:'키위',    emoji:'🥝'},
+    {id:'blueberry',  name:'블루베리',emoji:'🫐'},
+    {id:'melon',      name:'멜론',    emoji:'🍈'},
+    {id:'coconut',    name:'코코넛',  emoji:'🥥'},
+    {id:'green_apple',name:'청사과',  emoji:'🍏'},
+    {id:'tomato',     name:'토마토',  emoji:'🍅'},
+  ]},
+  animal: { label:'🐶 동물', cards:[
+    {id:'dog',     name:'강아지',  emoji:'🐶'},
+    {id:'cat',     name:'고양이',  emoji:'🐱'},
+    {id:'rabbit',  name:'토끼',    emoji:'🐰'},
+    {id:'fox',     name:'여우',    emoji:'🦊'},
+    {id:'bear',    name:'곰',      emoji:'🐻'},
+    {id:'panda',   name:'판다',    emoji:'🐼'},
+    {id:'koala',   name:'코알라',  emoji:'🐨'},
+    {id:'tiger',   name:'호랑이',  emoji:'🐯'},
+    {id:'lion',    name:'사자',    emoji:'🦁'},
+    {id:'cow',     name:'소',      emoji:'🐮'},
+    {id:'pig',     name:'돼지',    emoji:'🐷'},
+    {id:'frog',    name:'개구리',  emoji:'🐸'},
+    {id:'monkey',  name:'원숭이',  emoji:'🐒'},
+    {id:'penguin', name:'펭귄',    emoji:'🐧'},
+    {id:'chick',   name:'병아리',  emoji:'🐥'},
+    {id:'duck',    name:'오리',    emoji:'🦆'},
+    {id:'elephant',name:'코끼리',  emoji:'🐘'},
+    {id:'giraffe', name:'기린',    emoji:'🦒'},
+  ]},
+  vehicle: { label:'🚗 탈것', cards:[
+    {id:'car',       name:'자동차',  emoji:'🚗'},
+    {id:'bus',       name:'버스',    emoji:'🚌'},
+    {id:'race',      name:'레이싱카',emoji:'🏎️'},
+    {id:'police',    name:'경찰차',  emoji:'🚓'},
+    {id:'ambulance', name:'구급차',  emoji:'🚑'},
+    {id:'fire',      name:'소방차',  emoji:'🚒'},
+    {id:'bike',      name:'자전거',  emoji:'🚲'},
+    {id:'plane',     name:'비행기',  emoji:'✈️'},
+    {id:'heli',      name:'헬리콥터',emoji:'🚁'},
+    {id:'ufo',       name:'UFO',     emoji:'🛸'},
+    {id:'rocket',    name:'로켓',    emoji:'🚀'},
+    {id:'ship',      name:'배',      emoji:'🚢'},
+    {id:'train',     name:'기차',    emoji:'🚂'},
+    {id:'truck',     name:'트럭',    emoji:'🚛'},
+    {id:'scooter',   name:'스쿠터',  emoji:'🛵'},
+    {id:'boat',      name:'보트',    emoji:'⛵'},
+    {id:'tractor',   name:'트랙터',  emoji:'🚜'},
+    {id:'submarine', name:'잠수함',  emoji:'🤿'},
+  ]},
+  food: { label:'🍕 음식', cards:[
+    {id:'pizza',    name:'피자',    emoji:'🍕'},
+    {id:'burger',   name:'햄버거',  emoji:'🍔'},
+    {id:'fries',    name:'감자튀김',emoji:'🍟'},
+    {id:'hotdog',   name:'핫도그',  emoji:'🌭'},
+    {id:'donut',    name:'도넛',    emoji:'🍩'},
+    {id:'cookie',   name:'쿠키',    emoji:'🍪'},
+    {id:'cake',     name:'케이크',  emoji:'🎂'},
+    {id:'cupcake',  name:'컵케이크',emoji:'🧁'},
+    {id:'icecream', name:'아이스크림',emoji:'🍦'},
+    {id:'choco',    name:'초콜릿',  emoji:'🍫'},
+    {id:'candy',    name:'사탕',    emoji:'🍬'},
+    {id:'lollipop', name:'막대사탕',emoji:'🍭'},
+    {id:'popcorn',  name:'팝콘',    emoji:'🍿'},
+    {id:'croissant',name:'크루아상',emoji:'🥐'},
+    {id:'pancake',  name:'팬케이크',emoji:'🥞'},
+    {id:'taco',     name:'타코',    emoji:'🌮'},
+    {id:'sushi',    name:'초밥',    emoji:'🍣'},
+    {id:'ramen',    name:'라면',    emoji:'🍜'},
+  ]},
+  sports: { label:'⚽ 스포츠', cards:[
+    {id:'soccer',   name:'축구',    emoji:'⚽'},
+    {id:'basket',   name:'농구',    emoji:'🏀'},
+    {id:'football', name:'미식축구',emoji:'🏈'},
+    {id:'baseball', name:'야구',    emoji:'⚾'},
+    {id:'tennis',   name:'테니스',  emoji:'🎾'},
+    {id:'volley',   name:'배구',    emoji:'🏐'},
+    {id:'billiard', name:'당구',    emoji:'🎱'},
+    {id:'pingpong', name:'탁구',    emoji:'🏓'},
+    {id:'badminton',name:'배드민턴',emoji:'🏸'},
+    {id:'golf',     name:'골프',    emoji:'⛳'},
+    {id:'fishing',  name:'낚시',    emoji:'🎣'},
+    {id:'boxing',   name:'권투',    emoji:'🥊'},
+    {id:'sled',     name:'썰매',    emoji:'🛷'},
+    {id:'ski',      name:'스키',    emoji:'🎿'},
+    {id:'skate',    name:'스케이트',emoji:'⛸️'},
+    {id:'archery',  name:'양궁',    emoji:'🏹'},
+    {id:'diving',   name:'다이빙',  emoji:'🤿'},
+    {id:'cycling',  name:'사이클',  emoji:'🚴'},
+  ]},
+  space: { label:'🚀 우주', cards:[
+    {id:'star',     name:'별',      emoji:'⭐'},
+    {id:'sparkle',  name:'반짝별',  emoji:'✨'},
+    {id:'comet',    name:'혜성',    emoji:'☄️'},
+    {id:'rocket',   name:'로켓',    emoji:'🚀'},
+    {id:'ufo',      name:'UFO',     emoji:'🛸'},
+    {id:'scope',    name:'망원경',  emoji:'🔭'},
+    {id:'moon',     name:'달',      emoji:'🌕'},
+    {id:'earth',    name:'지구',    emoji:'🌍'},
+    {id:'planet',   name:'행성',    emoji:'🪐'},
+    {id:'sun',      name:'태양',    emoji:'☀️'},
+    {id:'crescent', name:'초승달',  emoji:'🌙'},
+    {id:'explosion',name:'폭발',    emoji:'💥'},
+    {id:'satellite',name:'위성',    emoji:'🛰️'},
+    {id:'milkyway', name:'은하수',  emoji:'🌌'},
+    {id:'shooting', name:'유성',    emoji:'🌠'},
+    {id:'rainbow',  name:'무지개',  emoji:'🌈'},
+    {id:'alien',    name:'외계인',  emoji:'👽'},
+    {id:'astronaut',name:'우주인',  emoji:'👨‍🚀'},
+  ]},
+  sea: { label:'🐟 바다', cards:[
+    {id:'fish',     name:'물고기',  emoji:'🐟'},
+    {id:'tropfish', name:'열대어',  emoji:'🐠'},
+    {id:'blowfish', name:'복어',    emoji:'🐡'},
+    {id:'shark',    name:'상어',    emoji:'🦈'},
+    {id:'octopus',  name:'문어',    emoji:'🐙'},
+    {id:'squid',    name:'오징어',  emoji:'🦑'},
+    {id:'lobster',  name:'바닷가재',emoji:'🦞'},
+    {id:'crab',     name:'게',      emoji:'🦀'},
+    {id:'shrimp',   name:'새우',    emoji:'🦐'},
+    {id:'shell',    name:'조개',    emoji:'🐚'},
+    {id:'whale',    name:'고래',    emoji:'🐋'},
+    {id:'dolphin',  name:'돌고래',  emoji:'🐬'},
+    {id:'seal',     name:'물개',    emoji:'🦭'},
+    {id:'otter',    name:'수달',    emoji:'🦦'},
+    {id:'jellyfish',name:'해파리',  emoji:'🪼'},
+    {id:'turtle',   name:'거북이',  emoji:'🐢'},
+    {id:'coral',    name:'산호',    emoji:'🪸'},
+    {id:'seahorse', name:'해마',    emoji:'🌊'},
+  ]},
+  weather: { label:'⛅ 날씨', cards:[
+    {id:'sunny',    name:'맑음',    emoji:'☀️'},
+    {id:'partcloud',name:'구름조금',emoji:'⛅'},
+    {id:'cloud',    name:'흐림',    emoji:'☁️'},
+    {id:'rain',     name:'비',      emoji:'🌧️'},
+    {id:'thunder',  name:'천둥',    emoji:'⛈️'},
+    {id:'snow',     name:'눈',      emoji:'❄️'},
+    {id:'rainbow',  name:'무지개',  emoji:'🌈'},
+    {id:'tornado',  name:'토네이도',emoji:'🌪️'},
+    {id:'fire',     name:'불꽃',    emoji:'🔥'},
+    {id:'water',    name:'물방울',  emoji:'💧'},
+    {id:'wind',     name:'바람',    emoji:'🌬️'},
+    {id:'lightning',name:'번개',    emoji:'⚡'},
+    {id:'fog',      name:'안개',    emoji:'🌫️'},
+    {id:'volcano',  name:'화산',    emoji:'🌋'},
+    {id:'wave',     name:'파도',    emoji:'🌊'},
+    {id:'snowman',  name:'눈사람',  emoji:'⛄'},
+    {id:'umbrella', name:'우산',    emoji:'☂️'},
+    {id:'cyclone',  name:'사이클론',emoji:'🌀'},
+  ]},
+  magic: { label:'🦄 판타지', cards:[
+    {id:'unicorn',  name:'유니콘',  emoji:'🦄'},
+    {id:'dragon',   name:'드래곤',  emoji:'🐉'},
+    {id:'wizard',   name:'마법사',  emoji:'🧙'},
+    {id:'fairy',    name:'요정',    emoji:'🧚'},
+    {id:'crystal',  name:'수정구슬',emoji:'🔮'},
+    {id:'wand',     name:'마법봉',  emoji:'🪄'},
+    {id:'castle',   name:'성',      emoji:'🏰'},
+    {id:'gem',      name:'보석',    emoji:'💎'},
+    {id:'sword',    name:'검',      emoji:'⚔️'},
+    {id:'shield',   name:'방패',    emoji:'🛡️'},
+    {id:'princess', name:'공주',    emoji:'👸'},
+    {id:'prince',   name:'왕자',    emoji:'🤴'},
+    {id:'genie',    name:'지니',    emoji:'🧞'},
+    {id:'mermaid',  name:'인어',    emoji:'🧜'},
+    {id:'phoenix',  name:'불사조',  emoji:'🦅'},
+    {id:'goblin',   name:'도깨비',  emoji:'👺'},
+    {id:'ghost',    name:'유령',    emoji:'👻'},
+    {id:'skull',    name:'해골',    emoji:'💀'},
+  ]},
+  veggie: { label:'🥦 채소', cards:[
+    {id:'broccoli', name:'브로콜리',emoji:'🥦'},
+    {id:'carrot',   name:'당근',    emoji:'🥕'},
+    {id:'corn',     name:'옥수수',  emoji:'🌽'},
+    {id:'eggplant', name:'가지',    emoji:'🍆'},
+    {id:'avocado',  name:'아보카도',emoji:'🥑'},
+    {id:'onion',    name:'양파',    emoji:'🧅'},
+    {id:'garlic',   name:'마늘',    emoji:'🧄'},
+    {id:'pepper',   name:'고추',    emoji:'🌶️'},
+    {id:'cucumber', name:'오이',    emoji:'🥒'},
+    {id:'lettuce',  name:'상추',    emoji:'🥬'},
+    {id:'bellpepper',name:'파프리카',emoji:'🫑'},
+    {id:'mushroom', name:'버섯',    emoji:'🍄'},
+    {id:'sunflower',name:'해바라기',emoji:'🌻'},
+    {id:'rose',     name:'장미',    emoji:'🌹'},
+    {id:'tulip',    name:'튤립',    emoji:'🌷'},
+    {id:'blossom',  name:'꽃',      emoji:'🌸'},
+    {id:'peanut',   name:'땅콩',    emoji:'🥜'},
+    {id:'potato',   name:'감자',    emoji:'🥔'},
+  ]},
+};
 
 // =====================================================================
 // FILE I/O — File System Access API + IndexedDB handle persistence
@@ -574,12 +853,15 @@ const state = {
   settings: {
     playerCount:1, playerNames:['플레이어 1'],
     previewSeconds:10, cardCount:12, bgmEnabled:true, sfxEnabled:true,
+    category:'fruit', timeLimit:0,
   },
   deck:[], currentPlayerIndex:0,
   openedCards:[], matchedCardIds:new Set(),
   isPreviewPhase:false, isBusy:false,
   startTime:null, timerInterval:null, previewTimer:null,
-  moves:0, playerResults:[],
+  timeLimitInterval:null, timeLeft:0,
+  moves:0, combo:0, maxCombo:0,
+  playerResults:[],
   bestRecords:{}, recentRecords:[],
 };
 
@@ -714,6 +996,10 @@ function renderStartScreen() {
   document.getElementById('card-count-select').value = s.cardCount;
   document.getElementById('bgm-toggle').checked = s.bgmEnabled;
   document.getElementById('sfx-toggle').checked = s.sfxEnabled;
+  document.querySelectorAll('#category-group .choice-btn')
+    .forEach(b=>b.classList.toggle('active',b.dataset.cat===s.category));
+  document.querySelectorAll('#timelimit-group .choice-btn')
+    .forEach(b=>b.classList.toggle('active',+b.dataset.limit===s.timeLimit));
   updateDiffPreview();
   updateFileStatus();
   showScreen('start');
@@ -757,8 +1043,9 @@ function validate() {
 // =====================================================================
 function buildDeck() {
   const pairs = state.settings.cardCount / 2;
+  const pool  = CARD_CATEGORIES[state.settings.category]?.cards || CARD_CATEGORIES.fruit.cards;
   const deck  = [];
-  shuffle(FRUIT_CARDS).slice(0,pairs).forEach(c=>{
+  shuffle([...pool]).slice(0,pairs).forEach(c=>{
     deck.push({...c,uid:`${c.id}-A`});
     deck.push({...c,uid:`${c.id}-B`});
   });
@@ -814,9 +1101,22 @@ function startGame() {
 function startRound() {
   clearInterval(state.timerInterval);  state.timerInterval = null;
   clearInterval(state.previewTimer);   state.previewTimer  = null;
+  clearInterval(state.timeLimitInterval); state.timeLimitInterval = null;
   state.deck=buildDeck(); state.openedCards=[]; state.matchedCardIds=new Set();
-  state.moves=0; state.isBusy=false; state.isPreviewPhase=true; state.startTime=null;
+  state.moves=0; state.combo=0; state.maxCombo=0;
+  state.isBusy=false; state.isPreviewPhase=true; state.startTime=null;
   document.getElementById('stat-timer').textContent='00:00';
+  document.getElementById('stat-combo').textContent='0';
+  document.getElementById('stat-combo-wrap').style.display='none';
+  // 제한시간 UI 초기화
+  const hasLimit = state.settings.timeLimit > 0;
+  document.getElementById('stat-timelimit-wrap').style.display = hasLimit ? '' : 'none';
+  if(hasLimit){
+    state.timeLeft = state.settings.timeLimit;
+    document.getElementById('stat-timeleft').textContent = fmtTime(state.timeLeft*1000);
+    document.getElementById('stat-timeleft').classList.remove('low');
+  }
+  document.getElementById('timeup-overlay').classList.add('hidden');
   renderStatus(); renderCards();
 
   const banner=document.getElementById('preview-banner'), cdown=document.getElementById('preview-countdown');
@@ -839,6 +1139,29 @@ function endPreview() {
   state.timerInterval=setInterval(()=>{
     if(state.startTime) document.getElementById('stat-timer').textContent=fmtTime(Date.now()-state.startTime);
   },200);
+  // 제한시간 카운트다운
+  if(state.settings.timeLimit > 0) {
+    state.timeLimitInterval = setInterval(()=>{
+      state.timeLeft--;
+      const el = document.getElementById('stat-timeleft');
+      el.textContent = fmtTime(Math.max(0,state.timeLeft)*1000);
+      if(state.timeLeft <= 10) el.classList.add('low');
+      if(state.timeLeft <= 0) {
+        clearInterval(state.timeLimitInterval); state.timeLimitInterval=null;
+        handleTimeUp();
+      }
+    },1000);
+  }
+}
+
+function handleTimeUp() {
+  clearInterval(state.timerInterval); state.timerInterval=null;
+  AudioSys.stopBGM();
+  const matched = state.matchedCardIds.size/2;
+  const total   = state.settings.cardCount/2;
+  document.getElementById('timeup-msg').textContent =
+    `${total}쌍 중 ${matched}쌍 완성! 다음엔 더 빠르게! 💪`;
+  document.getElementById('timeup-overlay').classList.remove('hidden');
 }
 
 function handleCardClick(uid) {
@@ -861,23 +1184,43 @@ function checkMatch() {
       document.querySelector(`.card[data-uid="${uid}"]`).classList.add('matched');
     });
     document.getElementById('stat-pairs').textContent=state.settings.cardCount/2-state.matchedCardIds.size/2;
+    // 콤보 처리
+    state.combo++;
+    if(state.combo > state.maxCombo) state.maxCombo = state.combo;
+    if(state.combo >= 2) showComboPopup(state.combo);
+    document.getElementById('stat-combo').textContent = state.combo;
+    document.getElementById('stat-combo-wrap').style.display = '';
     state.openedCards=[]; state.isBusy=false;
     if(state.matchedCardIds.size===state.settings.cardCount) setTimeout(finishRound,350);
   } else {
     [u1,u2].forEach(uid=>document.querySelector(`.card[data-uid="${uid}"]`).classList.remove('flipped'));
+    state.combo = 0;
+    document.getElementById('stat-combo').textContent = 0;
     state.openedCards=[]; state.isBusy=false;
   }
 }
 
+function showComboPopup(n) {
+  const el = document.getElementById('combo-popup');
+  const msgs = ['','','2콤보! 🔥','3콤보! 🔥🔥','4콤보! ⚡','5콤보! 💥','6콤보! 🌟'];
+  el.textContent = msgs[Math.min(n, msgs.length-1)] || `${n}콤보! 🏆`;
+  el.classList.remove('hidden','hide');
+  el.classList.add('show');
+  setTimeout(()=>{ el.classList.remove('show'); el.classList.add('hide'); },900);
+  setTimeout(()=>{ el.classList.add('hidden'); el.classList.remove('hide'); },1200);
+}
+
 function finishRound() {
   clearInterval(state.timerInterval); state.timerInterval=null;
+  clearInterval(state.timeLimitInterval); state.timeLimitInterval=null;
   const ms=Date.now()-state.startTime, {settings,currentPlayerIndex,moves}=state;
   AudioSys.playWin();
   const rec={
     playerName:settings.playerNames[currentPlayerIndex],
     difficultyLabel:diffLabel(settings.cardCount,settings.previewSeconds),
     cardCount:settings.cardCount, previewSeconds:settings.previewSeconds,
-    completionTimeMs:ms, moves, matchedPairs:settings.cardCount/2,
+    completionTimeMs:ms, moves, maxCombo:state.maxCombo,
+    matchedPairs:settings.cardCount/2,
     playedAt:new Date().toISOString(), turnIndex:currentPlayerIndex,
   };
   state.playerResults.push(rec);
@@ -919,7 +1262,7 @@ function showRanking() {
       <div class="rank-name">${r.playerName}</div>
       <div class="rank-time">${fmtSec(r.completionTimeMs)}</div>
       <div class="rank-moves">${r.moves}회</div>
-      <div class="rank-diff">${r.difficultyLabel}</div>
+      <div class="rank-diff">${r.maxCombo>=2?`🔥${r.maxCombo}콤보`:r.difficultyLabel}</div>
     </div>`).join('');
   showScreen('result');
 }
@@ -1044,6 +1387,33 @@ function initEvents() {
     e.target.value='';
   });
 
+  // 카테고리
+  document.querySelectorAll('#category-group .choice-btn').forEach(btn=>
+    btn.addEventListener('click',()=>{
+      state.settings.category=btn.dataset.cat;
+      document.querySelectorAll('#category-group .choice-btn')
+        .forEach(b=>b.classList.toggle('active',b===btn));
+    }));
+
+  // 제한 시간
+  document.querySelectorAll('#timelimit-group .choice-btn').forEach(btn=>
+    btn.addEventListener('click',()=>{
+      state.settings.timeLimit=+btn.dataset.limit;
+      document.querySelectorAll('#timelimit-group .choice-btn')
+        .forEach(b=>b.classList.toggle('active',b===btn));
+    }));
+
+  // 시간 초과 버튼
+  document.getElementById('btn-timeup-retry').addEventListener('click',()=>{
+    document.getElementById('timeup-overlay').classList.add('hidden');
+    state.currentPlayerIndex=0; state.playerResults=[];
+    startRound();
+  });
+  document.getElementById('btn-timeup-home').addEventListener('click',()=>{
+    document.getElementById('timeup-overlay').classList.add('hidden');
+    renderStartScreen();
+  });
+
   // 게임 시작
   document.getElementById('btn-start').addEventListener('click', startGame);
 
@@ -1067,12 +1437,14 @@ function initEvents() {
   // 게임 화면
   document.getElementById('btn-restart').addEventListener('click',()=>{
     clearInterval(state.previewTimer); clearInterval(state.timerInterval);
+    clearInterval(state.timeLimitInterval);
     AudioSys.stopBGM();
     state.currentPlayerIndex=0; state.playerResults=[];
     startRound();
   });
   document.getElementById('btn-home').addEventListener('click',()=>{
     clearInterval(state.previewTimer); clearInterval(state.timerInterval);
+    clearInterval(state.timeLimitInterval);
     AudioSys.stopBGM(); renderStartScreen();
   });
 
