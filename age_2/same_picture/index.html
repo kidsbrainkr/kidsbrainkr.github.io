@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>같은 그림 찾기 — 만 2세</title>
+  <style>
+    /* =====================================================
+       CSS 변수 — kidsbrainkr 브랜드 컬러 시스템
+       ===================================================== */
+    :root {
+      --accent:     #FF6B35;   /* 주 강조색 (주황) */
+      --accent-h:   #e85a25;   /* hover 시 어두운 주황 */
+      --mint:       #4ECDC4;   /* 보조색 (민트) */
+      --mint-h:     #38b8ae;
+      --bg:         #FFF8F0;   /* 전체 배경 */
+      --card-bg:    #FFFFFF;   /* 카드 배경 */
+      --text:       #333333;
+      --shadow:     0 4px 16px rgba(0,0,0,.12);
+      --shadow-lg:  0 8px 32px rgba(0,0,0,.18);
+      --radius-sm:  12px;
+      --radius-md:  20px;
+      --radius-lg:  24px;
+    }
+
+    /* =====================================================
+       리셋 & 기본 레이아웃
+       ===================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    /* =====================================================
+       화면 전환 — screen 단위로 show/hide
+       ===================================================== */
+    .screen {
+      display: none;
+      width: 100%;
+      max-width: 600px;
+      animation: fadeIn .3s ease;
+    }
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* =====================================================
+       헤더 (진행 상태 표시)
+       ===================================================== */
+    .game-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .progress-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* 진행 바 */
+    .progress-bar-wrap {
+      flex: 1;
+      margin: 0 12px;
+      height: 12px;
+      background: #ffe5d4;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 99px;
+      transition: width .4s ease;
+    }
+
+    /* 문제 번호 뱃지 */
+    .question-badge {
+      background: var(--accent);
+      color: #fff;
+      font-size: .9rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 99px;
+    }
+
+    /* =====================================================
+       목표 카드 (상단 — 크게 표시)
+       ===================================================== */
+    .target-label {
+      font-size: 1rem;
+      color: #888;
+      margin-bottom: 8px;
+      letter-spacing: .05em;
+    }
+
+    .target-card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      width: 180px;
+      height: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      border: 4px solid var(--mint);
+      position: relative;
+    }
+
+    .target-card .emoji {
+      font-size: 6rem;
+      line-height: 1;
+      user-select: none;
+    }
+
+    .target-card .name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* "찾아봐요!" 라벨 */
+    .target-card::before {
+      content: '찾아봐요!';
+      position: absolute;
+      top: -16px;
+      background: var(--mint);
+      color: #fff;
+      font-size: .8rem;
+      font-weight: 700;
+      padding: 3px 12px;
+      border-radius: 99px;
+    }
+
+    /* =====================================================
+       선택지 카드 (하단 3개)
+       ===================================================== */
+    .choices-label {
+      font-size: 1rem;
+      color: #888;
+      margin-bottom: 10px;
+    }
+
+    .choices-grid {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .choice-card {
+      background: var(--card-bg);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow);
+      width: 150px;
+      height: 160px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      border: 4px solid transparent;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .2s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .choice-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .choice-card:active {
+      transform: scale(.95);
+    }
+
+    .choice-card .emoji {
+      font-size: 5rem;
+      line-height: 1;
+    }
+
+    .choice-card .name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* 정답 카드 상태 */
+    .choice-card.correct {
+      border-color: #2ecc71;
+      background: #f0fff5;
+      animation: correctPop .4s ease;
+    }
+
+    @keyframes correctPop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.15); }
+      70%  { transform: scale(.97); }
+      100% { transform: scale(1); }
+    }
+
+    /* 오답 카드 상태 — 흔들기 */
+    .choice-card.wrong {
+      border-color: #e74c3c;
+      background: #fff5f5;
+      animation: shake .4s ease;
+    }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%     { transform: translateX(-8px); }
+      40%     { transform: translateX(8px); }
+      60%     { transform: translateX(-6px); }
+      80%     { transform: translateX(6px); }
+    }
+
+    /* 정답 선택 후 카드 비활성화 (클릭 무시) */
+    .choice-card.disabled {
+      pointer-events: none;
+    }
+
+    /* =====================================================
+       축하 오버레이 (정답 시 잠깐 표시)
+       ===================================================== */
+    #overlay-correct {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(46, 204, 113, .25);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      animation: overlayFade .5s ease;
+      pointer-events: none;
+    }
+    #overlay-correct.show {
+      display: flex;
+    }
+
+    @keyframes overlayFade {
+      0%   { opacity: 0; }
+      30%  { opacity: 1; }
+      70%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    .overlay-msg {
+      font-size: 3.5rem;
+      font-weight: 900;
+      color: #2ecc71;
+      text-shadow: 0 4px 16px rgba(46,204,113,.4);
+      animation: msgBounce .5s ease;
+    }
+
+    @keyframes msgBounce {
+      0%   { transform: scale(.5) rotate(-5deg); opacity: 0; }
+      60%  { transform: scale(1.15) rotate(3deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0); }
+    }
+
+    /* =====================================================
+       파티클 — 정답 시 날아오르는 이모지
+       ===================================================== */
+    .particle {
+      position: fixed;
+      font-size: 2rem;
+      pointer-events: none;
+      z-index: 200;
+      animation: particleFly 1.2s ease-out forwards;
+    }
+
+    @keyframes particleFly {
+      0%   { transform: translateY(0) rotate(0deg) scale(1);   opacity: 1; }
+      100% { transform: translateY(-300px) rotate(360deg) scale(.3); opacity: 0; }
+    }
+
+    /* =====================================================
+       결과 화면
+       ===================================================== */
+    #screen-result {
+      gap: 20px;
+      text-align: center;
+      padding-top: 20px;
+    }
+
+    .result-emoji {
+      font-size: 6rem;
+      animation: resultBounce .6s ease;
+    }
+
+    @keyframes resultBounce {
+      0%   { transform: scale(.3); opacity: 0; }
+      70%  { transform: scale(1.2); }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
+    .result-title {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--accent);
+    }
+
+    .result-sub {
+      font-size: 1.1rem;
+      color: #666;
+    }
+
+    .star-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      font-size: 2.5rem;
+      animation: starPop .5s .3s ease both;
+    }
+
+    @keyframes starPop {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    /* 다시하기 버튼 */
+    .btn-restart {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 1.3rem;
+      font-weight: 700;
+      padding: 16px 48px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: background .2s, transform .1s;
+      margin-top: 8px;
+      font-family: inherit;
+    }
+
+    .btn-restart:hover  { background: var(--accent-h); }
+    .btn-restart:active { transform: scale(.96); }
+
+    /* =====================================================
+       반응형 — 모바일 소형 화면 대응
+       ===================================================== */
+    @media (max-width: 480px) {
+      .target-card {
+        width: 150px;
+        height: 150px;
+      }
+      .target-card .emoji  { font-size: 5rem; }
+      .choice-card {
+        width: 110px;
+        height: 125px;
+      }
+      .choice-card .emoji  { font-size: 4rem; }
+      .choices-grid        { gap: 10px; }
+    }
+
+    @media (max-width: 360px) {
+      .choice-card {
+        width: 95px;
+        height: 110px;
+      }
+      .choice-card .emoji  { font-size: 3.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =====================================================
+       게임 화면
+       ===================================================== -->
+  <div id="screen-game" class="screen active">
+
+    <!-- 진행 상태 헤더 -->
+    <header class="game-header">
+      <span class="progress-text" id="score-text">0 / 10</span>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+      </div>
+      <span class="question-badge" id="question-badge">1번</span>
+    </header>
+
+    <!-- 목표 그림 (상단) -->
+    <p class="target-label">어떤 그림일까요?</p>
+    <div class="target-card" id="target-card">
+      <span class="emoji" id="target-emoji">🍎</span>
+      <span class="name"  id="target-name">사과</span>
+    </div>
+
+    <!-- 선택지 (하단 3개) -->
+    <p class="choices-label">같은 그림을 눌러요!</p>
+    <div class="choices-grid" id="choices-grid">
+      <!-- JS로 동적 생성 -->
+    </div>
+
+  </div>
+
+  <!-- =====================================================
+       결과 화면
+       ===================================================== -->
+  <div id="screen-result" class="screen">
+    <div class="result-emoji">🎉</div>
+    <div class="result-title">정말 잘했어요!</div>
+    <div class="result-sub">10문제를 모두 풀었어요 🌟</div>
+    <div class="star-row">⭐⭐⭐⭐⭐</div>
+    <button class="btn-restart" id="btn-restart">다시 하기 🔄</button>
+  </div>
+
+  <!-- =====================================================
+       정답 축하 오버레이 (전체 화면 깜빡)
+       ===================================================== -->
+  <div id="overlay-correct">
+    <div class="overlay-msg" id="overlay-msg">잘했어요! 🎉</div>
+  </div>
+
+
+  <!-- =====================================================
+       JavaScript
+       ===================================================== -->
+  <script>
+  'use strict';
+
+  /* ---------------------------------------------------
+     그림 데이터 — 이모지 + 한글 이름 (26종)
+     --------------------------------------------------- */
+  const ITEMS = [
+    /* 과일 */
+    { emoji: '🍎', name: '사과'   },
+    { emoji: '🍌', name: '바나나' },
+    { emoji: '🍇', name: '포도'   },
+    { emoji: '🍊', name: '귤'     },
+    { emoji: '🍓', name: '딸기'   },
+    { emoji: '🍑', name: '복숭아' },
+    /* 동물 */
+    { emoji: '🐶', name: '강아지' },
+    { emoji: '🐱', name: '고양이' },
+    { emoji: '🐰', name: '토끼'   },
+    { emoji: '🐻', name: '곰'     },
+    { emoji: '🐧', name: '펭귄'   },
+    { emoji: '🐸', name: '개구리' },
+    /* 탈것 */
+    { emoji: '🚗', name: '자동차' },
+    { emoji: '🚌', name: '버스'   },
+    { emoji: '✈️', name: '비행기' },
+    { emoji: '🚀', name: '로켓'   },
+    /* 음식 */
+    { emoji: '🍕', name: '피자'   },
+    { emoji: '🍔', name: '햄버거' },
+    { emoji: '🍩', name: '도넛'   },
+    { emoji: '🎂', name: '케이크' },
+    /* 기타 */
+    { emoji: '⭐', name: '별'     },
+    { emoji: '🌈', name: '무지개' },
+    { emoji: '🎈', name: '풍선'   },
+    { emoji: '🎁', name: '선물'   },
+    { emoji: '🌸', name: '꽃'     },
+    { emoji: '🦋', name: '나비'   },
+  ];
+
+  /* ---------------------------------------------------
+     축하 메시지 풀 — 매 정답마다 랜덤 선택
+     --------------------------------------------------- */
+  const CORRECT_MSGS = [
+    '잘했어요! 🎉',
+    '맞아요! 👏',
+    '훌륭해요! 🌟',
+    '최고예요! 💛',
+    '정답이에요! 🎊',
+  ];
+
+  /* ---------------------------------------------------
+     게임 상태
+     --------------------------------------------------- */
+  const TOTAL_QUESTIONS = 10; // 총 문제 수
+
+  let state = {
+    questions:    [],   // 이번 게임의 문제 순서 (셔플된 ITEMS 배열)
+    current:      0,    // 현재 문제 인덱스 (0~9)
+    correct:      0,    // 맞춘 횟수 (현재 게임에서는 항상 TOTAL_QUESTIONS)
+    busy:         false,// 정답/오답 처리 중 클릭 방지 플래그
+  };
+
+  /* ---------------------------------------------------
+     Web Audio API — 합성 효과음
+     --------------------------------------------------- */
+  const AudioSys = (() => {
+    let ctx = null; // AudioContext (첫 상호작용 이후 생성)
+
+    // AudioContext 지연 초기화 (브라우저 정책: 사용자 제스처 이후만 허용)
+    function getCtx() {
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      return ctx;
+    }
+
+    // 단일 비프음 재생 헬퍼
+    // freq: 주파수(Hz), type: 파형, start: 시작 시각(sec), dur: 지속(sec), vol: 볼륨
+    function beep(freq, type, start, dur, vol = .4) {
+      const c = getCtx();
+      const osc = c.createOscillator();
+      const gain = c.createGain();
+      osc.connect(gain);
+      gain.connect(c.destination);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, c.currentTime + start);
+      gain.gain.setValueAtTime(vol, c.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(.001, c.currentTime + start + dur);
+      osc.start(c.currentTime + start);
+      osc.stop(c.currentTime + start + dur + .05);
+    }
+
+    return {
+      // 정답 효과음 — 밝고 경쾌한 3음 상승 (도·미·솔)
+      playCorrect() {
+        beep(523, 'sine', 0,    .12, .5); // 도
+        beep(659, 'sine', .12,  .12, .5); // 미
+        beep(784, 'sine', .24,  .22, .5); // 솔
+      },
+      // 오답 효과음 — 낮고 짧은 2음 하강
+      playWrong() {
+        beep(300, 'square', 0,   .10, .3);
+        beep(220, 'square', .12, .15, .3);
+      },
+      // 게임 클리어 팡파레 — 5음 멜로디
+      playWin() {
+        const notes = [523, 659, 784, 880, 1046];
+        notes.forEach((f, i) => beep(f, 'sine', i * .12, .18, .4));
+      },
+    };
+  })();
+
+  /* ---------------------------------------------------
+     유틸: 배열 셔플 (Fisher-Yates)
+     --------------------------------------------------- */
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  /* ---------------------------------------------------
+     화면 전환 헬퍼
+     --------------------------------------------------- */
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  /* ---------------------------------------------------
+     게임 시작 / 초기화
+     --------------------------------------------------- */
+  function startGame() {
+    // 문제 목록: ITEMS에서 TOTAL_QUESTIONS개 랜덤 선택
+    state.questions = shuffle(ITEMS).slice(0, TOTAL_QUESTIONS);
+    state.current   = 0;
+    state.correct   = 0;
+    state.busy      = false;
+    showScreen('screen-game');
+    renderQuestion();
+  }
+
+  /* ---------------------------------------------------
+     문제 렌더링
+     --------------------------------------------------- */
+  function renderQuestion() {
+    const q = state.questions[state.current]; // 현재 정답 아이템
+
+    /* 헤더 업데이트 */
+    document.getElementById('score-text').textContent =
+      `${state.current} / ${TOTAL_QUESTIONS}`;
+    document.getElementById('question-badge').textContent =
+      `${state.current + 1}번`;
+    document.getElementById('progress-bar').style.width =
+      `${(state.current / TOTAL_QUESTIONS) * 100}%`;
+
+    /* 목표 카드 */
+    document.getElementById('target-emoji').textContent = q.emoji;
+    document.getElementById('target-name').textContent  = q.name;
+
+    /* 선택지 생성: 정답 1개 + 오답 2개 (중복 없이) */
+    const wrongPool = ITEMS.filter(item => item.emoji !== q.emoji);
+    const wrongs    = shuffle(wrongPool).slice(0, 2);
+    const choices   = shuffle([q, ...wrongs]); // 섞어서 배치
+
+    /* 카드 DOM 그리기 */
+    const grid = document.getElementById('choices-grid');
+    grid.innerHTML = '';
+    choices.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'choice-card';
+      card.dataset.emoji = item.emoji; // 클릭 판별에 사용
+      card.innerHTML = `
+        <span class="emoji">${item.emoji}</span>
+        <span class="name">${item.name}</span>
+      `;
+      card.addEventListener('click', () => onChoiceClick(card, item, q));
+      grid.appendChild(card);
+    });
+  }
+
+  /* ---------------------------------------------------
+     선택지 클릭 처리
+     --------------------------------------------------- */
+  function onChoiceClick(card, chosen, target) {
+    if (state.busy) return; // 처리 중 중복 클릭 방지
+
+    if (chosen.emoji === target.emoji) {
+      /* === 정답 === */
+      handleCorrect(card);
+    } else {
+      /* === 오답 === */
+      handleWrong(card);
+    }
+  }
+
+  /* ---------------------------------------------------
+     정답 처리
+     --------------------------------------------------- */
+  function handleCorrect(card) {
+    state.busy = true;
+
+    /* 효과음 */
+    AudioSys.playCorrect();
+
+    /* 카드 스타일 */
+    card.classList.add('correct', 'disabled');
+
+    /* 나머지 카드도 클릭 막기 */
+    document.querySelectorAll('.choice-card').forEach(c => c.classList.add('disabled'));
+
+    /* 축하 오버레이 표시 */
+    showCorrectOverlay();
+
+    /* 파티클 */
+    launchParticles(card);
+
+    /* 일정 시간 후 다음 문제 또는 결과 화면으로 이동 */
+    setTimeout(() => {
+      hideCorrectOverlay();
+      state.current++;
+      state.correct++;
+      if (state.current >= TOTAL_QUESTIONS) {
+        // 10문제 완료 → 결과 화면
+        AudioSys.playWin();
+        showScreen('screen-result');
+        updateProgressHeader(); // 완료 상태로 업데이트
+      } else {
+        state.busy = false;
+        renderQuestion();
+      }
+    }, 1100); // 축하 효과를 충분히 감상할 시간
+  }
+
+  /* 결과 화면 이동 시 헤더를 10/10으로 업데이트 */
+  function updateProgressHeader() {
+    document.getElementById('score-text').textContent =
+      `${TOTAL_QUESTIONS} / ${TOTAL_QUESTIONS}`;
+    document.getElementById('progress-bar').style.width = '100%';
+    document.getElementById('question-badge').textContent = '완료!';
+  }
+
+  /* ---------------------------------------------------
+     오답 처리
+     --------------------------------------------------- */
+  function handleWrong(card) {
+    /* 효과음 */
+    AudioSys.playWrong();
+
+    /* 흔들기 애니메이션 적용 후 제거 (재클릭 가능하도록) */
+    card.classList.add('wrong');
+    card.addEventListener('animationend', () => {
+      card.classList.remove('wrong');
+    }, { once: true });
+    /* 패널티 없음 — 다시 선택 가능 */
+  }
+
+  /* ---------------------------------------------------
+     정답 축하 오버레이 표시/숨기기
+     --------------------------------------------------- */
+  function showCorrectOverlay() {
+    const overlay = document.getElementById('overlay-correct');
+    const msg     = document.getElementById('overlay-msg');
+    // 랜덤 축하 메시지
+    msg.textContent = CORRECT_MSGS[Math.floor(Math.random() * CORRECT_MSGS.length)];
+    overlay.classList.add('show');
+    // 1초 후 자동 숨김
+    setTimeout(hideCorrectOverlay, 900);
+  }
+
+  function hideCorrectOverlay() {
+    document.getElementById('overlay-correct').classList.remove('show');
+  }
+
+  /* ---------------------------------------------------
+     파티클 — 정답 카드 위치에서 이모지 날리기
+     --------------------------------------------------- */
+  function launchParticles(card) {
+    const rect    = card.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top  + rect.height / 2;
+
+    // 파티클 이모지 풀
+    const PART_EMOJIS = ['⭐','🌟','✨','💫','🎉','🎊','💛','🧡'];
+
+    for (let i = 0; i < 8; i++) {
+      const el = document.createElement('div');
+      el.className = 'particle';
+      el.textContent = PART_EMOJIS[Math.floor(Math.random() * PART_EMOJIS.length)];
+
+      // 카드 중앙 기준으로 무작위 수평 분산
+      const offsetX = (Math.random() - .5) * 140;
+      el.style.left = `${centerX + offsetX}px`;
+      el.style.top  = `${centerY}px`;
+      el.style.animationDelay    = `${Math.random() * .2}s`;
+      el.style.animationDuration = `${.8 + Math.random() * .5}s`;
+
+      document.body.appendChild(el);
+
+      // 애니메이션 끝나면 DOM에서 제거
+      el.addEventListener('animationend', () => el.remove());
+    }
+  }
+
+  /* ---------------------------------------------------
+     이벤트 연결
+     --------------------------------------------------- */
+  document.getElementById('btn-restart').addEventListener('click', () => {
+    startGame();
+  });
+
+  /* ---------------------------------------------------
+     게임 최초 시작
+     --------------------------------------------------- */
+  startGame();
+
+  </script>
+</body>
+</html>

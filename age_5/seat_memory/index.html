@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>자리 기억 게임 🪑</title>
+  <style>
+    /* ───────────────────────────────────────────
+       CSS 변수 & 기본 리셋
+    ─────────────────────────────────────────── */
+    :root {
+      --accent:  #FF6B35;
+      --mint:    #4ECDC4;
+      --bg:      #FFF8F0;
+      --white:   #ffffff;
+      --gray100: #f3f4f6;
+      --gray300: #d1d5db;
+      --gray500: #6b7280;
+      --green:   #22c55e;
+      --red:     #ef4444;
+      --shadow:  0 4px 16px rgba(0,0,0,0.10);
+      --radius:  12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 8px 32px;
+      user-select: none;
+    }
+
+    /* ───────────────────────────────────────────
+       헤더
+    ─────────────────────────────────────────── */
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      font-size: 1.9rem;
+      color: var(--accent);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .header p {
+      font-size: 0.95rem;
+      color: var(--gray500);
+      margin-top: 4px;
+    }
+
+    /* ───────────────────────────────────────────
+       공통 버튼
+    ─────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 28px;
+      border: none;
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+      font-family: inherit;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn-accent  { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(255,107,53,0.35); }
+    .btn-mint    { background: var(--mint);   color: #fff; box-shadow: 0 4px 12px rgba(78,205,196,0.35); }
+    .btn-gray    { background: var(--gray300); color: #333; }
+    .btn-sm      { padding: 8px 18px; font-size: 0.88rem; }
+
+    /* ───────────────────────────────────────────
+       카드 (설정 화면 섹션 래퍼)
+    ─────────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+      width: 100%;
+      max-width: 520px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: #333;
+    }
+
+    /* ───────────────────────────────────────────
+       설정 화면
+    ─────────────────────────────────────────── */
+    #screen-setup { width: 100%; max-width: 520px; }
+
+    /* 모드 토글 */
+    .mode-toggle {
+      display: flex;
+      border-radius: 50px;
+      overflow: hidden;
+      border: 2px solid var(--mint);
+      width: fit-content;
+      margin: 0 auto 4px;
+    }
+    .mode-toggle button {
+      flex: 1;
+      padding: 10px 22px;
+      border: none;
+      background: transparent;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--mint);
+      transition: background 0.2s, color 0.2s;
+      font-family: inherit;
+    }
+    .mode-toggle button.active {
+      background: var(--mint);
+      color: #fff;
+    }
+
+    /* 인원 수 선택 */
+    .count-selector {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 8px;
+    }
+    .count-btn {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      border: 2px solid var(--gray300);
+      background: var(--white);
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, color 0.2s;
+      font-family: inherit;
+    }
+    .count-btn.selected {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* 친구 이름 입력 */
+    #name-input-section { display: none; }
+    #name-input-section.visible { display: block; }
+
+    .name-input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .name-input-grid input {
+      padding: 10px 12px;
+      border: 2px solid var(--gray300);
+      border-radius: 10px;
+      font-size: 1rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .name-input-grid input:focus { border-color: var(--mint); }
+    .name-input-grid input::placeholder { color: var(--gray300); }
+
+    /* 시작 버튼 영역 */
+    .setup-actions {
+      display: flex;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    /* ───────────────────────────────────────────
+       공개 화면 (카운트다운)
+    ─────────────────────────────────────────── */
+    #screen-reveal { display: none; width: 100%; max-width: 600px; text-align: center; }
+
+    .reveal-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    /* 카운트다운 원 */
+    .countdown-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .countdown-ring {
+      position: relative;
+      width: 80px; height: 80px;
+    }
+    .countdown-ring svg {
+      position: absolute; top: 0; left: 0;
+      transform: rotate(-90deg);
+    }
+    .countdown-ring .track { fill: none; stroke: var(--gray100); stroke-width: 6; }
+    .countdown-ring .fill  { fill: none; stroke: var(--accent);   stroke-width: 6;
+                              stroke-linecap: round;
+                              stroke-dasharray: 220; stroke-dashoffset: 0;
+                              transition: stroke-dashoffset 0.9s linear; }
+    .countdown-num {
+      position: absolute;
+      inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; font-weight: 800; color: var(--accent);
+    }
+
+    /* ───────────────────────────────────────────
+       자리 배치판
+    ─────────────────────────────────────────── */
+    .seat-grid-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .seat-grid {
+      display: grid;
+      gap: 10px;
+    }
+    /* 열 수는 JS에서 style로 주입 */
+
+    /* 자리 카드 (정보 표시용) */
+    .seat-card {
+      min-width: 110px;
+      min-height: 88px;
+      background: var(--white);
+      border: 2px solid var(--gray300);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 8px;
+      transition: border-color 0.3s, background 0.3s, transform 0.15s;
+      cursor: default;
+      font-family: inherit;
+    }
+    .seat-card .seat-emoji { font-size: 1.8rem; line-height: 1; }
+    .seat-card .seat-name  { font-size: 1.1rem; font-weight: 700; color: #222; }
+
+    /* 빈 자리 (입력 단계) */
+    .seat-card.empty {
+      border: 2.5px dashed var(--gray300);
+      background: var(--gray100);
+      cursor: pointer;
+    }
+    .seat-card.empty:hover { border-color: var(--mint); background: #e8faf9; }
+    .seat-card.empty.target-highlight {
+      border-color: var(--mint);
+      background: #e0f7f6;
+      box-shadow: 0 0 0 3px rgba(78,205,196,0.3);
+    }
+    /* 정답 애니메이션 */
+    .seat-card.correct {
+      border-color: var(--green) !important;
+      background: #f0fdf4 !important;
+      animation: pop 0.35s ease;
+    }
+    /* 오답 애니메이션 */
+    .seat-card.wrong {
+      border-color: var(--red) !important;
+      background: #fef2f2 !important;
+      animation: shake 0.35s ease;
+    }
+
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%     { transform: translateX(-5px); }
+      40%     { transform: translateX(5px); }
+      60%     { transform: translateX(-4px); }
+      80%     { transform: translateX(4px); }
+    }
+
+    /* ───────────────────────────────────────────
+       입력 화면
+    ─────────────────────────────────────────── */
+    #screen-play { display: none; width: 100%; max-width: 600px; }
+
+    .play-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .play-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #333;
+    }
+    .play-score {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* 이름 카드 패널 */
+    .name-panel {
+      background: var(--white);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      margin-top: 12px;
+    }
+    .name-panel h3 {
+      font-size: 0.9rem;
+      color: var(--gray500);
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .name-cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    /* 선택 카드 */
+    .name-card {
+      min-width: 80px;
+      padding: 10px 14px;
+      background: var(--gray100);
+      border: 2px solid var(--gray300);
+      border-radius: 50px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #333;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.1s, opacity 0.2s;
+      text-align: center;
+      font-family: inherit;
+    }
+    .name-card:hover { border-color: var(--mint); background: #e8faf9; }
+    .name-card.selected {
+      border-color: var(--accent);
+      background: #fff1eb;
+      box-shadow: 0 0 0 3px rgba(255,107,53,0.25);
+      transform: scale(1.05);
+    }
+    .name-card.used { opacity: 0.35; pointer-events: none; }
+
+    /* ───────────────────────────────────────────
+       결과 화면
+    ─────────────────────────────────────────── */
+    #screen-result {
+      display: none;
+      width: 100%; max-width: 520px;
+      text-align: center;
+    }
+    .result-card {
+      background: var(--white);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 36px 28px;
+    }
+    .result-emoji { font-size: 4rem; margin-bottom: 12px; }
+    .result-title { font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
+    .result-score {
+      font-size: 2.8rem; font-weight: 800;
+      color: var(--mint);
+      margin: 12px 0;
+    }
+    .result-msg { font-size: 1rem; color: var(--gray500); margin-bottom: 24px; }
+    .result-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+    /* 정답 복기 그리드 (결과 화면에서 배치판 재표시) */
+    .result-review {
+      margin: 20px 0 0;
+      text-align: left;
+    }
+    .result-review h3 {
+      font-size: 0.9rem; color: var(--gray500);
+      text-align: center; margin-bottom: 10px;
+    }
+
+    /* ───────────────────────────────────────────
+       반응형
+    ─────────────────────────────────────────── */
+    @media (max-width: 400px) {
+      .seat-card { min-width: 88px; min-height: 76px; }
+      .seat-card .seat-emoji { font-size: 1.5rem; }
+      .seat-card .seat-name  { font-size: 1rem; }
+      .header h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ───────────────────────────────────────────
+     헤더
+─────────────────────────────────────────── -->
+<header class="header">
+  <h1>🪑 자리 기억 게임</h1>
+  <p>친구들 자리를 기억해 보세요!</p>
+</header>
+
+<!-- ═══════════════════════════════════════════
+     화면 1: 설정
+═══════════════════════════════════════════ -->
+<section id="screen-setup">
+
+  <!-- 모드 선택 -->
+  <div class="card">
+    <h2>🎮 게임 모드 선택</h2>
+    <div class="mode-toggle">
+      <button id="btn-emoji-mode"  class="active" onclick="setMode('emoji')">🐾 이모지 모드</button>
+      <button id="btn-friend-mode"               onclick="setMode('friend')">✏️ 친구 이름 모드</button>
+    </div>
+    <p style="font-size:0.82rem;color:var(--gray500);text-align:center;margin-top:8px;" id="mode-desc">
+      미리 준비된 캐릭터 8명 중 랜덤으로 선택해요.
+    </p>
+  </div>
+
+  <!-- 인원 수 선택 -->
+  <div class="card">
+    <h2>👦 친구 수 선택</h2>
+    <div class="count-selector" id="count-selector">
+      <!-- 2~8 버튼은 JS로 생성 -->
+    </div>
+  </div>
+
+  <!-- 친구 이름 입력 (친구 이름 모드에서만 표시) -->
+  <div class="card" id="name-input-section">
+    <h2>✏️ 친구 이름 입력</h2>
+    <div class="name-input-grid" id="name-input-grid">
+      <!-- 인원 수에 맞게 JS로 생성 -->
+    </div>
+  </div>
+
+  <!-- 시작 버튼 -->
+  <div class="setup-actions">
+    <button class="btn btn-accent" onclick="startGame()">▶ 게임 시작!</button>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     화면 2: 공개 (자리 배치 보여주기 + 카운트다운)
+═══════════════════════════════════════════ -->
+<section id="screen-reveal">
+  <div class="reveal-title">👀 친구들 자리를 기억해요!</div>
+
+  <!-- 카운트다운 링 -->
+  <div class="countdown-wrap">
+    <div class="countdown-ring">
+      <svg viewBox="0 0 80 80" width="80" height="80">
+        <circle class="track" cx="40" cy="40" r="35"/>
+        <circle class="fill"  cx="40" cy="40" r="35" id="cd-fill"/>
+      </svg>
+      <div class="countdown-num" id="cd-num">5</div>
+    </div>
+  </div>
+
+  <!-- 자리 배치판 -->
+  <div class="seat-grid-wrap">
+    <div class="seat-grid" id="reveal-grid"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     화면 3: 입력 (빈 자리 채우기)
+═══════════════════════════════════════════ -->
+<section id="screen-play">
+  <div class="play-header">
+    <div class="play-title">🎯 친구를 올바른 자리에 놓아요!</div>
+    <div class="play-score" id="play-score">0 / 0</div>
+  </div>
+
+  <!-- 빈 자리 배치판 -->
+  <div class="seat-grid-wrap">
+    <div class="seat-grid" id="play-grid"></div>
+  </div>
+
+  <!-- 이름 카드 패널 -->
+  <div class="name-panel">
+    <h3>아래 친구 카드를 클릭하고 → 빈 자리를 클릭해서 배치하세요</h3>
+    <div class="name-cards" id="name-cards"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     화면 4: 결과
+═══════════════════════════════════════════ -->
+<section id="screen-result">
+  <div class="result-card">
+    <div class="result-emoji" id="result-emoji">🎉</div>
+    <div class="result-title" id="result-title">결과</div>
+    <div class="result-score" id="result-score">0 / 0</div>
+    <div class="result-msg"   id="result-msg"></div>
+
+    <!-- 정답 복기 -->
+    <div class="result-review">
+      <h3>정답 자리 배치</h3>
+      <div class="seat-grid-wrap">
+        <div class="seat-grid" id="result-grid"></div>
+      </div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn btn-mint"  onclick="retryGame()">🔄 다시 하기</button>
+      <button class="btn btn-gray btn-sm" onclick="goSetup()">⚙️ 설정으로</button>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   전역 상태
+═══════════════════════════════════════════════════════ */
+// 이모지 모드 기본 캐릭터 풀
+const EMOJI_CHARS = [
+  { name: '민준', emoji: '🦁' },
+  { name: '서연', emoji: '🐰' },
+  { name: '지호', emoji: '🐻' },
+  { name: '수아', emoji: '🦊' },
+  { name: '도윤', emoji: '🐧' },
+  { name: '예린', emoji: '🐱' },
+  { name: '현우', emoji: '🐸' },
+  { name: '나은', emoji: '🌟' },
+];
+
+// 게임 설정/상태
+let state = {
+  mode: 'emoji',       // 'emoji' | 'friend'
+  count: 4,            // 친구 수
+  chars: [],           // 실제 사용 캐릭터 [{ name, emoji }]
+  arrangement: [],     // 자리 배치 순서 (섞인 인덱스)
+  selectedCard: null,  // 현재 선택된 이름 카드 인덱스 (chars 기준)
+  placed: {},          // { seatIndex: charIndex } 플레이어가 배치한 것
+  correctCount: 0,
+};
+
+/* ═══════════════════════════════════════════════════════
+   Audio (Web Audio API)
+═══════════════════════════════════════════════════════ */
+let audioCtx = null;
+
+// AudioContext 지연 초기화 (첫 상호작용 후)
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+// 단음 재생
+function playTone(freq, startTime, duration, ctx, gainNode) {
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(freq, startTime);
+  osc.connect(gainNode);
+  osc.start(startTime);
+  osc.stop(startTime + duration);
+}
+
+// 정답 효과음: 맑은 3음 상승
+function sfxCorrect() {
+  const ctx = getAudioCtx();
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.3, ctx.currentTime);
+  g.connect(ctx.destination);
+  const notes = [523, 659, 784]; // C5 E5 G5
+  notes.forEach((f, i) => playTone(f, ctx.currentTime + i * 0.12, 0.15, ctx, g));
+}
+
+// 오답 효과음: 낮은 2음 하강
+function sfxWrong() {
+  const ctx = getAudioCtx();
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.25, ctx.currentTime);
+  g.connect(ctx.destination);
+  [330, 220].forEach((f, i) => playTone(f, ctx.currentTime + i * 0.14, 0.18, ctx, g));
+}
+
+// 전체 성공 팡파레
+function sfxFanfare() {
+  const ctx = getAudioCtx();
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.28, ctx.currentTime);
+  g.connect(ctx.destination);
+  // 간단한 팡파레 멜로디
+  const melody = [523, 659, 784, 1047, 784, 1047];
+  const dur    = [0.12, 0.12, 0.12, 0.22, 0.10, 0.30];
+  let t = ctx.currentTime;
+  melody.forEach((f, i) => {
+    playTone(f, t, dur[i], ctx, g);
+    t += dur[i] + 0.03;
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   설정 화면 초기화
+═══════════════════════════════════════════════════════ */
+(function initSetup() {
+  // 인원 수 버튼 2~8 생성
+  const wrap = document.getElementById('count-selector');
+  for (let n = 2; n <= 8; n++) {
+    const btn = document.createElement('button');
+    btn.className = 'count-btn' + (n === 4 ? ' selected' : '');
+    btn.textContent = n;
+    btn.dataset.n = n;
+    btn.onclick = () => selectCount(n);
+    wrap.appendChild(btn);
+  }
+})();
+
+// 모드 전환
+function setMode(mode) {
+  state.mode = mode;
+  document.getElementById('btn-emoji-mode').classList.toggle('active', mode === 'emoji');
+  document.getElementById('btn-friend-mode').classList.toggle('active', mode === 'friend');
+  document.getElementById('mode-desc').textContent =
+    mode === 'emoji'
+      ? '미리 준비된 캐릭터 8명 중 랜덤으로 선택해요.'
+      : '선생님이 직접 친구 이름을 입력해요.';
+  const sec = document.getElementById('name-input-section');
+  if (mode === 'friend') {
+    sec.classList.add('visible');
+    buildNameInputs(state.count);
+  } else {
+    sec.classList.remove('visible');
+  }
+}
+
+// 인원 수 선택
+function selectCount(n) {
+  state.count = n;
+  // 버튼 강조
+  document.querySelectorAll('.count-btn').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.dataset.n) === n);
+  });
+  // 친구 이름 모드라면 입력창 재생성
+  if (state.mode === 'friend') buildNameInputs(n);
+}
+
+// 이름 입력창 생성
+function buildNameInputs(n) {
+  const grid = document.getElementById('name-input-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = `${i + 1}번 친구 이름`;
+    input.id = `name-input-${i}`;
+    input.maxLength = 6;
+    grid.appendChild(input);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   게임 시작
+═══════════════════════════════════════════════════════ */
+function startGame() {
+  const n = state.count;
+
+  // 캐릭터 결정
+  if (state.mode === 'emoji') {
+    // 이모지 풀에서 랜덤 n명 선택
+    const pool = [...EMOJI_CHARS];
+    shuffle(pool);
+    state.chars = pool.slice(0, n);
+  } else {
+    // 입력된 이름 읽기
+    const names = [];
+    for (let i = 0; i < n; i++) {
+      const val = (document.getElementById(`name-input-${i}`)?.value || '').trim();
+      names.push({ name: val || `친구${i + 1}`, emoji: '😊' });
+    }
+    state.chars = names;
+  }
+
+  // 자리 배치 (0~n-1 섞기)
+  state.arrangement = Array.from({ length: n }, (_, i) => i);
+  shuffle(state.arrangement);
+
+  // 상태 초기화
+  state.selectedCard = null;
+  state.placed = {};
+  state.correctCount = 0;
+
+  showReveal();
+}
+
+/* ═══════════════════════════════════════════════════════
+   화면 2: 공개
+═══════════════════════════════════════════════════════ */
+function showReveal() {
+  showScreen('screen-reveal');
+
+  // 자리 배치판 구성
+  const grid = document.getElementById('reveal-grid');
+  grid.innerHTML = '';
+  applyGridStyle(grid, state.count);
+
+  state.arrangement.forEach(charIdx => {
+    grid.appendChild(makeSeatCard(charIdx, false));
+  });
+
+  // 카운트다운 시작 (5초)
+  startCountdown(5, () => showPlay());
+}
+
+// 카운트다운 애니메이션
+function startCountdown(seconds, onDone) {
+  const numEl  = document.getElementById('cd-num');
+  const fillEl = document.getElementById('cd-fill');
+  const circumference = 2 * Math.PI * 35; // r=35
+
+  let remaining = seconds;
+
+  function update() {
+    numEl.textContent = remaining;
+    // 원형 진행 (0 = 가득 참, circumference = 비어 있음)
+    const offset = circumference * (1 - remaining / seconds);
+    fillEl.style.strokeDashoffset = offset;
+  }
+
+  update();
+
+  const interval = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(interval);
+      numEl.textContent = '0';
+      fillEl.style.strokeDashoffset = circumference;
+      setTimeout(onDone, 300);
+    } else {
+      update();
+    }
+  }, 1000);
+}
+
+/* ═══════════════════════════════════════════════════════
+   화면 3: 입력
+═══════════════════════════════════════════════════════ */
+function showPlay() {
+  showScreen('screen-play');
+
+  // 점수 표시
+  updateScore();
+
+  // 빈 자리 배치판
+  const grid = document.getElementById('play-grid');
+  grid.innerHTML = '';
+  applyGridStyle(grid, state.count);
+
+  state.arrangement.forEach((charIdx, seatIdx) => {
+    const card = document.createElement('button');
+    card.className = 'seat-card empty';
+    card.dataset.seat = seatIdx;
+    card.innerHTML = '<span style="font-size:2rem;color:var(--gray300);">?</span>';
+    card.onclick = () => onSeatClick(seatIdx, card);
+    grid.appendChild(card);
+  });
+
+  // 이름 카드 패널
+  const panel = document.getElementById('name-cards');
+  panel.innerHTML = '';
+  state.chars.forEach((ch, idx) => {
+    const card = document.createElement('button');
+    card.className = 'name-card';
+    card.dataset.char = idx;
+    card.textContent = `${ch.emoji} ${ch.name}`;
+    card.onclick = () => onNameCardClick(idx, card);
+    panel.appendChild(card);
+  });
+}
+
+// 이름 카드 클릭 처리
+function onNameCardClick(charIdx, el) {
+  // 이미 사용된 카드는 무시
+  if (el.classList.contains('used')) return;
+
+  // 이전 선택 해제
+  document.querySelectorAll('.name-card.selected').forEach(c => c.classList.remove('selected'));
+
+  if (state.selectedCard === charIdx) {
+    // 같은 카드 재클릭 → 선택 해제
+    state.selectedCard = null;
+  } else {
+    state.selectedCard = charIdx;
+    el.classList.add('selected');
+  }
+
+  // 빈 자리 강조 갱신
+  updateSeatHighlight();
+}
+
+// 자리 클릭 처리
+function onSeatClick(seatIdx, el) {
+  if (state.selectedCard === null) return; // 카드 미선택
+
+  // 이미 채워진 자리는 무시 (정답 처리된 자리)
+  if (el.classList.contains('correct')) return;
+
+  const charIdx   = state.selectedCard;
+  const correct   = (state.arrangement[seatIdx] === charIdx);
+  const ch        = state.chars[charIdx];
+
+  // 자리 카드 내용 업데이트
+  el.innerHTML = `
+    <span class="seat-emoji">${ch.emoji}</span>
+    <span class="seat-name">${ch.name}</span>
+  `;
+  el.classList.remove('empty', 'target-highlight');
+
+  if (correct) {
+    // 정답
+    el.classList.add('correct');
+    sfxCorrect();
+    state.placed[seatIdx] = charIdx;
+    state.correctCount++;
+    // 이름 카드 사용 처리
+    markNameCardUsed(charIdx);
+    updateScore();
+
+    // 모두 맞췄을 때
+    if (state.correctCount === state.count) {
+      setTimeout(() => {
+        sfxFanfare();
+        setTimeout(showResult, 600);
+      }, 300);
+    }
+  } else {
+    // 오답: 잠깐 빨간색 후 다시 빈 자리로
+    el.classList.add('wrong');
+    sfxWrong();
+    setTimeout(() => {
+      el.classList.remove('wrong');
+      el.classList.add('empty');
+      el.innerHTML = '<span style="font-size:2rem;color:var(--gray300);">?</span>';
+    }, 700);
+  }
+
+  // 선택 해제
+  state.selectedCard = null;
+  document.querySelectorAll('.name-card.selected').forEach(c => c.classList.remove('selected'));
+  updateSeatHighlight();
+}
+
+// 빈 자리 강조 (카드 선택 시 시각 힌트)
+function updateSeatHighlight() {
+  document.querySelectorAll('#play-grid .seat-card.empty').forEach(el => {
+    el.classList.toggle('target-highlight', state.selectedCard !== null);
+  });
+}
+
+// 이름 카드 사용 완료 표시
+function markNameCardUsed(charIdx) {
+  const card = document.querySelector(`.name-card[data-char="${charIdx}"]`);
+  if (card) {
+    card.classList.remove('selected');
+    card.classList.add('used');
+  }
+}
+
+// 점수 갱신
+function updateScore() {
+  document.getElementById('play-score').textContent = `${state.correctCount} / ${state.count}`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   화면 4: 결과
+═══════════════════════════════════════════════════════ */
+function showResult() {
+  showScreen('screen-result');
+
+  const n = state.count;
+  const c = state.correctCount;
+
+  // 이모지 & 메시지
+  let emoji, title, msg;
+  if (c === n) {
+    emoji = '🎉'; title = '완벽해요!';
+    msg   = `${n}명 모두 맞췄어요! 정말 대단해요! 👏`;
+  } else if (c >= Math.ceil(n / 2)) {
+    emoji = '😊'; title = '잘 했어요!';
+    msg   = `${n}명 중 ${c}명을 맞췄어요! 한 번 더 해볼까요?`;
+  } else {
+    emoji = '😅'; title = '아쉬워요!';
+    msg   = `${n}명 중 ${c}명을 맞췄어요. 다시 기억해 봐요!`;
+  }
+
+  document.getElementById('result-emoji').textContent = emoji;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-score').textContent = `${c} / ${n}`;
+  document.getElementById('result-msg').textContent   = msg;
+
+  // 정답 복기 그리드
+  const grid = document.getElementById('result-grid');
+  grid.innerHTML = '';
+  applyGridStyle(grid, n);
+  state.arrangement.forEach(charIdx => {
+    grid.appendChild(makeSeatCard(charIdx, false));
+  });
+}
+
+// 다시 하기 (같은 설정 + 새 배치)
+function retryGame() {
+  startGame();
+}
+
+// 설정 화면으로 돌아가기
+function goSetup() {
+  showScreen('screen-setup');
+}
+
+/* ═══════════════════════════════════════════════════════
+   유틸
+═══════════════════════════════════════════════════════ */
+// 화면 전환
+function showScreen(id) {
+  ['screen-setup', 'screen-reveal', 'screen-play', 'screen-result'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? '' : 'none';
+  });
+}
+
+// 자리 배치판 열 수 계산 및 스타일 적용
+function applyGridStyle(gridEl, n) {
+  // 2×2(4), 2×3(6), 2×4(8) → 모두 2열
+  // 2명: 1열, 3명: 3열(1행), 4~8명: 2열
+  let cols;
+  if (n <= 3)      cols = n;      // 2~3명: 한 줄
+  else             cols = 2;      // 4명 이상: 2열 배치
+
+  gridEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+}
+
+// 자리 카드 DOM 생성 (공개 / 결과 화면용)
+function makeSeatCard(charIdx, empty) {
+  const el = document.createElement('div');
+  el.className = 'seat-card';
+  if (empty) {
+    el.classList.add('empty');
+    el.innerHTML = '<span style="font-size:2rem;color:var(--gray300);">?</span>';
+  } else {
+    const ch = state.chars[charIdx];
+    el.innerHTML = `
+      <span class="seat-emoji">${ch.emoji}</span>
+      <span class="seat-name">${ch.name}</span>
+    `;
+  }
+  return el;
+}
+
+// Fisher-Yates 셔플 (배열 in-place)
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/* 초기 화면 표시 */
+showScreen('screen-setup');
+</script>
+</body>
+</html>

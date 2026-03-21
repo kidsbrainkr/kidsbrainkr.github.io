@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>순서 기억 게임 - 만 4세</title>
+  <style>
+    /* ===== CSS 변수 ===== */
+    :root {
+      --accent: #FF6B35;
+      --mint:   #4ECDC4;
+      --bg:     #FFF8F0;
+      --white:  #FFFFFF;
+      --shadow: 0 4px 16px rgba(0,0,0,0.12);
+      --radius: 16px;
+    }
+
+    /* ===== 기본 리셋 ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 40px;
+      user-select: none;
+    }
+
+    /* ===== 헤더 영역 ===== */
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      font-size: 1.9rem;
+      color: var(--accent);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .header p.sub {
+      font-size: 1rem;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    /* ===== 단계 / 상태 표시 배지 ===== */
+    .stage-badge {
+      background: var(--accent);
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      padding: 8px 22px;
+      border-radius: 99px;
+      margin-bottom: 12px;
+      box-shadow: 0 3px 10px rgba(255,107,53,0.35);
+      transition: background 0.3s;
+    }
+
+    /* ===== 메시지 표시줄 ===== */
+    .message-box {
+      min-height: 36px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 14px;
+      text-align: center;
+      transition: color 0.2s;
+    }
+    .message-box.success { color: var(--mint); }
+    .message-box.error   { color: #E63946; }
+
+    /* ===== 진행 표시바 (입력 단계) ===== */
+    .progress-wrap {
+      width: 100%;
+      max-width: 360px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .progress-label {
+      font-size: 0.88rem;
+      color: #888;
+      white-space: nowrap;
+    }
+    .progress-bar-outer {
+      flex: 1;
+      height: 10px;
+      background: #E8E0D8;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-bar-inner {
+      height: 100%;
+      background: var(--mint);
+      border-radius: 99px;
+      transition: width 0.25s ease;
+      width: 0%;
+    }
+
+    /* ===== 3×3 이모지 그리드 ===== */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      max-width: 380px;
+      width: 100%;
+      margin-bottom: 24px;
+    }
+
+    /* ===== 이모지 버튼 ===== */
+    .emoji-btn {
+      background: var(--white);
+      border: 2px solid #EDE8E0;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      font-size: 3rem;
+      line-height: 1;
+      padding: 18px 10px;
+      cursor: pointer;
+      transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        background 0.15s ease,
+        border-color 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* 터치 하이라이트 제거 */
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+
+    /* 비활성(보여주는 단계): 클릭 불가 + 살짝 흐림 */
+    .emoji-btn.disabled {
+      cursor: default;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    /* 강조(highlight): 노란 배경 + glow + scale */
+    .emoji-btn.highlight {
+      background: #FFF176;
+      border-color: #FFD600;
+      transform: scale(1.15);
+      box-shadow:
+        0 0 0 4px #FFD600,
+        0 0 22px 6px rgba(255,214,0,0.55),
+        var(--shadow);
+      opacity: 1;
+    }
+
+    /* 정답 클릭: 민트 배경 briefly */
+    .emoji-btn.correct {
+      background: #B2F5EA;
+      border-color: var(--mint);
+      transform: scale(1.08);
+    }
+
+    /* 오답 클릭: 빨간 flash + shake */
+    .emoji-btn.wrong {
+      background: #FFDAD7;
+      border-color: #E63946;
+      animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+      0%   { transform: translateX(0); }
+      20%  { transform: translateX(-7px); }
+      40%  { transform: translateX(7px); }
+      60%  { transform: translateX(-5px); }
+      80%  { transform: translateX(5px); }
+      100% { transform: translateX(0); }
+    }
+
+    /* ===== 시작/재시작 버튼 ===== */
+    .action-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 99px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      padding: 14px 44px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(255,107,53,0.4);
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(255,107,53,0.45); }
+    .action-btn:active { transform: translateY(0); }
+
+    /* ===== 결과 화면 오버레이 ===== */
+    .result-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,248,240,0.97);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    .result-overlay.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .result-overlay .big-emoji {
+      font-size: 5rem;
+      animation: pop 0.6s cubic-bezier(.175,.885,.32,1.275) both;
+    }
+    @keyframes pop {
+      0%   { transform: scale(0); }
+      100% { transform: scale(1); }
+    }
+    .result-overlay h2 {
+      font-size: 2rem;
+      color: var(--accent);
+      font-weight: 800;
+      text-align: center;
+    }
+    .result-overlay p {
+      font-size: 1.1rem;
+      color: #555;
+      text-align: center;
+    }
+
+    /* ===== 별 꽃가루 애니메이션 ===== */
+    .confetti-wrap {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 99;
+    }
+    .confetti-piece {
+      position: absolute;
+      top: -20px;
+      font-size: 1.5rem;
+      animation: fall linear forwards;
+    }
+    @keyframes fall {
+      to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== 헤더 ===== -->
+<div class="header">
+  <h1>✨ 순서 기억 게임</h1>
+  <p class="sub">이모지가 빛나는 순서를 기억해요!</p>
+</div>
+
+<!-- ===== 단계 배지 ===== -->
+<div class="stage-badge" id="stageBadge">1단계 - 3개를 기억해요!</div>
+
+<!-- ===== 메시지 표시 ===== -->
+<div class="message-box" id="messageBox">준비됐나요? 시작해볼까요?</div>
+
+<!-- ===== 진행 표시바 ===== -->
+<div class="progress-wrap" id="progressWrap" style="visibility:hidden">
+  <span class="progress-label" id="progressLabel">0 / 0</span>
+  <div class="progress-bar-outer">
+    <div class="progress-bar-inner" id="progressBar"></div>
+  </div>
+</div>
+
+<!-- ===== 3×3 이모지 그리드 ===== -->
+<div class="grid" id="emojiGrid">
+  <!-- JS에서 동적으로 생성 -->
+</div>
+
+<!-- ===== 시작 버튼 ===== -->
+<button class="action-btn" id="startBtn" onclick="startGame()">게임 시작!</button>
+
+<!-- ===== 결과 오버레이 ===== -->
+<div class="result-overlay" id="resultOverlay">
+  <div class="big-emoji">🎉</div>
+  <h2>대단해요! 모두 성공!</h2>
+  <p>순서를 모두 기억했어요!<br>정말 기억력이 좋네요 ⭐</p>
+  <button class="action-btn" onclick="resetGame()">다시 하기</button>
+</div>
+
+<!-- ===== 꽃가루 레이어 ===== -->
+<div class="confetti-wrap" id="confettiWrap"></div>
+
+<script>
+/* ============================================================
+   순서 기억 게임 - 만 4세용
+   Web Audio API 사용 (외부 파일 없음)
+   ============================================================ */
+
+// ===== 이모지 목록 (9개, 3×3 배치) =====
+const EMOJIS = ['🌟','⭐','💫','🌈','🎈','🎁','🎀','🎊','🎉'];
+
+// ===== 단계별 기억해야 할 이모지 수 =====
+const STAGE_CONFIG = [
+  { stage: 1, count: 3, label: '1단계 - 3개를 기억해요!' },
+  { stage: 2, count: 4, label: '2단계 - 4개를 기억해요!' },
+  { stage: 3, count: 5, label: '3단계 - 5개를 기억해요!' },
+  { stage: 4, count: 6, label: '4단계 - 6개를 기억해요!' },
+];
+
+// ===== 전역 상태 =====
+let currentStageIdx = 0;  // 현재 단계 인덱스 (0~3)
+let sequence = [];         // 현재 단계 이모지 순서 (인덱스 배열)
+let inputSeq = [];         // 아이가 입력한 순서
+let isShowing = false;     // 보여주는 중 여부
+let isInput = false;       // 입력 받는 중 여부
+let audioCtx = null;       // Web Audio Context
+
+// ===== Web Audio Context 초기화 (첫 인터랙션 후) =====
+function getAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioCtx;
+}
+
+/* ===== 소리 유틸: 주파수 + 지속시간으로 삐 소리 생성 =====
+   freq: Hz, duration: 초, type: 파형 종류 */
+function playTone(freq, duration = 0.18, type = 'sine', volume = 0.4) {
+  const ctx = getAudio();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, ctx.currentTime);
+  gain.gain.setValueAtTime(volume, ctx.currentTime);
+  // 끝에서 부드럽게 페이드아웃
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + duration);
+}
+
+/* ===== 이모지 인덱스에 따라 다른 음높이로 뿅 소리 ===== */
+function playEmojiSound(idx) {
+  // 인덱스 0~8에 대응하는 음계 (도레미파솔라시도레)
+  const freqs = [523, 587, 659, 698, 784, 880, 988, 1047, 1175];
+  playTone(freqs[idx] || 600, 0.22, 'sine', 0.35);
+}
+
+/* ===== 정답 클릭음 ===== */
+function playCorrectSound() {
+  playTone(880, 0.12, 'sine', 0.3);
+}
+
+/* ===== 오답 부저음 ===== */
+function playWrongSound() {
+  playTone(180, 0.35, 'sawtooth', 0.35);
+}
+
+/* ===== 단계 성공: 상행 3음 ===== */
+function playStageClear() {
+  const ctx = getAudio();
+  const notes = [523, 659, 784]; // 도 미 솔
+  notes.forEach((freq, i) => {
+    setTimeout(() => playTone(freq, 0.25, 'sine', 0.4), i * 160);
+  });
+}
+
+/* ===== 전체 완료 팡파레 ===== */
+function playFanfare() {
+  const ctx = getAudio();
+  const notes = [523, 659, 784, 1047, 784, 1047]; // 도미솔도솔도
+  notes.forEach((freq, i) => {
+    setTimeout(() => playTone(freq, 0.3, 'triangle', 0.45), i * 140);
+  });
+}
+
+// ===== DOM 참조 =====
+const grid         = document.getElementById('emojiGrid');
+const startBtn     = document.getElementById('startBtn');
+const stageBadge   = document.getElementById('stageBadge');
+const messageBox   = document.getElementById('messageBox');
+const progressWrap = document.getElementById('progressWrap');
+const progressBar  = document.getElementById('progressBar');
+const progressLabel= document.getElementById('progressLabel');
+const resultOverlay= document.getElementById('resultOverlay');
+const confettiWrap = document.getElementById('confettiWrap');
+
+/* ===== 그리드에 버튼 생성 (최초 1회) ===== */
+function buildGrid() {
+  grid.innerHTML = '';
+  EMOJIS.forEach((emoji, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-btn disabled';
+    btn.dataset.idx = idx;
+    btn.textContent = emoji;
+    btn.setAttribute('aria-label', emoji);
+    btn.addEventListener('click', () => onEmojiClick(idx));
+    grid.appendChild(btn);
+  });
+}
+
+/* ===== 특정 버튼 DOM 반환 ===== */
+function getBtn(idx) {
+  return grid.querySelector(`[data-idx="${idx}"]`);
+}
+
+/* ===== 모든 버튼에 클래스 일괄 조작 ===== */
+function setAllDisabled(disabled) {
+  grid.querySelectorAll('.emoji-btn').forEach(btn => {
+    if (disabled) {
+      btn.classList.add('disabled');
+    } else {
+      btn.classList.remove('disabled');
+    }
+  });
+}
+
+/* ===== 진행 표시바 업데이트 ===== */
+function updateProgress(done, total) {
+  const pct = total > 0 ? (done / total) * 100 : 0;
+  progressBar.style.width = pct + '%';
+  progressLabel.textContent = `${done} / ${total}`;
+}
+
+/* ===== 메시지 박스 업데이트 ===== */
+function setMessage(text, type = '') {
+  messageBox.textContent = text;
+  messageBox.className = 'message-box' + (type ? ' ' + type : '');
+}
+
+/* ===== 게임 시작 ===== */
+function startGame() {
+  getAudio(); // 오디오 컨텍스트 활성화 (사용자 인터랙션 필요)
+  startBtn.style.display = 'none';
+  buildGrid();
+  showStage();
+}
+
+/* ===== 현재 단계 표시 (sequence 생성 후 하이라이트 재생) ===== */
+function showStage() {
+  const cfg = STAGE_CONFIG[currentStageIdx];
+  stageBadge.textContent = cfg.label;
+  isShowing = true;
+  isInput = false;
+  setAllDisabled(true);
+  progressWrap.style.visibility = 'hidden';
+
+  // 무작위 순서 생성 (9개 중 count개 선택)
+  sequence = randomSequence(EMOJIS.length, cfg.count);
+  inputSeq = [];
+
+  setMessage('잘 보세요! 🌟 순서를 기억해요!');
+
+  // 잠깐 대기 후 하이라이트 시작
+  setTimeout(() => playSequence(), 600);
+}
+
+/* ===== 이모지 인덱스 배열을 무작위로 생성 ===== */
+function randomSequence(total, count) {
+  // 전체 인덱스를 섞어서 앞에서 count개 사용
+  const arr = Array.from({length: total}, (_, i) => i);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, count);
+}
+
+/* ===== 순서대로 하이라이트 재생 ===== */
+function playSequence() {
+  const SHOW_MS  = 600;  // 하이라이트 지속 시간 (ms)
+  const GAP_MS   = 300;  // 하이라이트 사이 간격 (ms)
+
+  let i = 0;
+
+  function showNext() {
+    if (i >= sequence.length) {
+      // 전체 보여주기 완료 → 입력 단계 시작
+      setTimeout(() => startInput(), 400);
+      return;
+    }
+    const idx = sequence[i];
+    const btn = getBtn(idx);
+
+    // 하이라이트 ON
+    btn.classList.add('highlight');
+    playEmojiSound(idx);
+
+    // 하이라이트 OFF 후 다음으로
+    setTimeout(() => {
+      btn.classList.remove('highlight');
+      i++;
+      setTimeout(showNext, GAP_MS);
+    }, SHOW_MS);
+  }
+
+  showNext();
+}
+
+/* ===== 입력 단계 시작 ===== */
+function startInput() {
+  isShowing = false;
+  isInput = true;
+  setAllDisabled(false);
+  updateProgress(0, sequence.length);
+  progressWrap.style.visibility = 'visible';
+  setMessage('이제 같은 순서로 눌러봐요! 👆');
+}
+
+/* ===== 이모지 버튼 클릭 처리 ===== */
+function onEmojiClick(idx) {
+  if (!isInput) return; // 입력 단계가 아니면 무시
+
+  const btn = getBtn(idx);
+  const expected = sequence[inputSeq.length]; // 다음 기대 인덱스
+
+  if (idx === expected) {
+    // ===== 정답 처리 =====
+    inputSeq.push(idx);
+    playCorrectSound();
+
+    // 민트 briefly
+    btn.classList.add('correct');
+    setTimeout(() => btn.classList.remove('correct'), 350);
+
+    updateProgress(inputSeq.length, sequence.length);
+
+    if (inputSeq.length === sequence.length) {
+      // 단계 완료
+      isInput = false;
+      setAllDisabled(true);
+      progressWrap.style.visibility = 'hidden';
+      setTimeout(() => handleStageSuccess(), 400);
+    }
+  } else {
+    // ===== 오답 처리 =====
+    isInput = false;
+    setAllDisabled(true);
+    playWrongSound();
+
+    btn.classList.add('wrong');
+    setMessage('앗, 다시 해봐요! 💪', 'error');
+
+    // 잠깐 후 같은 단계 재시도
+    setTimeout(() => {
+      btn.classList.remove('wrong');
+      progressWrap.style.visibility = 'hidden';
+      setMessage('다시 보여줄게요! 👀');
+      setTimeout(() => {
+        inputSeq = [];
+        playSequence();
+      }, 600);
+    }, 1000);
+  }
+}
+
+/* ===== 단계 성공 처리 ===== */
+function handleStageSuccess() {
+  playStageClear();
+  setMessage('잘 했어요! 🎉', 'success');
+
+  // 단계 성공 하이라이트 (정답 버튼들 동시 빛남)
+  sequence.forEach(idx => getBtn(idx).classList.add('correct'));
+  setTimeout(() => {
+    sequence.forEach(idx => getBtn(idx).classList.remove('correct'));
+
+    if (currentStageIdx < STAGE_CONFIG.length - 1) {
+      // 다음 단계로
+      currentStageIdx++;
+      setMessage('다음 단계로 가요! ⭐');
+      setTimeout(() => showStage(), 1000);
+    } else {
+      // 전체 완료!
+      showResult();
+    }
+  }, 900);
+}
+
+/* ===== 결과 화면 표시 ===== */
+function showResult() {
+  playFanfare();
+  launchConfetti();
+  setTimeout(() => {
+    resultOverlay.classList.add('visible');
+  }, 600);
+}
+
+/* ===== 꽃가루 생성 ===== */
+function launchConfetti() {
+  confettiWrap.innerHTML = '';
+  const pieces = ['🌟','⭐','💫','🎉','🎊','🎈','✨'];
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.textContent = pieces[Math.floor(Math.random() * pieces.length)];
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.fontSize = (1.2 + Math.random() * 1.4) + 'rem';
+    const dur = 2.2 + Math.random() * 2;
+    el.style.animationDuration = dur + 's';
+    el.style.animationDelay = Math.random() * 1.5 + 's';
+    confettiWrap.appendChild(el);
+    // 애니메이션 종료 후 제거
+    setTimeout(() => el.remove(), (dur + 1.5) * 1000 + 500);
+  }
+}
+
+/* ===== 게임 초기화 (다시 하기) ===== */
+function resetGame() {
+  currentStageIdx = 0;
+  sequence = [];
+  inputSeq = [];
+  isShowing = false;
+  isInput = false;
+  resultOverlay.classList.remove('visible');
+  confettiWrap.innerHTML = '';
+
+  stageBadge.textContent = STAGE_CONFIG[0].label;
+  setMessage('준비됐나요? 시작해볼까요?');
+  progressWrap.style.visibility = 'hidden';
+
+  buildGrid();
+  setAllDisabled(true);
+  startBtn.style.display = 'block';
+  startBtn.textContent = '다시 하기!';
+}
+
+/* ===== 초기 그리드 빌드 (페이지 로드 시) ===== */
+buildGrid();
+</script>
+</body>
+</html>

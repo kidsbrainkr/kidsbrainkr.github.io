@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>하루 일과 순서 맞추기</title>
+  <style>
+    /* =============================================
+       CSS 변수 & 기본 리셋
+    ============================================= */
+    :root {
+      --accent:   #FF6B35;
+      --mint:     #4ECDC4;
+      --bg:       #FFF8F0;
+      --card-bg:  #FFFFFF;
+      --correct:  #2ECC71;
+      --wrong:    #E74C3C;
+      --slot-border: #CCBBAA;
+      --shadow:   0 4px 12px rgba(0,0,0,0.10);
+      --radius:   12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI','Malgun Gothic','Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    /* =============================================
+       공통 버튼 스타일
+    ============================================= */
+    .btn {
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 700;
+      transition: transform .1s, box-shadow .1s;
+      user-select: none;
+    }
+    .btn:active { transform: scale(.95); }
+
+    .btn-accent {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(255,107,53,.35);
+    }
+    .btn-mint {
+      background: var(--mint);
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(78,205,196,.35);
+    }
+    .btn-outline {
+      background: #fff;
+      color: var(--accent);
+      border: 2px solid var(--accent);
+    }
+
+    /* =============================================
+       화면 전환
+    ============================================= */
+    .screen { display: none; width: 100%; max-width: 780px; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; }
+
+    /* =============================================
+       시작 화면
+    ============================================= */
+    #screen-start {
+      gap: 28px;
+      padding-top: 32px;
+    }
+
+    .start-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--accent);
+      text-align: center;
+      line-height: 1.3;
+    }
+    .start-title span {
+      display: block;
+      font-size: 1.1rem;
+      color: #888;
+      font-weight: 400;
+      margin-top: 6px;
+    }
+
+    /* 미리보기 카드 예시 */
+    .preview-card {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 20px;
+      gap: 6px;
+    }
+    .preview-card .emoji { font-size: 2.5rem; }
+    .preview-card .label { font-size: .85rem; color: #555; text-align: center; }
+
+    .preview-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* 난이도 선택 버튼 */
+    .difficulty-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #444;
+    }
+
+    .difficulty-btns {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .diff-btn {
+      padding: 16px 30px;
+      font-size: 1.05rem;
+      border-radius: 14px;
+    }
+
+    .diff-btn .sub {
+      display: block;
+      font-size: .78rem;
+      font-weight: 400;
+      opacity: .85;
+      margin-top: 3px;
+    }
+
+    /* =============================================
+       게임 화면
+    ============================================= */
+    #screen-game {
+      gap: 18px;
+      padding-top: 12px;
+    }
+
+    /* 헤더 (제목 + 난이도 표시 + 다시하기) */
+    .game-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .game-title {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .diff-badge {
+      background: var(--mint);
+      color: #fff;
+      font-size: .78rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    .btn-reset {
+      padding: 8px 18px;
+      font-size: .88rem;
+    }
+
+    /* ---- 순서 슬롯 영역 ---- */
+    .slots-label {
+      font-size: .95rem;
+      font-weight: 700;
+      color: #555;
+      align-self: flex-start;
+    }
+
+    .slots-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      width: 100%;
+    }
+
+    /* 슬롯 하나 */
+    .slot {
+      position: relative;
+      width: 110px;
+      min-height: 120px;
+      border: 2.5px dashed var(--slot-border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s, box-shadow .2s;
+      background: rgba(255,255,255,.6);
+    }
+
+    /* 번호 뱃지 */
+    .slot-num {
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: .75rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,.18);
+    }
+
+    /* 슬롯 호버/선택 대기 상태 */
+    .slot.hover-ready {
+      border-color: var(--accent);
+      border-style: solid;
+      box-shadow: 0 0 0 3px rgba(255,107,53,.25);
+    }
+
+    /* 슬롯에 카드 채워진 상태 */
+    .slot.filled {
+      border-style: solid;
+      border-color: var(--mint);
+      cursor: pointer;
+    }
+    .slot.filled:hover {
+      border-color: var(--accent);
+    }
+
+    /* 정답/오답 표시 */
+    .slot.correct {
+      border-color: var(--correct) !important;
+      background: rgba(46,204,113,.12) !important;
+    }
+    .slot.wrong {
+      border-color: var(--wrong) !important;
+      background: rgba(231,76,60,.10) !important;
+    }
+
+    /* 슬롯 내부 카드 콘텐츠 */
+    .slot .card-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 4px;
+    }
+
+    .slot .card-content .emoji {
+      font-size: 2.2rem;
+      line-height: 1;
+    }
+
+    .slot .card-content .name {
+      font-size: .78rem;
+      font-weight: 700;
+      color: #333;
+      text-align: center;
+    }
+
+    .slot .card-content .desc {
+      font-size: .65rem;
+      color: #777;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    /* 빈 슬롯 힌트 */
+    .slot .empty-hint {
+      color: #ccc;
+      font-size: .75rem;
+      text-align: center;
+    }
+
+    /* ---- 구분선 ---- */
+    .divider {
+      width: 100%;
+      border: none;
+      border-top: 2px dashed #E0D6CC;
+      margin: 4px 0;
+    }
+
+    /* ---- 카드 패널 (하단) ---- */
+    .cards-label {
+      font-size: .95rem;
+      font-weight: 700;
+      color: #555;
+      align-self: flex-start;
+    }
+
+    .cards-panel {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      width: 100%;
+      min-height: 80px;
+      padding: 8px;
+      background: rgba(255,255,255,.5);
+      border-radius: 14px;
+      border: 2px solid #EEE4DA;
+    }
+
+    /* 개별 카드 */
+    .card {
+      width: 110px;
+      min-height: 110px;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 2.5px solid transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 10px 6px;
+      cursor: pointer;
+      transition: border-color .15s, transform .15s, box-shadow .15s;
+      user-select: none;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0,0,0,.14);
+    }
+
+    /* 선택된 카드: 주황 테두리 강조 */
+    .card.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(255,107,53,.30), var(--shadow);
+      transform: translateY(-4px) scale(1.04);
+    }
+
+    /* 패널에서 사용된 카드(슬롯으로 이동됨) → 숨김 */
+    .card.used {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(.85);
+    }
+
+    .card .emoji {
+      font-size: 2.5rem;
+      line-height: 1;
+    }
+
+    .card .name {
+      font-size: .82rem;
+      font-weight: 700;
+      color: #333;
+      text-align: center;
+    }
+
+    .card .desc {
+      font-size: .68rem;
+      color: #777;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    /* ---- 하단 버튼들 ---- */
+    .game-btns {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn-check {
+      padding: 14px 36px;
+      font-size: 1.1rem;
+      border-radius: 14px;
+    }
+
+    .btn-home {
+      padding: 14px 24px;
+      font-size: 1rem;
+      border-radius: 14px;
+    }
+
+    /* =============================================
+       결과 오버레이
+    ============================================= */
+    #result-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    #result-overlay.show { display: flex; }
+
+    .result-box {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 36px 40px;
+      max-width: 340px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 16px 48px rgba(0,0,0,.22);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      animation: popIn .3s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(.6); opacity: 0; }
+      to   { transform: scale(1);  opacity: 1; }
+    }
+
+    .result-icon { font-size: 4rem; }
+    .result-title { font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+    .result-msg   { font-size: .95rem; color: #555; line-height: 1.6; }
+    .result-score { font-size: 1.2rem; font-weight: 700; color: var(--mint); }
+
+    .result-btns {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .result-btns .btn {
+      padding: 12px 24px;
+      font-size: .95rem;
+      border-radius: 12px;
+    }
+
+    /* =============================================
+       반응형 (작은 화면)
+    ============================================= */
+    @media (max-width: 480px) {
+      .slot, .card { width: 90px; min-height: 96px; }
+      .card .emoji { font-size: 2rem; }
+      .slot .card-content .emoji { font-size: 1.9rem; }
+      .start-title { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- =============================================
+     시작 화면: 난이도 선택
+============================================= -->
+<section id="screen-start" class="screen active">
+  <h1 class="start-title">
+    하루 일과 순서 맞추기
+    <span>유치원 하루를 순서대로 늘어놓아요!</span>
+  </h1>
+
+  <!-- 카드 미리보기 3장 -->
+  <div class="preview-row">
+    <div class="preview-card">
+      <span class="emoji">🌅</span>
+      <span class="label">등원</span>
+    </div>
+    <div class="preview-card">
+      <span class="emoji">🎨</span>
+      <span class="label">놀이</span>
+    </div>
+    <div class="preview-card">
+      <span class="emoji">🚌</span>
+      <span class="label">하원</span>
+    </div>
+  </div>
+
+  <p class="difficulty-title">난이도를 골라요!</p>
+
+  <div class="difficulty-btns">
+    <!-- 쉬움: 4장 -->
+    <button class="btn btn-mint diff-btn" onclick="startGame('easy')">
+      😊 쉬움
+      <span class="sub">카드 4장</span>
+    </button>
+    <!-- 보통: 6장 -->
+    <button class="btn btn-accent diff-btn" onclick="startGame('normal')">
+      🙂 보통
+      <span class="sub">카드 6장</span>
+    </button>
+    <!-- 어려움: 9장 전체 -->
+    <button class="btn btn-outline diff-btn" onclick="startGame('hard')">
+      😎 어려움
+      <span class="sub">카드 9장</span>
+    </button>
+  </div>
+</section>
+
+<!-- =============================================
+     게임 화면
+============================================= -->
+<section id="screen-game" class="screen">
+
+  <!-- 헤더 -->
+  <div class="game-header">
+    <span class="game-title">하루 일과 순서 맞추기</span>
+    <span id="diff-badge" class="diff-badge"></span>
+    <button class="btn btn-outline btn-reset" onclick="resetGame()">🔄 다시하기</button>
+  </div>
+
+  <!-- 순서 배치 슬롯 영역 -->
+  <p class="slots-label">📌 순서대로 놓아요</p>
+  <div id="slots-area" class="slots-area"></div>
+
+  <hr class="divider" />
+
+  <!-- 섞인 카드 패널 -->
+  <p class="cards-label">👇 카드를 골라요</p>
+  <div id="cards-panel" class="cards-panel"></div>
+
+  <!-- 확인 / 처음으로 버튼 -->
+  <div class="game-btns">
+    <button class="btn btn-accent btn-check" onclick="checkAnswer()">✅ 확인!</button>
+    <button class="btn btn-outline btn-home" onclick="goHome()">🏠 처음으로</button>
+  </div>
+
+</section>
+
+<!-- =============================================
+     결과 오버레이
+============================================= -->
+<div id="result-overlay">
+  <div class="result-box">
+    <div class="result-icon" id="result-icon"></div>
+    <div class="result-title" id="result-title"></div>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-msg"   id="result-msg"></div>
+    <div class="result-btns">
+      <button class="btn btn-accent" onclick="resetGame()">🔄 다시하기</button>
+      <button class="btn btn-outline" onclick="goHome()">🏠 처음으로</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =============================================
+   ▌ 데이터: 전체 하루 일과 카드 (정답 순서)
+============================================= */
+const ALL_CARDS = [
+  { id: 1, emoji: '🌅', name: '등원',    desc: '유치원에 도착해요' },
+  { id: 2, emoji: '🎒', name: '가방 정리', desc: '가방을 정리해요'  },
+  { id: 3, emoji: '🤝', name: '인사',    desc: '선생님께 인사해요'  },
+  { id: 4, emoji: '🍱', name: '간식',    desc: '간식을 먹어요'     },
+  { id: 5, emoji: '🎨', name: '놀이',    desc: '신나게 놀아요'     },
+  { id: 6, emoji: '📖', name: '이야기',  desc: '이야기를 들어요'   },
+  { id: 7, emoji: '🍚', name: '점심',    desc: '점심을 먹어요'     },
+  { id: 8, emoji: '😴', name: '낮잠',    desc: '낮잠을 자요'      },
+  { id: 9, emoji: '🚌', name: '하원',    desc: '집에 가요'        },
+];
+
+/* 난이도별 사용 카드 인덱스 (ALL_CARDS 기준 id) */
+const DIFFICULTY_CONFIG = {
+  easy:   { label: '😊 쉬움 (4장)',   ids: [1, 3, 7, 9] },
+  normal: { label: '🙂 보통 (6장)',   ids: [1, 3, 4, 6, 7, 9] },
+  hard:   { label: '😎 어려움 (9장)', ids: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
+};
+
+/* =============================================
+   ▌ 게임 상태 변수
+============================================= */
+let currentDifficulty = null;   // 'easy' | 'normal' | 'hard'
+let activeCards        = [];    // 이번 게임에서 사용할 카드 배열 (정답 순서)
+let shuffledCards      = [];    // 셔플된 카드 배열 (패널 표시용)
+let slotData           = [];    // 슬롯에 배치된 카드 id (null = 빈 슬롯)
+let selectedCardId     = null;  // 현재 선택된 패널 카드 id
+
+/* =============================================
+   ▌ Web Audio API 사운드 함수들
+============================================= */
+let audioCtx = null;
+
+/* AudioContext 지연 초기화 (브라우저 정책: 사용자 인터랙션 후 생성) */
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioCtx;
+}
+
+/* 공통: 단순 사인파 음 재생
+   frequency(Hz), duration(초), volume(0~1), type: 파형 */
+function playTone(frequency, duration, volume = 0.4, type = 'sine') {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.type      = type;
+    osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    // 음 끝에 자연스러운 페이드아웃
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch(e) { /* 사운드 오류는 무시 */ }
+}
+
+/* 카드 배치음: 짧고 경쾌한 클릭 */
+function sfxPlace() {
+  playTone(600, 0.12, 0.3, 'square');
+}
+
+/* 슬롯에서 카드 제거음: 살짝 낮은 톤 */
+function sfxRemove() {
+  playTone(380, 0.10, 0.2, 'sine');
+}
+
+/* 정답 한 개 맑은 음 (index로 음계 높이 다르게) */
+function sfxCorrectOne(index) {
+  const notes = [523, 587, 659, 698, 784, 880, 988]; // C5~B5
+  const freq = notes[index % notes.length];
+  playTone(freq, 0.25, 0.35, 'sine');
+}
+
+/* 전체 성공 팡파레: 연속 화음 */
+function sfxFanfare() {
+  const ctx = getAudioCtx();
+  const chords = [
+    { freq: 523, delay: 0.0 },
+    { freq: 659, delay: 0.15 },
+    { freq: 784, delay: 0.30 },
+    { freq: 1047, delay: 0.45 },
+  ];
+  chords.forEach(({ freq, delay }) => {
+    try {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + 0.6);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.7);
+    } catch(e) {}
+  });
+}
+
+/* 오답 부저음: 낮고 둔탁한 느낌 */
+function sfxBuzzer() {
+  playTone(180, 0.45, 0.4, 'sawtooth');
+}
+
+/* =============================================
+   ▌ 화면 전환 유틸
+============================================= */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* =============================================
+   ▌ 배열 셔플 (Fisher-Yates)
+============================================= */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* =============================================
+   ▌ 게임 시작
+============================================= */
+function startGame(difficulty) {
+  currentDifficulty = difficulty;
+  const cfg = DIFFICULTY_CONFIG[difficulty];
+
+  // 이번 게임 카드 (정답 순서)
+  activeCards = cfg.ids.map(id => ALL_CARDS.find(c => c.id === id));
+
+  // 셔플 (정답 순서와 달라야 하므로 정렬이 같으면 다시 셔플)
+  do {
+    shuffledCards = shuffle(activeCards);
+  } while (
+    activeCards.length > 1 &&
+    shuffledCards.every((c, i) => c.id === activeCards[i].id)
+  );
+
+  // 슬롯 초기화
+  slotData = new Array(activeCards.length).fill(null);
+  selectedCardId = null;
+
+  // UI 빌드
+  document.getElementById('diff-badge').textContent = cfg.label;
+  buildSlots();
+  buildCards();
+
+  // 결과 오버레이 닫기
+  closeResult();
+
+  // 게임 화면 표시
+  showScreen('screen-game');
+}
+
+/* =============================================
+   ▌ 슬롯 UI 빌드
+============================================= */
+function buildSlots() {
+  const area = document.getElementById('slots-area');
+  area.innerHTML = '';
+
+  activeCards.forEach((_, idx) => {
+    const slot = document.createElement('div');
+    slot.className = 'slot';
+    slot.dataset.slotIdx = idx;
+    slot.onclick = () => onSlotClick(idx);
+
+    // 번호 뱃지
+    const badge = document.createElement('div');
+    badge.className = 'slot-num';
+    badge.textContent = idx + 1;
+    slot.appendChild(badge);
+
+    // 비어있는 힌트 텍스트
+    const hint = document.createElement('div');
+    hint.className = 'empty-hint';
+    hint.textContent = '여기에\n놓아요';
+    hint.style.whiteSpace = 'pre';
+    slot.appendChild(hint);
+
+    area.appendChild(slot);
+  });
+}
+
+/* 슬롯 DOM 요소를 현재 slotData에 맞게 갱신 */
+function refreshSlots() {
+  const slots = document.querySelectorAll('.slot');
+  slots.forEach((slot, idx) => {
+    const cardId = slotData[idx];
+    // 기존 card-content 제거, empty-hint 표시 제어
+    slot.classList.remove('filled', 'correct', 'wrong', 'hover-ready');
+
+    // 빈 힌트 요소
+    const hint = slot.querySelector('.empty-hint');
+    // 기존 카드 콘텐츠 제거
+    const existing = slot.querySelector('.card-content');
+    if (existing) existing.remove();
+
+    if (cardId !== null) {
+      // 카드 데이터 찾기
+      const card = ALL_CARDS.find(c => c.id === cardId);
+      const content = makeCardContent(card, false);
+      slot.appendChild(content);
+      slot.classList.add('filled');
+      if (hint) hint.style.display = 'none';
+    } else {
+      if (hint) hint.style.display = '';
+    }
+  });
+}
+
+/* =============================================
+   ▌ 카드 패널 UI 빌드
+============================================= */
+function buildCards() {
+  const panel = document.getElementById('cards-panel');
+  panel.innerHTML = '';
+
+  shuffledCards.forEach(card => {
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.dataset.cardId = card.id;
+    el.onclick = () => onCardClick(card.id);
+
+    const emoji = document.createElement('div');
+    emoji.className = 'emoji';
+    emoji.textContent = card.emoji;
+
+    const name = document.createElement('div');
+    name.className = 'name';
+    name.textContent = card.name;
+
+    const desc = document.createElement('div');
+    desc.className = 'desc';
+    desc.textContent = card.desc;
+
+    el.appendChild(emoji);
+    el.appendChild(name);
+    el.appendChild(desc);
+    panel.appendChild(el);
+  });
+
+  refreshCards();
+}
+
+/* 패널 카드 상태 갱신 (selected / used) */
+function refreshCards() {
+  const usedIds = new Set(slotData.filter(id => id !== null));
+
+  document.querySelectorAll('.card').forEach(el => {
+    const id = parseInt(el.dataset.cardId);
+    el.classList.remove('selected', 'used');
+
+    if (usedIds.has(id)) {
+      el.classList.add('used');
+    } else if (id === selectedCardId) {
+      el.classList.add('selected');
+    }
+  });
+}
+
+/* =============================================
+   ▌ 카드 콘텐츠 DOM 요소 생성 (슬롯 내부용)
+============================================= */
+function makeCardContent(card, showCorrect) {
+  const wrap = document.createElement('div');
+  wrap.className = 'card-content';
+
+  const emoji = document.createElement('div');
+  emoji.className = 'emoji';
+  emoji.textContent = card.emoji;
+
+  const name = document.createElement('div');
+  name.className = 'name';
+  name.textContent = card.name;
+
+  const desc = document.createElement('div');
+  desc.className = 'desc';
+  desc.textContent = card.desc;
+
+  wrap.appendChild(emoji);
+  wrap.appendChild(name);
+  wrap.appendChild(desc);
+  return wrap;
+}
+
+/* =============================================
+   ▌ 이벤트: 패널 카드 클릭
+============================================= */
+function onCardClick(cardId) {
+  const usedIds = new Set(slotData.filter(id => id !== null));
+  if (usedIds.has(cardId)) return; // 이미 슬롯에 배치된 카드는 선택 불가
+
+  // 같은 카드 클릭 → 선택 해제
+  if (selectedCardId === cardId) {
+    selectedCardId = null;
+  } else {
+    selectedCardId = cardId;
+    sfxPlace();
+  }
+
+  // 슬롯 hover-ready 표시: 선택된 카드가 있을 때 빈 슬롯 강조
+  updateSlotHighlight();
+  refreshCards();
+}
+
+/* =============================================
+   ▌ 이벤트: 슬롯 클릭
+============================================= */
+function onSlotClick(idx) {
+  // 1) 선택된 카드가 있는 경우 → 슬롯에 배치 또는 교체
+  if (selectedCardId !== null) {
+    // 이미 같은 카드가 다른 슬롯에 있다면 그 슬롯에서 제거
+    const prevSlotIdx = slotData.findIndex(id => id === selectedCardId);
+    if (prevSlotIdx !== -1) slotData[prevSlotIdx] = null;
+
+    // 대상 슬롯에 이미 다른 카드가 있다면 → 패널로 반환 (slotData를 null로)
+    // (그 카드는 자동으로 패널에 다시 나타남)
+    slotData[idx] = selectedCardId;
+    selectedCardId = null;
+    sfxPlace();
+
+  // 2) 선택된 카드 없이 채워진 슬롯 클릭 → 카드를 패널로 반환
+  } else if (slotData[idx] !== null) {
+    slotData[idx] = null;
+    sfxRemove();
+  }
+  // 3) 빈 슬롯 + 선택 없음 → 무시
+
+  updateSlotHighlight();
+  refreshSlots();
+  refreshCards();
+}
+
+/* 빈 슬롯에 hover-ready 클래스 토글 */
+function updateSlotHighlight() {
+  document.querySelectorAll('.slot').forEach((slot, idx) => {
+    slot.classList.remove('hover-ready');
+    if (selectedCardId !== null && slotData[idx] === null) {
+      slot.classList.add('hover-ready');
+    }
+  });
+}
+
+/* =============================================
+   ▌ 정답 확인
+============================================= */
+function checkAnswer() {
+  // 모든 슬롯이 채워져 있는지 확인
+  if (slotData.some(id => id === null)) {
+    // 빈 슬롯 흔들기 애니메이션
+    shakeEmptySlots();
+    return;
+  }
+
+  let correctCount = 0;
+  const slots = document.querySelectorAll('.slot');
+
+  slotData.forEach((cardId, idx) => {
+    const correctCard = activeCards[idx]; // 이 슬롯의 정답 카드
+    const isCorrect = (cardId === correctCard.id);
+
+    if (isCorrect) {
+      correctCount++;
+      slots[idx].classList.add('correct');
+      // 약간 딜레이를 두고 맑은 음 재생
+      setTimeout(() => sfxCorrectOne(idx), idx * 120);
+    } else {
+      slots[idx].classList.add('wrong');
+    }
+  });
+
+  // 결과 오버레이 표시 (사운드 재생 후)
+  const total = activeCards.length;
+  const allCorrect = (correctCount === total);
+  const delay = allCorrect ? total * 120 + 200 : 100;
+
+  setTimeout(() => {
+    if (allCorrect) {
+      sfxFanfare();
+    } else {
+      sfxBuzzer();
+    }
+    showResult(correctCount, total, allCorrect);
+  }, delay);
+}
+
+/* 빈 슬롯 흔들기 (CSS 트랜지션 활용) */
+function shakeEmptySlots() {
+  document.querySelectorAll('.slot').forEach((slot, idx) => {
+    if (slotData[idx] === null) {
+      slot.style.animation = 'none';
+      slot.style.borderColor = 'var(--wrong)';
+      slot.style.transition = 'transform .1s';
+      let count = 0;
+      const shake = setInterval(() => {
+        slot.style.transform = count % 2 === 0 ? 'translateX(6px)' : 'translateX(-6px)';
+        count++;
+        if (count >= 6) {
+          clearInterval(shake);
+          slot.style.transform = '';
+          slot.style.borderColor = '';
+        }
+      }, 60);
+    }
+  });
+  sfxBuzzer();
+}
+
+/* =============================================
+   ▌ 결과 오버레이 표시
+============================================= */
+function showResult(correct, total, allCorrect) {
+  const overlay = document.getElementById('result-overlay');
+  document.getElementById('result-icon').textContent  = allCorrect ? '🎉' : '😊';
+  document.getElementById('result-title').textContent = allCorrect ? '완벽해요!' : '거의 다 했어요!';
+  document.getElementById('result-score').textContent = `${correct} / ${total} 맞았어요`;
+  document.getElementById('result-msg').textContent   = allCorrect
+    ? '하루 일과를 모두 바르게 순서대로 놓았어요!\n정말 대단해요! 👏'
+    : `${total - correct}개의 카드 위치가 달라요.\n빨간 칸을 확인하고 다시 도전해요!`;
+
+  overlay.classList.add('show');
+}
+
+function closeResult() {
+  document.getElementById('result-overlay').classList.remove('show');
+}
+
+/* =============================================
+   ▌ 다시하기 / 처음으로
+============================================= */
+function resetGame() {
+  closeResult();
+  if (currentDifficulty) startGame(currentDifficulty);
+}
+
+function goHome() {
+  closeResult();
+  selectedCardId = null;
+  showScreen('screen-start');
+}
+</script>
+</body>
+</html>

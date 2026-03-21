@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧠 난이도 선택 짝맞추기</title>
+<style>
+/* ===== CSS 변수 ===== */
+:root {
+  --bg:        #FFF8F0;
+  --accent:    #FF6B35;
+  --accent-dk: #E55A24;
+  --mint:      #4ECDC4;
+  --ok:        #2ECC71;
+  --txt:       #333;
+  --txt-lt:    #888;
+  --err:       #E74C3C;
+  --sh:  0 4px 16px rgba(0,0,0,.12);
+  --sh2: 0 8px 32px rgba(0,0,0,.18);
+  --r: 14px;
+  --font: 'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+
+  /* 난이도별 컬러 */
+  --easy-color:   #27AE60;
+  --easy-light:   #E8F8F0;
+  --easy-border:  #A8DFC4;
+  --normal-color: #2980B9;
+  --normal-light: #EAF4FB;
+  --normal-border:#A8D4EF;
+  --hard-color:   #C0392B;
+  --hard-light:   #FDECEA;
+  --hard-border:  #F1ABAB;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255,107,53,.06) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(78,205,196,.06) 0%, transparent 50%);
+  color: var(--txt);
+  font-family: var(--font);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 20px 16px 48px;
+}
+.screen { display:none; width:100%; max-width:960px; margin:0 auto; }
+.screen.active { display:block; }
+.hidden { display:none !important; }
+
+/* ===== 공통 헤더 ===== */
+.game-header { text-align:center; padding:28px 0 20px; }
+.game-header h1 { font-size:2.4rem; color:var(--accent); text-shadow:2px 3px 6px rgba(255,107,53,.2); }
+.subtitle { color:var(--txt-lt); font-size:1rem; margin-top:6px; }
+
+/* ===== 공통 버튼 ===== */
+.btn-primary {
+  background:var(--accent); color:#fff; border:none;
+  padding:14px 36px; border-radius:28px;
+  font-size:1.05rem; font-weight:700; font-family:var(--font);
+  cursor:pointer; box-shadow:0 4px 14px rgba(255,107,53,.35);
+  transition:all .18s;
+}
+.btn-primary:hover { background:var(--accent-dk); transform:translateY(-2px); box-shadow:0 6px 18px rgba(255,107,53,.45); }
+.btn-primary:active { transform:translateY(0); }
+.btn-secondary {
+  background:#fff; color:var(--accent); border:2px solid var(--accent);
+  padding:12px 26px; border-radius:28px;
+  font-size:.95rem; font-weight:700; font-family:var(--font);
+  cursor:pointer; transition:all .18s;
+}
+.btn-secondary:hover { background:var(--accent); color:#fff; }
+.btn-small {
+  background:#f2f2f2; color:var(--txt); border:none;
+  padding:7px 16px; border-radius:20px;
+  font-size:.82rem; font-family:var(--font);
+  cursor:pointer; transition:background .18s; white-space:nowrap;
+}
+.btn-small:hover { background:#e4e4e4; }
+
+/* ===== START 화면 ===== */
+#screen-start { }
+.section-title {
+  font-size:1.1rem; font-weight:700; color:var(--txt);
+  margin-bottom:18px; text-align:center;
+}
+
+/* 난이도 카드 그리드 */
+.diff-grid {
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:16px;
+  max-width:860px;
+  margin:0 auto 32px;
+}
+@media(max-width:600px) { .diff-grid { grid-template-columns:1fr; } }
+
+.diff-card {
+  border:3px solid #e8e8e8;
+  border-radius:var(--r);
+  padding:28px 20px 24px;
+  text-align:center;
+  cursor:pointer;
+  transition:all .22s cubic-bezier(.4,0,.2,1);
+  background:#fff;
+  position:relative;
+  overflow:hidden;
+  font-family:var(--font);
+  user-select:none;
+}
+.diff-card::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:4px;
+  background:currentColor;
+  border-radius:var(--r) var(--r) 0 0;
+}
+.diff-card:hover {
+  transform:translateY(-5px);
+  box-shadow: var(--sh2);
+}
+.diff-card.selected { box-shadow:0 0 0 4px currentColor, var(--sh); }
+
+/* 쉬움: 초록 */
+.diff-card[data-diff="easy"] {
+  color: var(--easy-color);
+  border-color: var(--easy-border);
+  background: var(--easy-light);
+}
+.diff-card[data-diff="easy"]:hover { border-color:var(--easy-color); }
+
+/* 보통: 파랑 */
+.diff-card[data-diff="normal"] {
+  color: var(--normal-color);
+  border-color: var(--normal-border);
+  background: var(--normal-light);
+}
+.diff-card[data-diff="normal"]:hover { border-color:var(--normal-color); }
+
+/* 어려움: 빨강 */
+.diff-card[data-diff="hard"] {
+  color: var(--hard-color);
+  border-color: var(--hard-border);
+  background: var(--hard-light);
+}
+.diff-card[data-diff="hard"]:hover { border-color:var(--hard-color); }
+
+.diff-icon { font-size:3.2rem; margin-bottom:12px; display:block; }
+.diff-name { font-size:1.4rem; font-weight:800; margin-bottom:8px; }
+.diff-desc { font-size:.85rem; color:var(--txt); opacity:.75; line-height:1.5; }
+.diff-badge {
+  display:inline-block; margin-top:12px;
+  padding:5px 14px; border-radius:20px;
+  font-size:.8rem; font-weight:700;
+  background:currentColor; color:#fff;
+  opacity:.9;
+}
+/* badge 글자는 흰색으로 고정 */
+.diff-card[data-diff="easy"]    .diff-badge { background:var(--easy-color); color:#fff; }
+.diff-card[data-diff="normal"]  .diff-badge { background:var(--normal-color); color:#fff; }
+.diff-card[data-diff="hard"]    .diff-badge { background:var(--hard-color); color:#fff; }
+
+/* 카테고리 선택 */
+.cat-row {
+  display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+  max-width:600px; margin:0 auto 28px;
+}
+.cat-btn {
+  padding:10px 22px; border:2px solid #e8e8e8; border-radius:24px;
+  background:#fff; cursor:pointer; font-size:.95rem;
+  font-family:var(--font); color:var(--txt);
+  transition:all .18s;
+}
+.cat-btn:hover { border-color:var(--accent); color:var(--accent); }
+.cat-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; }
+
+/* 오디오 토글 */
+.audio-row {
+  display:flex; gap:24px; justify-content:center; align-items:center;
+  margin-bottom:28px;
+}
+.audio-item { display:flex; align-items:center; gap:8px; font-size:.9rem; color:var(--txt-lt); }
+.toggle-switch { position:relative; display:inline-block; width:44px; height:24px; cursor:pointer; }
+.toggle-switch input { opacity:0; width:0; height:0; }
+.toggle-slider {
+  position:absolute; inset:0; background:#d0d0d0;
+  border-radius:24px; transition:.25s;
+}
+.toggle-slider::before {
+  content:''; position:absolute; width:18px; height:18px;
+  left:3px; bottom:3px; background:#fff; border-radius:50%;
+  transition:.25s; box-shadow:0 1px 4px rgba(0,0,0,.2);
+}
+.toggle-switch input:checked + .toggle-slider { background:var(--accent); }
+.toggle-switch input:checked + .toggle-slider::before { transform:translateX(20px); }
+
+/* 시작 버튼 줄 */
+.start-row { text-align:center; margin-bottom:16px; }
+.start-hint { text-align:center; color:var(--txt-lt); font-size:.85rem; margin-bottom:30px; }
+.error-msg {
+  color:var(--err); background:#fff0f0; border:1px solid #ffd0d0;
+  border-radius:8px; padding:10px 16px;
+  margin:0 auto 16px; max-width:480px; font-size:.9rem; text-align:center;
+}
+
+/* ===== 게임 화면 ===== */
+/* 상단 상태바 */
+.game-status-bar {
+  display:flex; gap:8px; background:#fff;
+  border-radius:var(--r); box-shadow:0 2px 8px rgba(0,0,0,.08);
+  padding:12px 20px; margin-bottom:14px;
+  flex-wrap:wrap; justify-content:space-around;
+}
+.status-item { display:flex; flex-direction:column; align-items:center; min-width:66px; }
+.status-label { font-size:.66rem; color:var(--txt-lt); text-transform:uppercase; letter-spacing:.5px; }
+.status-value { font-size:.98rem; font-weight:700; margin-top:3px; white-space:nowrap; }
+.timer-val { color:var(--accent); font-size:1.1rem; }
+
+/* 미리보기 배너 */
+.preview-banner {
+  background:linear-gradient(135deg, var(--mint), #3aa8a0); color:#fff;
+  border-radius:var(--r); padding:14px; text-align:center;
+  margin-bottom:12px; font-size:1.05rem; font-weight:600;
+}
+.countdown {
+  font-size:3rem; font-weight:900; line-height:1; margin-top:4px;
+  animation:pulse 1s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+
+/* 카드 보드 */
+.card-board {
+  display:grid; gap:10px; padding:16px; background:#fff;
+  border-radius:var(--r); box-shadow:var(--sh);
+  margin:0 auto 14px;
+}
+
+/* 카드 */
+.card { aspect-ratio:1; cursor:pointer; perspective:700px; user-select:none; border-radius:var(--r); }
+.card-inner {
+  position:relative; width:100%; height:100%;
+  transform-style:preserve-3d;
+  transition:transform .38s cubic-bezier(.4,0,.2,1);
+  border-radius:var(--r);
+}
+.card.flipped .card-inner { transform:rotateY(180deg); }
+.card-face-down, .card-face-up {
+  position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  border-radius:var(--r);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden;
+}
+.card-face-down {
+  background:linear-gradient(135deg,#ff8c5a,#ff6b35,#e55a24);
+  box-shadow:0 3px 8px rgba(255,107,53,.28);
+}
+.card-face-down::before {
+  content:''; position:absolute; inset:4px;
+  border:2px solid rgba(255,255,255,.3); border-radius:8px;
+}
+.card-back-icon { font-size:1.6rem; opacity:.7; }
+.card-face-up {
+  transform:rotateY(180deg);
+  background:#fffaf5; border:2px solid #f0e4d8;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+.card-emoji { font-size:2.2rem; line-height:1; }
+.card-name { font-size:.68rem; color:var(--txt-lt); margin-top:5px; font-weight:600; }
+
+/* 카드 호버 / 매칭 상태 */
+.card:not(.matched):hover .card-face-down { filter:brightness(1.05); box-shadow:0 6px 16px rgba(255,107,53,.4); }
+.card.flipped:not(.matched):hover .card-inner { transform:rotateY(180deg) scale(1.04); }
+.card:not(.flipped):not(.matched):hover .card-inner { transform:scale(1.04); }
+.card.matched .card-face-up { background:linear-gradient(135deg,#d4f4e8,#b8edd8); border-color:#7edcb8; }
+.card.matched { cursor:default; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+.card.wrong { animation:shake .3s ease; }
+
+/* 게임 액션 버튼 */
+.game-actions { display:flex; gap:10px; justify-content:center; padding-bottom:20px; }
+
+/* ===== 결과 화면 ===== */
+.result-header { text-align:center; padding:28px 0 20px; }
+.result-trophy { font-size:3.8rem; margin-bottom:8px; }
+.result-header h2 { font-size:2rem; color:var(--accent); }
+#result-subtitle { color:var(--txt-lt); margin-top:8px; font-size:1.05rem; }
+.result-stats {
+  background:#fff; border-radius:var(--r); box-shadow:var(--sh);
+  padding:24px 32px; margin:0 auto 24px; max-width:440px;
+  display:grid; grid-template-columns:1fr 1fr; gap:18px;
+}
+.stat-block { text-align:center; }
+.stat-block .s-label { font-size:.75rem; color:var(--txt-lt); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.stat-block .s-value { font-size:1.6rem; font-weight:800; color:var(--accent); }
+.stat-block .s-value.mint { color:var(--mint); }
+.result-actions { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; padding-bottom:30px; }
+
+/* diff 뱃지 (결과 화면) */
+.diff-tag {
+  display:inline-block; padding:4px 14px; border-radius:20px;
+  font-size:.85rem; font-weight:700; margin-bottom:8px;
+}
+.diff-tag.easy   { background:var(--easy-light);   color:var(--easy-color);   border:1px solid var(--easy-border); }
+.diff-tag.normal { background:var(--normal-light);  color:var(--normal-color); border:1px solid var(--normal-border); }
+.diff-tag.hard   { background:var(--hard-light);    color:var(--hard-color);   border:1px solid var(--hard-border); }
+
+/* ===== 콤보 팝업 ===== */
+.combo-popup {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0);
+  background:linear-gradient(135deg,#FF6B35,#FFD166);
+  color:#fff; font-size:2.2rem; font-weight:900;
+  padding:18px 36px; border-radius:50px;
+  text-align:center; z-index:400; pointer-events:none;
+  box-shadow:0 8px 32px rgba(255,107,53,.5); white-space:nowrap;
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1), opacity .3s;
+}
+.combo-popup.show { transform:translate(-50%,-50%) scale(1); }
+.combo-popup.hide { transform:translate(-50%,-50%) scale(0); opacity:0; }
+
+/* ===== 저장 토스트 ===== */
+.save-toast {
+  position:fixed; bottom:24px; right:24px;
+  background:#1a9e60; color:#fff; padding:9px 18px;
+  border-radius:20px; font-size:.82rem; font-weight:600;
+  opacity:0; transition:opacity .3s; z-index:300; pointer-events:none;
+}
+.save-toast.show { opacity:1; }
+
+/* ===== 타이머 경고 애니메이션 ===== */
+@keyframes timeLow { 0%,100%{color:var(--accent)} 50%{color:#E74C3C; transform:scale(1.15)} }
+.timer-val.low { animation:timeLow .6s infinite; }
+
+/* ===== 반응형 ===== */
+@media(max-width:480px) {
+  body { padding:10px 8px 30px; }
+  .game-header h1 { font-size:1.8rem; }
+  .diff-icon { font-size:2.4rem; }
+  .diff-name { font-size:1.2rem; }
+  .card-board { padding:10px; gap:6px; }
+  .card-emoji { font-size:1.6rem; }
+  .card-name { font-size:.58rem; }
+  .game-status-bar { padding:8px 10px; gap:4px; }
+  .status-value { font-size:.85rem; }
+  .status-label { font-size:.6rem; }
+  .result-stats { padding:18px 16px; gap:12px; }
+  .stat-block .s-value { font-size:1.3rem; }
+  .combo-popup { font-size:1.6rem; padding:12px 24px; }
+}
+@media(max-width:360px) {
+  .card-emoji { font-size:1.3rem; }
+  .cat-btn { padding:8px 14px; font-size:.85rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ================================================================
+     START 화면: 난이도 선택 + 카테고리 선택
+================================================================ -->
+<div id="screen-start" class="screen active">
+  <header class="game-header">
+    <h1>🧠 짝맞추기</h1>
+    <p class="subtitle">난이도를 선택하고 게임을 시작하세요!</p>
+  </header>
+
+  <!-- 난이도 프리셋 카드 3개 -->
+  <p class="section-title">🎯 난이도 선택</p>
+  <div class="diff-grid">
+
+    <!-- 쉬움: 만 3~4세 -->
+    <button class="diff-card" data-diff="easy" id="diff-easy">
+      <span class="diff-icon">🌱</span>
+      <div class="diff-name">쉬움</div>
+      <div class="diff-desc">카드 8장 (4쌍)<br>공개 시간 15초</div>
+      <div class="diff-badge">만 3~4세</div>
+    </button>
+
+    <!-- 보통: 만 4~5세 -->
+    <button class="diff-card" data-diff="normal" id="diff-normal">
+      <span class="diff-icon">🌿</span>
+      <div class="diff-name">보통</div>
+      <div class="diff-desc">카드 12장 (6쌍)<br>공개 시간 10초</div>
+      <div class="diff-badge">만 4~5세</div>
+    </button>
+
+    <!-- 어려움: 만 5세+ -->
+    <button class="diff-card" data-diff="hard" id="diff-hard">
+      <span class="diff-icon">🔥</span>
+      <div class="diff-name">어려움</div>
+      <div class="diff-desc">카드 20장 (10쌍)<br>공개 시간 5초</div>
+      <div class="diff-badge">만 5세+</div>
+    </button>
+
+  </div>
+
+  <!-- 카테고리 선택 -->
+  <p class="section-title">🎨 카테고리 선택</p>
+  <div class="cat-row" id="cat-row">
+    <button class="cat-btn active" data-cat="fruit">🍎 과일</button>
+    <button class="cat-btn" data-cat="animal">🐶 동물</button>
+    <button class="cat-btn" data-cat="vehicle">🚗 탈것</button>
+    <button class="cat-btn" data-cat="food">🍕 음식</button>
+  </div>
+
+  <!-- 오디오 토글 -->
+  <div class="audio-row">
+    <div class="audio-item">
+      <span>🔊 효과음</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="sfx-toggle" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- 에러 메시지 -->
+  <div id="start-error" class="error-msg hidden"></div>
+
+  <!-- 게임 시작 버튼 -->
+  <div class="start-row">
+    <button class="btn-primary" id="btn-start">🎮 게임 시작!</button>
+  </div>
+  <p class="start-hint" id="start-hint">난이도를 먼저 선택해 주세요</p>
+</div>
+
+
+<!-- ================================================================
+     GAME 화면: 상태바 + 미리보기 배너 + 카드 보드
+================================================================ -->
+<div id="screen-game" class="screen">
+
+  <!-- 상단 상태바 -->
+  <div class="game-status-bar">
+    <div class="status-item">
+      <span class="status-label">난이도</span>
+      <span class="status-value" id="stat-diff">-</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">경과 시간</span>
+      <span class="status-value timer-val" id="stat-timer">00:00</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">이동 횟수</span>
+      <span class="status-value" id="stat-moves">0</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">남은 쌍</span>
+      <span class="status-value" id="stat-pairs">0</span>
+    </div>
+    <div class="status-item" id="stat-combo-wrap" style="display:none">
+      <span class="status-label">콤보</span>
+      <span class="status-value" id="stat-combo" style="color:#FF6B35">0</span>
+    </div>
+  </div>
+
+  <!-- 미리보기 카운트다운 배너 -->
+  <div id="preview-banner" class="preview-banner hidden">
+    <p>💡 카드 위치를 기억하세요!</p>
+    <div class="countdown" id="preview-countdown">10</div>
+  </div>
+
+  <!-- 카드 보드 -->
+  <div id="card-board" class="card-board"></div>
+
+  <!-- 게임 중 액션 버튼 -->
+  <div class="game-actions">
+    <button class="btn-small" id="btn-restart">🔄 다시 시작</button>
+    <button class="btn-small" id="btn-home">🏠 처음으로</button>
+  </div>
+</div>
+
+
+<!-- ================================================================
+     RESULT 화면: 완료 시간 + 이동 횟수 + 다시하기
+================================================================ -->
+<div id="screen-result" class="screen">
+  <header class="result-header">
+    <div class="result-trophy" id="result-trophy">🎉</div>
+    <h2>완료!</h2>
+    <p id="result-subtitle">수고했어요!</p>
+    <div id="result-diff-tag"></div>
+  </header>
+
+  <!-- 통계 블록 -->
+  <div class="result-stats">
+    <div class="stat-block">
+      <div class="s-label">⏱ 완료 시간</div>
+      <div class="s-value" id="res-time">-</div>
+    </div>
+    <div class="stat-block">
+      <div class="s-label">👆 이동 횟수</div>
+      <div class="s-value mint" id="res-moves">-</div>
+    </div>
+    <div class="stat-block">
+      <div class="s-label">🔥 최대 콤보</div>
+      <div class="s-value" id="res-combo">-</div>
+    </div>
+    <div class="stat-block">
+      <div class="s-label">🃏 카드 수</div>
+      <div class="s-value mint" id="res-cards">-</div>
+    </div>
+  </div>
+
+  <!-- 결과 액션 버튼 -->
+  <div class="result-actions">
+    <button class="btn-primary" id="btn-play-again">🔄 다시 플레이</button>
+    <button class="btn-secondary" id="btn-change-diff">⚙️ 난이도 변경</button>
+  </div>
+</div>
+
+
+<!-- ===== 콤보 팝업 ===== -->
+<div class="combo-popup hidden" id="combo-popup"></div>
+
+<!-- ===== 저장 토스트 ===== -->
+<div class="save-toast" id="save-toast">✅ 기록 저장됨</div>
+
+
+<script>
+'use strict';
+
+// =====================================================================
+// 이모지 카테고리 데이터
+// =====================================================================
+const CATEGORIES = {
+  fruit: {
+    label: '🍎 과일',
+    cards: [
+      { id:'apple',      name:'사과',    emoji:'🍎' },
+      { id:'banana',     name:'바나나',  emoji:'🍌' },
+      { id:'grape',      name:'포도',    emoji:'🍇' },
+      { id:'orange',     name:'오렌지',  emoji:'🍊' },
+      { id:'strawberry', name:'딸기',    emoji:'🍓' },
+      { id:'peach',      name:'복숭아',  emoji:'🍑' },
+      { id:'cherry',     name:'체리',    emoji:'🍒' },
+      { id:'lemon',      name:'레몬',    emoji:'🍋' },
+      { id:'watermelon', name:'수박',    emoji:'🍉' },
+      { id:'pineapple',  name:'파인애플',emoji:'🍍' },
+    ],
+  },
+  animal: {
+    label: '🐶 동물',
+    cards: [
+      { id:'dog',     name:'강아지',  emoji:'🐶' },
+      { id:'cat',     name:'고양이',  emoji:'🐱' },
+      { id:'rabbit',  name:'토끼',    emoji:'🐰' },
+      { id:'bear',    name:'곰',      emoji:'🐻' },
+      { id:'penguin', name:'펭귄',    emoji:'🐧' },
+      { id:'frog',    name:'개구리',  emoji:'🐸' },
+      { id:'fox',     name:'여우',    emoji:'🦊' },
+      { id:'koala',   name:'코알라',  emoji:'🐨' },
+      { id:'tiger',   name:'호랑이',  emoji:'🐯' },
+      { id:'lion',    name:'사자',    emoji:'🦁' },
+    ],
+  },
+  vehicle: {
+    label: '🚗 탈것',
+    cards: [
+      { id:'car',    name:'자동차',   emoji:'🚗' },
+      { id:'bus',    name:'버스',     emoji:'🚌' },
+      { id:'plane',  name:'비행기',   emoji:'✈️' },
+      { id:'rocket', name:'로켓',     emoji:'🚀' },
+      { id:'bike',   name:'자전거',   emoji:'🚲' },
+      { id:'ship',   name:'배',       emoji:'🚢' },
+      { id:'heli',   name:'헬리콥터', emoji:'🚁' },
+      { id:'train',  name:'기차',     emoji:'🚂' },
+      { id:'race',   name:'레이싱카', emoji:'🏎️' },
+      { id:'scooter',name:'스쿠터',   emoji:'🛵' },
+    ],
+  },
+  food: {
+    label: '🍕 음식',
+    cards: [
+      { id:'pizza',    name:'피자',    emoji:'🍕' },
+      { id:'burger',   name:'햄버거',  emoji:'🍔' },
+      { id:'donut',    name:'도넛',    emoji:'🍩' },
+      { id:'cake',     name:'케이크',  emoji:'🎂' },
+      { id:'icecream', name:'아이스크림',emoji:'🍦' },
+      { id:'choco',    name:'초콜릿',  emoji:'🍫' },
+      { id:'candy',    name:'사탕',    emoji:'🍬' },
+      { id:'lollipop', name:'막대사탕',emoji:'🍭' },
+      { id:'popcorn',  name:'팝콘',    emoji:'🍿' },
+      { id:'croissant',name:'크루아상',emoji:'🥐' },
+    ],
+  },
+};
+
+// =====================================================================
+// 난이도 프리셋 정의
+// =====================================================================
+const DIFFICULTY = {
+  easy:   { label:'🌱 쉬움', cardCount:8,  previewSeconds:15, cssClass:'easy'   },
+  normal: { label:'🌿 보통', cardCount:12, previewSeconds:10, cssClass:'normal'  },
+  hard:   { label:'🔥 어려움', cardCount:20, previewSeconds:5, cssClass:'hard'  },
+};
+
+// =====================================================================
+// 게임 상태 (state)
+// =====================================================================
+const state = {
+  diff:       null,        // 선택된 난이도 키 ('easy' | 'normal' | 'hard')
+  category:   'fruit',     // 선택된 카테고리 키
+  sfxEnabled: true,        // 효과음 on/off
+
+  deck:            [],     // 셔플된 카드 덱
+  openedCards:     [],     // 현재 열린 카드 uid 배열 (최대 2개)
+  matchedCardIds:  new Set(), // 매칭 완료된 카드 uid Set
+
+  isPreviewPhase:  false,  // 미리보기 단계 여부
+  isBusy:          false,  // 카드 판정 중 입력 잠금 여부
+
+  startTime:       null,   // 게임 시작 타임스탬프 (ms)
+  timerInterval:   null,   // 경과 시간 표시 인터벌 ID
+  previewTimer:    null,   // 미리보기 카운트다운 인터벌 ID
+
+  moves:     0,            // 총 이동(클릭) 횟수
+  combo:     0,            // 현재 연속 콤보
+  maxCombo:  0,            // 최대 콤보
+
+  // 최고 기록 (localStorage 키: 'dmg.best')
+  bestRecords: {},
+};
+
+// =====================================================================
+// WEB AUDIO API — 외부 파일 없이 합성음 재생
+// =====================================================================
+const AudioSys = (() => {
+  let ctx = null;
+
+  // AudioContext 초기화 (첫 사용자 인터랙션 이후 호출해야 함)
+  function ensure() {
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+  }
+
+  // 단일 음 재생
+  // freq: 주파수(Hz), dur: 지속 시간(초), gain: 볼륨(0~1), type: 파형, delay: 시작 지연(초)
+  function tone(freq, dur, gain = 0.4, type = 'sine', delay = 0) {
+    if (!ctx) return;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.type = type;
+    o.frequency.value = freq;
+    const t = ctx.currentTime + delay;
+    g.gain.setValueAtTime(gain * 0.6, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.start(t);
+    o.stop(t + dur + 0.02);
+  }
+
+  return {
+    init() { ensure(); },
+
+    // 카드 뒤집기 효과음 — 경쾌한 두 음 연속
+    playFlip() {
+      if (!state.sfxEnabled || !ctx) return;
+      tone(900, 0.06, 0.3, 'square');
+      tone(650, 0.06, 0.22, 'square', 0.05);
+    },
+
+    // 매칭 성공 효과음 — 3음 상행 화음
+    playMatch() {
+      if (!state.sfxEnabled || !ctx) return;
+      tone(523.25, 0.12, 0.45, 'sine');
+      tone(659.25, 0.12, 0.45, 'sine', 0.11);
+      tone(783.99, 0.22, 0.5,  'sine', 0.22);
+    },
+
+    // 콤보 효과음 — 더 높고 빠른 음
+    playCombo() {
+      if (!state.sfxEnabled || !ctx) return;
+      tone(880, 0.08, 0.4, 'sine');
+      tone(1046.5, 0.12, 0.45, 'sine', 0.09);
+    },
+
+    // 게임 완료 팡파레 — 4음 + 마지막 음 길게
+    playWin() {
+      if (!state.sfxEnabled || !ctx) return;
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, 0.22, 0.5, 'sine', i * 0.16));
+      tone(1046.5, 0.5, 0.6, 'sine', 0.64);
+    },
+  };
+})();
+
+// =====================================================================
+// 유틸 함수
+// =====================================================================
+
+// Fisher-Yates 셔플 (원본 배열 불변, 복사본 반환)
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// 밀리초 → "MM:SS" 형식
+function fmtTime(ms) {
+  const s = Math.floor(ms / 1000);
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+
+// 밀리초 → "X.X초" 형식
+function fmtSec(ms) {
+  return (ms / 1000).toFixed(1) + '초';
+}
+
+// 카드 총 수에 따른 그리드 열 수 결정
+function gridCols(n) {
+  if (n <= 8)  return 4;
+  if (n <= 12) return 4;
+  if (n <= 20) return 5; // 20장 → 4×5
+  return 5;
+}
+
+// =====================================================================
+// localStorage — 최고 기록 저장/불러오기
+// =====================================================================
+const LS_KEY = 'dmg.best'; // difficulty_matching.best
+
+// localStorage에서 최고 기록 불러오기
+function loadRecords() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) state.bestRecords = JSON.parse(raw);
+  } catch {}
+}
+
+// 최고 기록 갱신 — 키: "diff_cat", 더 빠르거나 이동수가 적으면 교체
+function saveBestRecord(diffKey, catKey, timeMs, moves) {
+  const key = `${diffKey}_${catKey}`;
+  const ex  = state.bestRecords[key];
+  if (!ex || timeMs < ex.timeMs || (timeMs === ex.timeMs && moves < ex.moves)) {
+    state.bestRecords[key] = { timeMs, moves, diffKey, catKey };
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state.bestRecords)); } catch {}
+    // 저장 토스트 표시
+    const toast = document.getElementById('save-toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+}
+
+// =====================================================================
+// 화면 전환
+// =====================================================================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+}
+
+// =====================================================================
+// START 화면 — UI 이벤트
+// =====================================================================
+
+// 선택된 난이도 카드 스타일 갱신
+function updateDiffUI(diffKey) {
+  document.querySelectorAll('.diff-card').forEach(el => {
+    el.classList.toggle('selected', el.dataset.diff === diffKey);
+  });
+  // 시작 힌트 텍스트 업데이트
+  if (diffKey) {
+    const d = DIFFICULTY[diffKey];
+    document.getElementById('start-hint').textContent =
+      `${d.label} — 카드 ${d.cardCount}장, 공개 ${d.previewSeconds}초`;
+  } else {
+    document.getElementById('start-hint').textContent = '난이도를 먼저 선택해 주세요';
+  }
+}
+
+// 난이도 카드 클릭 이벤트 등록
+document.querySelectorAll('.diff-card').forEach(btn => {
+  btn.addEventListener('click', () => {
+    AudioSys.init(); // 첫 인터랙션에 AudioContext 초기화
+    state.diff = btn.dataset.diff;
+    updateDiffUI(state.diff);
+    document.getElementById('start-error').classList.add('hidden');
+  });
+});
+
+// 카테고리 버튼 클릭 이벤트 등록
+document.querySelectorAll('.cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.category = btn.dataset.cat;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b === btn));
+  });
+});
+
+// 효과음 토글
+document.getElementById('sfx-toggle').addEventListener('change', e => {
+  state.sfxEnabled = e.target.checked;
+});
+
+// 게임 시작 버튼
+document.getElementById('btn-start').addEventListener('click', () => {
+  AudioSys.init();
+  const errEl = document.getElementById('start-error');
+  if (!state.diff) {
+    errEl.textContent = '난이도를 선택해 주세요!';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  errEl.classList.add('hidden');
+  startGame();
+});
+
+// =====================================================================
+// 덱 생성 — 선택된 카테고리에서 pairs 수만큼 추출, 2장씩 복제 후 셔플
+// =====================================================================
+function buildDeck() {
+  const d     = DIFFICULTY[state.diff];
+  const pairs = d.cardCount / 2;
+  const pool  = CATEGORIES[state.category]?.cards || CATEGORIES.fruit.cards;
+  const deck  = [];
+  // pairs 수만큼 랜덤 추출
+  shuffle([...pool]).slice(0, pairs).forEach(c => {
+    deck.push({ ...c, uid: `${c.id}-A` });
+    deck.push({ ...c, uid: `${c.id}-B` });
+  });
+  return shuffle(deck);
+}
+
+// =====================================================================
+// 게임 시작
+// =====================================================================
+function startGame() {
+  // 이전 타이머 정리
+  clearInterval(state.timerInterval);
+  clearInterval(state.previewTimer);
+  state.timerInterval = null;
+  state.previewTimer  = null;
+
+  // 상태 초기화
+  state.deck           = buildDeck();
+  state.openedCards    = [];
+  state.matchedCardIds = new Set();
+  state.moves          = 0;
+  state.combo          = 0;
+  state.maxCombo       = 0;
+  state.isBusy         = false;
+  state.isPreviewPhase = true;
+  state.startTime      = null;
+
+  showScreen('game');
+  renderStatus();
+  renderCards();
+  startPreview();
+}
+
+// =====================================================================
+// 미리보기 단계 — 카운트다운 후 카드 뒤집음
+// =====================================================================
+function startPreview() {
+  const d      = DIFFICULTY[state.diff];
+  const banner = document.getElementById('preview-banner');
+  const cdown  = document.getElementById('preview-countdown');
+
+  // 상태바 초기화
+  document.getElementById('stat-timer').textContent = '00:00';
+  document.getElementById('stat-timer').classList.remove('low');
+  document.getElementById('stat-moves').textContent = '0';
+  document.getElementById('stat-combo-wrap').style.display = 'none';
+  document.getElementById('stat-combo').textContent = '0';
+
+  banner.classList.remove('hidden');
+  let rem = d.previewSeconds;
+  cdown.textContent = rem;
+
+  // 1초마다 카운트다운
+  state.previewTimer = setInterval(() => {
+    cdown.textContent = --rem;
+    if (rem <= 0) {
+      clearInterval(state.previewTimer);
+      state.previewTimer = null;
+      endPreview();
+    }
+  }, 1000);
+}
+
+// =====================================================================
+// 미리보기 종료 — 카드 뒤집고 경과 시간 타이머 시작
+// =====================================================================
+function endPreview() {
+  state.isPreviewPhase = false;
+  document.getElementById('preview-banner').classList.add('hidden');
+
+  // 매칭되지 않은 카드 뒤집기
+  document.querySelectorAll('.card').forEach(el => {
+    if (!state.matchedCardIds.has(el.dataset.uid)) {
+      el.classList.remove('flipped');
+    }
+  });
+
+  state.startTime = Date.now();
+
+  // 200ms마다 경과 시간 갱신
+  state.timerInterval = setInterval(() => {
+    if (state.startTime) {
+      document.getElementById('stat-timer').textContent = fmtTime(Date.now() - state.startTime);
+    }
+  }, 200);
+}
+
+// =====================================================================
+// 상태바 렌더링
+// =====================================================================
+function renderStatus() {
+  const d = DIFFICULTY[state.diff] || {};
+  document.getElementById('stat-diff').textContent  = d.label || '-';
+  document.getElementById('stat-moves').textContent = state.moves;
+  const totalPairs = (DIFFICULTY[state.diff]?.cardCount || 0) / 2;
+  document.getElementById('stat-pairs').textContent = totalPairs - state.matchedCardIds.size / 2;
+}
+
+// =====================================================================
+// 카드 보드 렌더링
+// =====================================================================
+function renderCards() {
+  const board = document.getElementById('card-board');
+  board.innerHTML = '';
+
+  const d    = DIFFICULTY[state.diff];
+  const cols = gridCols(d.cardCount);
+  board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  // 카드 너비 최대 110px 기준으로 보드 최대 너비 계산
+  board.style.maxWidth = `${cols * 110 + (cols - 1) * 10 + 32}px`;
+
+  state.deck.forEach(card => {
+    const el = document.createElement('div');
+    el.className   = 'card';
+    el.dataset.uid = card.uid;
+
+    // 미리보기 단계이거나 이미 매칭된 카드는 앞면 표시
+    const flipped = state.isPreviewPhase || state.matchedCardIds.has(card.uid);
+    if (flipped) el.classList.add('flipped');
+    if (state.matchedCardIds.has(card.uid)) el.classList.add('matched');
+
+    el.innerHTML = `<div class="card-inner">
+      <div class="card-face-down"><span class="card-back-icon">🎴</span></div>
+      <div class="card-face-up">
+        <span class="card-emoji">${card.emoji}</span>
+        <span class="card-name">${card.name}</span>
+      </div>
+    </div>`;
+
+    el.addEventListener('click', () => handleCardClick(card.uid));
+    board.appendChild(el);
+  });
+}
+
+// =====================================================================
+// 카드 클릭 처리
+// =====================================================================
+function handleCardClick(uid) {
+  // 미리보기 중, 잠금 중, 이미 매칭됨, 이미 열림, 2장 이미 열림 → 무시
+  if (
+    state.isPreviewPhase ||
+    state.isBusy ||
+    state.matchedCardIds.has(uid) ||
+    state.openedCards.includes(uid) ||
+    state.openedCards.length >= 2
+  ) return;
+
+  AudioSys.playFlip();
+
+  // 카드 앞면 공개
+  document.querySelector(`.card[data-uid="${uid}"]`).classList.add('flipped');
+  state.openedCards.push(uid);
+  document.getElementById('stat-moves').textContent = ++state.moves;
+
+  // 2장 열리면 650ms 후 매칭 확인 (뒤집기 애니메이션 완료 대기)
+  if (state.openedCards.length === 2) {
+    state.isBusy = true;
+    setTimeout(checkMatch, 650);
+  }
+}
+
+// =====================================================================
+// 매칭 확인
+// =====================================================================
+function checkMatch() {
+  const [u1, u2] = state.openedCards;
+  const c1 = state.deck.find(c => c.uid === u1);
+  const c2 = state.deck.find(c => c.uid === u2);
+
+  // 같은 원본 id이면 매칭 성공
+  if (c1.id === c2.id) {
+    AudioSys.playMatch();
+
+    // 매칭 완료 처리
+    [u1, u2].forEach(uid => {
+      state.matchedCardIds.add(uid);
+      document.querySelector(`.card[data-uid="${uid}"]`).classList.add('matched');
+    });
+
+    // 남은 쌍 갱신
+    const totalPairs = DIFFICULTY[state.diff].cardCount / 2;
+    document.getElementById('stat-pairs').textContent =
+      totalPairs - state.matchedCardIds.size / 2;
+
+    // 콤보 처리
+    state.combo++;
+    if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+    document.getElementById('stat-combo').textContent = state.combo;
+    document.getElementById('stat-combo-wrap').style.display = '';
+
+    // 2콤보 이상이면 팝업 + 효과음
+    if (state.combo >= 2) {
+      AudioSys.playCombo();
+      showComboPopup(state.combo);
+    }
+
+    state.openedCards = [];
+    state.isBusy      = false;
+
+    // 모든 카드 매칭 완료 시 350ms 후 게임 종료
+    if (state.matchedCardIds.size === state.deck.length) {
+      setTimeout(finishGame, 350);
+    }
+  } else {
+    // 매칭 실패 — 카드 다시 뒤집기, 콤보 초기화
+    [u1, u2].forEach(uid => {
+      const el = document.querySelector(`.card[data-uid="${uid}"]`);
+      if (el) {
+        el.classList.add('wrong');
+        setTimeout(() => el.classList.remove('wrong'), 300);
+        setTimeout(() => el.classList.remove('flipped'), 320);
+      }
+    });
+    state.combo = 0;
+    document.getElementById('stat-combo').textContent = '0';
+    state.openedCards = [];
+    state.isBusy      = false;
+  }
+}
+
+// =====================================================================
+// 콤보 팝업 표시
+// =====================================================================
+function showComboPopup(n) {
+  const el   = document.getElementById('combo-popup');
+  const msgs = ['', '', '2콤보! 🔥', '3콤보! 🔥🔥', '4콤보! ⚡', '5콤보! 💥', '6콤보! 🌟'];
+  el.textContent = msgs[Math.min(n, msgs.length - 1)] || `${n}콤보! 🏆`;
+  el.classList.remove('hidden', 'hide');
+  el.classList.add('show');
+  setTimeout(() => { el.classList.remove('show'); el.classList.add('hide'); }, 900);
+  setTimeout(() => { el.classList.add('hidden');  el.classList.remove('hide'); }, 1200);
+}
+
+// =====================================================================
+// 게임 완료 처리
+// =====================================================================
+function finishGame() {
+  // 타이머 정지
+  clearInterval(state.timerInterval);
+  state.timerInterval = null;
+
+  const elapsed = Date.now() - state.startTime;
+  AudioSys.playWin();
+
+  // 최고 기록 갱신 시도
+  saveBestRecord(state.diff, state.category, elapsed, state.moves);
+
+  // 결과 화면 렌더링
+  showResult(elapsed);
+}
+
+// =====================================================================
+// 결과 화면 렌더링
+// =====================================================================
+function showResult(elapsed) {
+  const d = DIFFICULTY[state.diff];
+
+  // 트로피 이모지 — 최대 콤보에 따라 다양하게
+  const trophies = ['🎉', '🥉', '🥈', '🥇', '🏆'];
+  const idx = Math.min(Math.floor(state.maxCombo / 2), trophies.length - 1);
+  document.getElementById('result-trophy').textContent = trophies[idx];
+  document.getElementById('result-subtitle').textContent =
+    `잘했어요! ${CATEGORIES[state.category].label} · ${d.label}`;
+
+  // 난이도 뱃지
+  const tagEl = document.getElementById('result-diff-tag');
+  tagEl.innerHTML = `<span class="diff-tag ${d.cssClass}">${d.label} · 카드 ${d.cardCount}장</span>`;
+
+  // 통계 값 표시
+  document.getElementById('res-time').textContent  = fmtSec(elapsed);
+  document.getElementById('res-moves').textContent = state.moves + '회';
+  document.getElementById('res-combo').textContent = state.maxCombo >= 2
+    ? `${state.maxCombo}콤보`
+    : '-';
+  document.getElementById('res-cards').textContent = d.cardCount + '장';
+
+  showScreen('result');
+}
+
+// =====================================================================
+// 게임 화면 버튼 이벤트
+// =====================================================================
+
+// 다시 시작 — 같은 난이도/카테고리로 재시작
+document.getElementById('btn-restart').addEventListener('click', () => {
+  AudioSys.init();
+  clearInterval(state.timerInterval);
+  clearInterval(state.previewTimer);
+  state.timerInterval = null;
+  state.previewTimer  = null;
+  startGame();
+});
+
+// 홈으로 — 시작 화면으로 이동
+document.getElementById('btn-home').addEventListener('click', () => {
+  clearInterval(state.timerInterval);
+  clearInterval(state.previewTimer);
+  state.timerInterval = null;
+  state.previewTimer  = null;
+  showScreen('start');
+});
+
+// =====================================================================
+// 결과 화면 버튼 이벤트
+// =====================================================================
+
+// 다시 플레이 — 같은 설정으로 바로 재시작
+document.getElementById('btn-play-again').addEventListener('click', () => {
+  AudioSys.init();
+  startGame();
+});
+
+// 난이도 변경 — 시작 화면으로 돌아가기
+document.getElementById('btn-change-diff').addEventListener('click', () => {
+  showScreen('start');
+});
+
+// =====================================================================
+// 앱 초기화
+// =====================================================================
+(function init() {
+  loadRecords();   // localStorage에서 최고 기록 불러오기
+  updateDiffUI(state.diff); // 초기 힌트 텍스트 표시
+})();
+</script>
+</body>
+</html>

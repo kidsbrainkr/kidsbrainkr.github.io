@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>그림자 맞추기 — 만 3세</title>
+  <style>
+    /* =============================================
+       CSS 변수 & 전역 리셋
+    ============================================= */
+    :root {
+      --accent:  #FF6B35;
+      --mint:    #4ECDC4;
+      --bg:      #FFF8F0;
+      --shadow-bg: #e8e8e8;
+      --correct-bg: #d4f5e2;
+      --correct-border: #2ecc71;
+      --wrong-border: #e74c3c;
+      --text-dark: #2c2c2c;
+      --radius-sm: 12px;
+      --radius-lg: 24px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    /* =============================================
+       상단 헤더 (진행 표시)
+    ============================================= */
+    #header {
+      width: 100%;
+      max-width: 780px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    #header h1 {
+      font-size: 1.3rem;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    #progress-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      background: #fff;
+      border: 2px solid var(--mint);
+      border-radius: var(--radius-sm);
+      padding: 4px 14px;
+    }
+
+    /* 진행 바 */
+    #progress-bar-wrap {
+      width: 100%;
+      max-width: 780px;
+      background: #ddd;
+      border-radius: 99px;
+      height: 10px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    #progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--mint), var(--accent));
+      border-radius: 99px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    /* =============================================
+       게임 영역 (좌: 그림자, 우: 선택지)
+    ============================================= */
+    #game-area {
+      width: 100%;
+      max-width: 780px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 24px;
+    }
+
+    /* --- 그림자 패널 --- */
+    #shadow-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    #shadow-label {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #888;
+      letter-spacing: 0.05em;
+    }
+
+    /* 그림자 카드: 이모지를 검은 실루엣처럼 표시 */
+    #shadow-card {
+      position: relative;             /* 정답 이모지가 위에 겹치기 위한 기준점 */
+      width: 180px;
+      height: 180px;
+      background: var(--shadow-bg);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+    }
+
+    /* 실루엣 이모지 */
+    #shadow-emoji {
+      font-size: 7rem;
+      /* brightness(0): 이모지를 완전한 검정 실루엣으로 변환 */
+      filter: brightness(0);
+      user-select: none;
+      line-height: 1;
+    }
+
+    /* 정답 선택 시 그림자 위에 컬러 이모지가 나타나는 오버레이 */
+    #answer-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7rem;
+      line-height: 1;
+      opacity: 0;
+      transform: scale(0.4);
+      transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* 정답 확정 후 오버레이 표시 상태 */
+    #answer-overlay.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* --- 구분선 (세로) --- */
+    #divider {
+      width: 3px;
+      height: 200px;
+      background: linear-gradient(180deg, transparent, var(--mint), transparent);
+      border-radius: 99px;
+      flex-shrink: 0;
+    }
+
+    /* --- 선택지 패널 --- */
+    #choices-panel {
+      flex: 1.4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #choices-label {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #888;
+      letter-spacing: 0.05em;
+    }
+
+    /* 선택지 버튼 3개 가로 배열 */
+    #choices-grid {
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    /* 개별 선택지 버튼 */
+    .choice-btn {
+      width: 110px;
+      height: 110px;
+      background: #fff;
+      border: 3px solid #ddd;
+      border-radius: var(--radius-lg);
+      font-size: 4.2rem;       /* 이모지 크게 */
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease, border-color 0.2s, background 0.2s;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .choice-btn:hover:not(:disabled) {
+      transform: scale(1.07);
+      border-color: var(--mint);
+    }
+
+    .choice-btn:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+
+    /* 정답 선택 후 버튼 스타일 */
+    .choice-btn.correct {
+      background: var(--correct-bg);
+      border-color: var(--correct-border);
+    }
+
+    /* 오답 흔들기 애니메이션 */
+    .choice-btn.wrong {
+      animation: shake 0.45s ease forwards;
+      border-color: var(--wrong-border);
+    }
+
+    /* 정답 확정 후 모든 버튼 비활성화 */
+    .choice-btn:disabled {
+      cursor: default;
+    }
+
+    /* =============================================
+       키프레임: 흔들기 (오답)
+    ============================================= */
+    @keyframes shake {
+      0%   { transform: translateX(0); }
+      15%  { transform: translateX(-8px) rotate(-3deg); }
+      30%  { transform: translateX(8px) rotate(3deg); }
+      45%  { transform: translateX(-6px) rotate(-2deg); }
+      60%  { transform: translateX(6px) rotate(2deg); }
+      75%  { transform: translateX(-3px); }
+      100% { transform: translateX(0); }
+    }
+
+    /* 정답 시 버튼 팡팡 이펙트 */
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+
+    .choice-btn.pop {
+      animation: pop 0.3s ease;
+    }
+
+    /* =============================================
+       피드백 메시지 (정답/오답 텍스트)
+    ============================================= */
+    #feedback {
+      margin-top: 18px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      min-height: 2rem;
+      text-align: center;
+      transition: opacity 0.3s;
+    }
+
+    #feedback.correct-msg { color: var(--correct-border); }
+    #feedback.wrong-msg   { color: var(--wrong-border); }
+
+    /* =============================================
+       결과 화면
+    ============================================= */
+    #result-screen {
+      display: none;              /* 기본 숨김 */
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 20px;
+      padding: 40px 20px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    #result-screen.show {
+      display: flex;
+    }
+
+    #result-trophy {
+      font-size: 6rem;
+      animation: bounce 0.8s ease infinite alternate;
+    }
+
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to   { transform: translateY(-14px); }
+    }
+
+    #result-title {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--accent);
+    }
+
+    #result-desc {
+      font-size: 1.15rem;
+      color: #555;
+      line-height: 1.6;
+    }
+
+    /* 다시하기 버튼 */
+    #restart-btn {
+      margin-top: 10px;
+      padding: 16px 40px;
+      font-size: 1.2rem;
+      font-weight: 800;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(255,107,53,0.35);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    #restart-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255,107,53,0.45);
+    }
+
+    #restart-btn:active {
+      transform: translateY(0);
+    }
+
+    /* =============================================
+       반응형: 모바일 → 상하 레이아웃
+    ============================================= */
+    @media (max-width: 560px) {
+      body { padding: 10px; }
+
+      #header h1 { font-size: 1.1rem; }
+
+      #game-area {
+        flex-direction: column;   /* 좌우 → 상하 전환 */
+        gap: 16px;
+      }
+
+      #divider {
+        width: 200px;
+        height: 3px;              /* 세로 → 가로 구분선으로 전환 */
+      }
+
+      #shadow-card {
+        width: 150px;
+        height: 150px;
+      }
+
+      #shadow-emoji,
+      #answer-overlay {
+        font-size: 5.5rem;
+      }
+
+      .choice-btn {
+        width: 90px;
+        height: 90px;
+        font-size: 3.4rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =============================================
+       게임 플레이 화면
+  ============================================= -->
+  <div id="play-screen">
+
+    <!-- 상단 헤더 -->
+    <div id="header">
+      <h1>🌟 그림자 맞추기</h1>
+      <div id="progress-text">1 / 10</div>
+    </div>
+
+    <!-- 진행 바 -->
+    <div id="progress-bar-wrap">
+      <div id="progress-bar"></div>
+    </div>
+
+    <!-- 게임 메인 영역 -->
+    <div id="game-area">
+
+      <!-- 왼쪽: 그림자 카드 -->
+      <div id="shadow-panel">
+        <div id="shadow-label">어떤 그림일까요?</div>
+        <div id="shadow-card">
+          <!-- 실루엣 이모지 (filter: brightness(0) 적용) -->
+          <span id="shadow-emoji"></span>
+          <!-- 정답 선택 시 컬러 이모지 오버레이 -->
+          <span id="answer-overlay"></span>
+        </div>
+      </div>
+
+      <!-- 가운데 구분선 -->
+      <div id="divider"></div>
+
+      <!-- 오른쪽: 선택지 3개 -->
+      <div id="choices-panel">
+        <div id="choices-label">맞는 그림을 눌러보세요!</div>
+        <div id="choices-grid">
+          <!-- JS로 동적 생성 -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 피드백 메시지 -->
+    <div id="feedback"></div>
+
+  </div><!-- /play-screen -->
+
+  <!-- =============================================
+       결과 화면
+  ============================================= -->
+  <div id="result-screen">
+    <div id="result-trophy">🏆</div>
+    <div id="result-title">다 맞혔어요!</div>
+    <div id="result-desc">
+      10문제를 모두 풀었어요.<br>정말 잘했어요! 👏
+    </div>
+    <button id="restart-btn" onclick="startGame()">다시 하기 🔄</button>
+  </div>
+
+  <script>
+    /* =============================================
+       데이터: 이모지 세트 (동물 10개 + 과일 10개)
+       각 항목: { emoji, label }
+    ============================================= */
+    const ALL_ITEMS = [
+      /* 동물 */
+      { emoji: '🐶', label: '강아지' },
+      { emoji: '🐱', label: '고양이' },
+      { emoji: '🐰', label: '토끼' },
+      { emoji: '🐻', label: '곰' },
+      { emoji: '🐧', label: '펭귄' },
+      { emoji: '🐸', label: '개구리' },
+      { emoji: '🦊', label: '여우' },
+      { emoji: '🐨', label: '코알라' },
+      { emoji: '🐯', label: '호랑이' },
+      { emoji: '🦁', label: '사자' },
+      /* 과일 */
+      { emoji: '🍎', label: '사과' },
+      { emoji: '🍌', label: '바나나' },
+      { emoji: '🍇', label: '포도' },
+      { emoji: '🍊', label: '귤' },
+      { emoji: '🍓', label: '딸기' },
+      { emoji: '🍑', label: '복숭아' },
+      { emoji: '🍒', label: '체리' },
+      { emoji: '🍋', label: '레몬' },
+      { emoji: '🍉', label: '수박' },
+      { emoji: '🍍', label: '파인애플' },
+    ];
+
+    /* =============================================
+       게임 상태 변수
+    ============================================= */
+    let questionList = [];   // 현재 게임의 10문제 순서
+    let currentIdx  = 0;     // 현재 문제 인덱스 (0~9)
+    let isLocked    = false; // 정답 처리 중 입력 잠금
+
+    /* =============================================
+       Web Audio API 초기화
+       (사용자 클릭 시 AudioContext 생성 — 자동재생 정책 준수)
+    ============================================= */
+    let audioCtx = null;
+
+    /**
+     * AudioContext를 첫 상호작용 시 생성 (lazy init)
+     */
+    function getAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioCtx;
+    }
+
+    /**
+     * 단순 비프음 생성 유틸
+     * @param {number} freq - 주파수 (Hz)
+     * @param {number} startTime - AudioContext 기준 시작 시간 (초)
+     * @param {number} duration - 지속 시간 (초)
+     * @param {string} type - 파형 타입 ('sine'|'square'|'triangle')
+     */
+    function playBeep(freq, startTime, duration, type = 'sine') {
+      const ctx = getAudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      /* 부드러운 페이드아웃으로 클릭 잡음 방지 */
+      gain.gain.setValueAtTime(0.35, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    }
+
+    /** 정답 효과음: 밝은 3음 (도→미→솔 상행) */
+    function playCorrectSound() {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      playBeep(523, now,        0.18, 'sine'); // 도 (C5)
+      playBeep(659, now + 0.18, 0.18, 'sine'); // 미 (E5)
+      playBeep(784, now + 0.36, 0.28, 'sine'); // 솔 (G5)
+    }
+
+    /** 오답 효과음: 낮은 2음 (하행) */
+    function playWrongSound() {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      playBeep(330, now,        0.22, 'square'); // 미 (E4)
+      playBeep(262, now + 0.22, 0.28, 'square'); // 도 (C4)
+    }
+
+    /** 완료 팡파레: 5음 상행 + 지속음 */
+    function playFanfare() {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      const notes = [523, 659, 784, 1047, 1175]; // C5 E5 G5 C6 D6
+      notes.forEach((freq, i) => {
+        playBeep(freq, now + i * 0.14, i < notes.length - 1 ? 0.13 : 0.5, 'sine');
+      });
+    }
+
+    /* =============================================
+       유틸: 배열 섞기 (Fisher-Yates)
+    ============================================= */
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    /* =============================================
+       게임 시작 / 재시작
+    ============================================= */
+    function startGame() {
+      /* 전체 20개 중 랜덤 10개 선택 후 섞기 */
+      questionList = shuffle(ALL_ITEMS).slice(0, 10);
+      currentIdx   = 0;
+      isLocked     = false;
+
+      /* 결과 화면 숨기고 플레이 화면 표시 */
+      document.getElementById('result-screen').classList.remove('show');
+      document.getElementById('play-screen').style.display = 'block';
+
+      showQuestion();
+    }
+
+    /* =============================================
+       문제 표시
+    ============================================= */
+    function showQuestion() {
+      isLocked = false;
+
+      const current = questionList[currentIdx];
+
+      /* 진행 표시 업데이트 */
+      document.getElementById('progress-text').textContent =
+        `${currentIdx + 1} / 10`;
+      document.getElementById('progress-bar').style.width =
+        `${(currentIdx / 10) * 100}%`;
+
+      /* 피드백 초기화 */
+      const feedback = document.getElementById('feedback');
+      feedback.textContent = '';
+      feedback.className = '';
+
+      /* 그림자 이모지 설정 */
+      document.getElementById('shadow-emoji').textContent = current.emoji;
+
+      /* 정답 오버레이 초기화 */
+      const overlay = document.getElementById('answer-overlay');
+      overlay.textContent = '';
+      overlay.classList.remove('show');
+
+      /* 오답 2개 선택: 정답을 제외한 나머지에서 랜덤 2개 */
+      const others = ALL_ITEMS.filter(item => item.emoji !== current.emoji);
+      const wrongs = shuffle(others).slice(0, 2);
+
+      /* 선택지 3개 섞기 (정답 위치 무작위) */
+      const choices = shuffle([current, ...wrongs]);
+
+      /* 버튼 생성 */
+      const grid = document.getElementById('choices-grid');
+      grid.innerHTML = '';
+      choices.forEach(item => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = item.emoji;
+        btn.setAttribute('aria-label', item.label);
+        btn.dataset.correct = (item.emoji === current.emoji) ? 'true' : 'false';
+        btn.addEventListener('click', () => handleChoice(btn, item, current));
+        grid.appendChild(btn);
+      });
+    }
+
+    /* =============================================
+       선택지 클릭 처리
+    ============================================= */
+    function handleChoice(btn, selected, correct) {
+      /* 이미 처리 중이면 무시 */
+      if (isLocked) return;
+
+      const isCorrect = selected.emoji === correct.emoji;
+
+      if (isCorrect) {
+        /* --- 정답 처리 --- */
+        isLocked = true;
+
+        playCorrectSound();
+
+        /* 버튼 정답 표시 */
+        btn.classList.add('correct', 'pop');
+
+        /* 모든 버튼 비활성화 */
+        document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+
+        /* 피드백 메시지 */
+        const feedback = document.getElementById('feedback');
+        feedback.textContent = '🎉 맞았어요!';
+        feedback.className = 'correct-msg';
+
+        /* 그림자 위에 컬러 이모지 오버레이 애니메이션 */
+        const overlay = document.getElementById('answer-overlay');
+        overlay.textContent = correct.emoji;
+
+        /* 약간의 딜레이 후 오버레이 표시 (버튼 애니메이션과 겹치지 않게) */
+        setTimeout(() => {
+          overlay.classList.add('show');
+        }, 150);
+
+        /* 다음 문제로 이동 (1.4초 후) */
+        setTimeout(() => {
+          currentIdx++;
+          if (currentIdx >= 10) {
+            showResult();
+          } else {
+            showQuestion();
+          }
+        }, 1400);
+
+      } else {
+        /* --- 오답 처리 (패널티 없음, 흔들기만) --- */
+        playWrongSound();
+
+        btn.classList.add('wrong');
+        btn.disabled = true; /* 같은 오답 버튼 재클릭 방지 */
+
+        /* 피드백 메시지 */
+        const feedback = document.getElementById('feedback');
+        feedback.textContent = '다시 해봐요!';
+        feedback.className = 'wrong-msg';
+
+        /* 흔들기 애니메이션 끝난 후 클래스 제거 (재사용 가능하도록) */
+        btn.addEventListener('animationend', () => {
+          btn.classList.remove('wrong');
+        }, { once: true });
+
+        /* 피드백 메시지 잠시 후 지우기 */
+        setTimeout(() => {
+          if (feedback.className === 'wrong-msg') {
+            feedback.textContent = '';
+            feedback.className = '';
+          }
+        }, 800);
+      }
+    }
+
+    /* =============================================
+       결과 화면 표시
+    ============================================= */
+    function showResult() {
+      /* 진행 바 100% 채우기 */
+      document.getElementById('progress-bar').style.width = '100%';
+      document.getElementById('progress-text').textContent = '10 / 10';
+
+      /* 팡파레 효과음 */
+      playFanfare();
+
+      /* 플레이 화면 숨기고 결과 화면 표시 */
+      setTimeout(() => {
+        document.getElementById('play-screen').style.display = 'none';
+        document.getElementById('result-screen').classList.add('show');
+      }, 400);
+    }
+
+    /* =============================================
+       게임 자동 시작 (페이지 로드 시)
+    ============================================= */
+    startGame();
+  </script>
+</body>
+</html>

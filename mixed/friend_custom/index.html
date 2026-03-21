@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>👫 친구 짝맞추기 (혼합반)</title>
+<style>
+/* ===== CSS 변수 ===== */
+:root {
+  --bg:        #FFF8F0;
+  --accent:    #FF6B35;
+  --accent-dk: #E55A24;
+  --mint:      #4ECDC4;
+  --mint-dk:   #3ab5ad;
+  --ok:        #2ECC71;
+  --ok-dk:     #27ae60;
+  --purple:    #7C3AED;
+  --purple-lt: #a78bfa;
+  --warn-bg:   #FFF3CD;
+  --warn-bd:   #FF6B35;
+  --txt:       #333;
+  --txt-lt:    #888;
+  --sh:  0 4px 16px rgba(0,0,0,.12);
+  --sh2: 0 8px 32px rgba(0,0,0,.18);
+  --r: 12px;
+  --font: 'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+}
+
+/* ===== 기본 리셋 ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255,107,53,.06) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(78,205,196,.06) 0%, transparent 50%);
+  color: var(--txt);
+  font-family: var(--font);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 20px 16px 60px;
+}
+
+/* ===== 화면 전환 ===== */
+.screen { display: none; width: 100%; max-width: 700px; margin: 0 auto; }
+.screen.active { display: block; }
+.hidden { display: none !important; }
+
+/* ===== 공통 헤더 ===== */
+.game-header {
+  text-align: center;
+  padding: 28px 0 20px;
+}
+.game-header h1 {
+  font-size: 2.4rem;
+  color: var(--accent);
+  text-shadow: 2px 3px 6px rgba(255,107,53,.2);
+}
+.subtitle {
+  color: var(--txt-lt);
+  font-size: 1rem;
+  margin-top: 6px;
+}
+
+/* ===== 카드 공통 ===== */
+.card-box {
+  background: #fff;
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+/* ===== 버튼 공통 ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--r);
+  font-family: var(--font);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s, background .15s;
+}
+.btn:hover  { transform: translateY(-2px); box-shadow: var(--sh2); }
+.btn:active { transform: translateY(0);   box-shadow: var(--sh); }
+
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { background: var(--accent-dk); }
+
+.btn-mint { background: var(--mint); color: #fff; }
+.btn-mint:hover { background: var(--mint-dk); }
+
+.btn-ok { background: var(--ok); color: #fff; }
+.btn-ok:hover { background: var(--ok-dk); }
+
+.btn-ghost {
+  background: transparent;
+  border: 2px solid var(--txt-lt);
+  color: var(--txt-lt);
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+.btn-danger { background: #e74c3c; color: #fff; }
+.btn-danger:hover { background: #c0392b; }
+
+.btn-full { width: 100%; margin-bottom: 10px; }
+.btn-sm { padding: 6px 14px; font-size: .85rem; border-radius: 8px; }
+
+/* ===== 개인정보 안내 박스 ===== */
+.privacy-box {
+  background: var(--warn-bg);
+  border: 2px solid var(--warn-bd);
+  border-radius: var(--r);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  font-size: .88rem;
+  color: #7a4500;
+  line-height: 1.6;
+}
+.privacy-box strong { display: block; margin-bottom: 4px; font-size: 1rem; }
+
+/* ===== 친구 등록 화면 ===== */
+#screen-register .section-label {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--txt-lt);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 8px;
+}
+
+/* 반 이름 입력 */
+.class-name-wrap {
+  background: #fff;
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+.class-name-wrap input {
+  width: 100%;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 1rem;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color .2s;
+}
+.class-name-wrap input:focus { border-color: var(--accent); }
+
+/* 친구 목록 */
+.friends-list {
+  background: #fff;
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  padding: 16px 20px;
+  margin-bottom: 14px;
+}
+
+/* 친구 행 */
+.friend-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+  position: relative;
+}
+.friend-row:last-child { border-bottom: none; }
+
+/* 원형 사진 미리보기 */
+.avatar-wrap {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+.avatar-wrap .avatar-img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #eee;
+}
+.avatar-wrap .avatar-emoji {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FFD6C0, #FFC1A8);
+  border: 2px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+.avatar-upload-btn {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: .65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid #fff;
+  transition: background .15s;
+}
+.avatar-upload-btn:hover { background: var(--accent-dk); }
+
+/* 이름 입력 */
+.friend-name-input {
+  flex: 1;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: .95rem;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color .2s;
+}
+.friend-name-input:focus { border-color: var(--mint); }
+
+/* 친구 삭제 버튼 */
+.friend-del-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--txt-lt);
+  padding: 4px;
+  border-radius: 6px;
+  transition: color .15s, background .15s;
+  flex-shrink: 0;
+}
+.friend-del-btn:hover { color: #e74c3c; background: #fee; }
+
+/* 친구 추가 버튼 행 */
+.add-friend-btn {
+  width: 100%;
+  padding: 10px;
+  border: 2px dashed var(--mint);
+  background: rgba(78,205,196,.05);
+  border-radius: 8px;
+  color: var(--mint-dk);
+  font-size: .95rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background .2s, border-color .2s;
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+.add-friend-btn:hover { background: rgba(78,205,196,.12); border-color: var(--mint-dk); }
+
+/* 저장 선택 */
+.save-choice {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.save-choice label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: .9rem;
+  font-weight: 600;
+  border: 2px solid transparent;
+  transition: border-color .2s;
+}
+.save-choice input[type="radio"] { accent-color: var(--accent); }
+.save-choice label:has(input:checked) { border-color: var(--accent); }
+
+/* 최소 인원 경고 */
+.min-warn {
+  color: #e74c3c;
+  font-size: .85rem;
+  margin-top: 6px;
+  display: none;
+}
+.min-warn.show { display: block; }
+
+/* ===== 난이도 선택 화면 ===== */
+#screen-mode {
+  text-align: center;
+}
+.mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 24px 0;
+}
+.mode-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: var(--sh);
+  padding: 28px 16px 24px;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+  border: 3px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+.mode-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.mode-card.easy::before  { background: linear-gradient(135deg, rgba(78,205,196,.1), rgba(78,205,196,.04)); }
+.mode-card.hard::before  { background: linear-gradient(135deg, rgba(255,107,53,.1), rgba(124,58,237,.06)); }
+.mode-card:hover         { transform: translateY(-4px); box-shadow: var(--sh2); }
+.mode-card:hover::before { opacity: 1; }
+.mode-card.easy:hover    { border-color: var(--mint); }
+.mode-card.hard:hover    { border-color: var(--accent); }
+
+.mode-icon  { font-size: 3.2rem; margin-bottom: 12px; }
+.mode-title { font-size: 1.3rem; font-weight: 800; color: var(--txt); margin-bottom: 6px; }
+.mode-age   { font-size: .82rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; display: inline-block; margin-bottom: 8px; }
+.mode-age.easy { background: rgba(78,205,196,.15); color: var(--mint-dk); }
+.mode-age.hard { background: rgba(255,107,53,.12); color: var(--accent-dk); }
+.mode-desc  { font-size: .85rem; color: var(--txt-lt); line-height: 1.5; }
+
+.mode-back-btn {
+  margin-top: 8px;
+  font-size: .9rem;
+}
+
+/* ===== 게임 화면 ===== */
+#screen-game {
+  text-align: center;
+}
+.game-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  padding: 12px 20px;
+  margin-bottom: 18px;
+}
+.info-class  { font-size: .85rem; color: var(--txt-lt); font-weight: 600; }
+.info-mode   { font-size: .85rem; font-weight: 700; }
+.info-mode.easy { color: var(--mint-dk); }
+.info-mode.hard { color: var(--accent); }
+.info-score  { font-size: .95rem; font-weight: 700; color: var(--txt); }
+.info-score span { color: var(--accent); }
+
+/* 남은 짝 표시 */
+.pairs-left-bar {
+  margin-bottom: 14px;
+  font-size: .9rem;
+  color: var(--txt-lt);
+}
+.pairs-left-bar strong { color: var(--accent); }
+
+/* 카드 그리드 */
+.card-grid {
+  display: grid;
+  gap: 12px;
+  margin: 0 auto 20px;
+  /* 열 수는 JS에서 동적 설정 */
+}
+
+/* ===== 3D 카드 ===== */
+.mem-card {
+  aspect-ratio: 3/4;
+  perspective: 600px;
+  cursor: pointer;
+}
+.mem-card.no-flip { cursor: default; }
+
+.card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform .45s cubic-bezier(.4,0,.2,1);
+  border-radius: 12px;
+}
+.mem-card.flipped .card-inner { transform: rotateY(180deg); }
+
+/* 카드 앞면 / 뒷면 공통 */
+.card-front,
+.card-back {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* 카드 뒷면 (패턴) */
+.card-back {
+  background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 50%, #FFB347 100%);
+  box-shadow: 0 3px 10px rgba(255,107,53,.3);
+}
+.card-back-pattern {
+  font-size: 2rem;
+  opacity: .35;
+  user-select: none;
+}
+
+/* 카드 앞면 공통 */
+.card-front {
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(0,0,0,.1);
+  transform: rotateY(180deg);
+  border: 2px solid #f0f0f0;
+  padding: 8px;
+  gap: 6px;
+}
+.card-front.matched {
+  border-color: var(--ok);
+  background: linear-gradient(135deg, #f0fff4, #e8fdf0);
+}
+
+/* 사진 카드 앞면 */
+.card-photo-img {
+  width: 72%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--mint);
+  flex-shrink: 0;
+}
+.card-photo-emoji {
+  width: 72%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FFD6C0, #FFC1A8);
+  border: 3px solid var(--mint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+  flex-shrink: 0;
+}
+.card-name-label {
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--txt);
+  text-align: center;
+  word-break: keep-all;
+  line-height: 1.3;
+}
+
+/* 이름 카드 앞면 */
+.card-front.name-card {
+  background: linear-gradient(135deg, #7C3AED, #a78bfa);
+  border-color: var(--purple);
+}
+.card-front.name-card.matched {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  border-color: var(--ok);
+}
+.card-name-big {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+  text-align: center;
+  word-break: keep-all;
+  padding: 0 6px;
+  line-height: 1.3;
+  text-shadow: 0 2px 6px rgba(0,0,0,.2);
+}
+
+/* 공개 카운트다운 오버레이 */
+.reveal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  color: #fff;
+  font-size: 1.1rem;
+  font-family: var(--font);
+  gap: 12px;
+}
+.reveal-overlay .countdown {
+  font-size: 5rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255,107,53,.8);
+  line-height: 1;
+}
+.reveal-overlay .reveal-msg {
+  font-size: 1.2rem;
+  opacity: .9;
+}
+
+/* 게임 하단 버튼 */
+.game-bottom {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+/* ===== 결과 화면 ===== */
+#screen-result {
+  text-align: center;
+}
+.result-trophy { font-size: 5rem; margin-bottom: 12px; animation: bounce .6s infinite alternate; }
+@keyframes bounce { to { transform: translateY(-10px); } }
+
+.result-title { font-size: 2rem; font-weight: 900; color: var(--accent); margin-bottom: 6px; }
+.result-sub   { color: var(--txt-lt); font-size: 1rem; margin-bottom: 20px; }
+
+.result-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: var(--sh);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.result-stat {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.stat-item {
+  background: var(--bg);
+  border-radius: var(--r);
+  padding: 14px;
+}
+.stat-item .val {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-item .lbl { font-size: .82rem; color: var(--txt-lt); }
+
+.stars-row { font-size: 2.2rem; margin-bottom: 8px; }
+
+.result-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* ===== 반응형 ===== */
+@media (max-width: 480px) {
+  .game-header h1 { font-size: 1.8rem; }
+  .mode-grid { grid-template-columns: 1fr; }
+  .mode-card { padding: 20px 16px; }
+  .save-choice { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<!-- =====================================================
+     화면 1: 친구 등록
+===================================================== -->
+<div id="screen-register" class="screen active">
+  <div class="game-header">
+    <h1>👫 친구 짝맞추기</h1>
+    <p class="subtitle">혼합반 맞춤 모드 — 연령에 맞게 난이도를 골라요</p>
+  </div>
+
+  <!-- 개인정보 안내 -->
+  <div class="privacy-box">
+    <strong>⚠️ 개인정보 안내</strong>
+    이 게임은 입력한 친구 이름과 사진을 <strong>외부 서버로 전송하지 않습니다.</strong>
+    모든 데이터는 이 기기 안에서만 사용됩니다.
+    '기기에 저장' 선택 시 브라우저 로컬스토리지에 보관되며, 브라우저 데이터 삭제 시 함께 지워집니다.
+    개인정보 보호를 위해 이름 이니셜 또는 별명 사용을 권장합니다.
+  </div>
+
+  <!-- 반 이름 -->
+  <div class="class-name-wrap card-box">
+    <div class="section-label">반 이름 (선택)</div>
+    <input id="class-name-input" type="text" placeholder="예: 햇살반, 무지개반…" maxlength="20">
+  </div>
+
+  <!-- 친구 목록 -->
+  <div class="friends-list" id="friends-list">
+    <div class="section-label" style="margin-bottom:12px;">친구 등록 (최소 2명, 최대 12명)</div>
+    <!-- 친구 행은 JS로 동적 생성 -->
+  </div>
+
+  <!-- 저장 방식 선택 -->
+  <div class="save-choice">
+    <label>
+      <input type="radio" name="save-mode" value="none" checked>
+      💨 저장 안 함 (이번만)
+    </label>
+    <label>
+      <input type="radio" name="save-mode" value="local">
+      💾 기기에 저장
+    </label>
+  </div>
+
+  <!-- 진행 버튼 -->
+  <p class="min-warn" id="min-warn">⚠️ 친구를 최소 2명 이상 추가해 주세요.</p>
+  <button class="btn btn-accent btn-full" style="font-size:1.1rem;padding:16px;" onclick="goToMode()">
+    다음 → 난이도 선택
+  </button>
+</div>
+
+<!-- =====================================================
+     화면 2: 난이도 선택
+===================================================== -->
+<div id="screen-mode" class="screen">
+  <div class="game-header">
+    <h1>🎮 난이도 선택</h1>
+    <p class="subtitle" id="mode-class-label">반을 골라보세요</p>
+  </div>
+
+  <div class="mode-grid">
+    <!-- 쉬움 -->
+    <div class="mode-card easy" onclick="startGame('easy')">
+      <div class="mode-icon">🌱</div>
+      <div class="mode-title">쉬움</div>
+      <div class="mode-age easy">만 3~4세</div>
+      <div class="mode-desc">같은 친구 사진<br>2장을 찾아요</div>
+    </div>
+    <!-- 어려움 -->
+    <div class="mode-card hard" onclick="onHardModeClick()">
+      <div class="mode-icon">🔥</div>
+      <div class="mode-title">어려움</div>
+      <div class="mode-age hard">만 5세</div>
+      <div class="mode-desc">사진과 이름 카드를<br>짝지어요</div>
+    </div>
+  </div>
+
+  <button class="btn btn-ghost mode-back-btn" onclick="showScreen('register')">← 친구 목록으로</button>
+</div>
+
+<!-- =====================================================
+     화면 3: 게임 플레이
+===================================================== -->
+<div id="screen-game" class="screen">
+  <!-- 정보 바 -->
+  <div class="game-info-bar">
+    <span class="info-class" id="game-class-label">—</span>
+    <span class="info-mode" id="game-mode-label">쉬움</span>
+    <span class="info-score">
+      <span id="score-current">0</span> / <span id="score-total">0</span> 쌍
+    </span>
+  </div>
+
+  <!-- 남은 짝 -->
+  <div class="pairs-left-bar">
+    남은 짝: <strong id="pairs-left">0</strong>개
+  </div>
+
+  <!-- 카드 그리드 -->
+  <div class="card-grid" id="card-grid"></div>
+
+  <!-- 하단 버튼 -->
+  <div class="game-bottom">
+    <button class="btn btn-ghost btn-sm" onclick="showScreen('mode')">← 난이도 선택</button>
+    <button class="btn btn-mint  btn-sm" onclick="restartGame()">🔄 다시 시작</button>
+  </div>
+</div>
+
+<!-- =====================================================
+     화면 4: 결과
+===================================================== -->
+<div id="screen-result" class="screen">
+  <div class="game-header" style="padding-top:36px;">
+    <div class="result-trophy" id="result-trophy">🏆</div>
+    <div class="result-title" id="result-title">완성!</div>
+    <div class="result-sub"  id="result-sub">모든 짝을 맞췄어요!</div>
+  </div>
+
+  <div class="result-card">
+    <div class="stars-row" id="result-stars">⭐⭐⭐</div>
+    <div class="result-stat">
+      <div class="stat-item">
+        <div class="val" id="stat-tries">0</div>
+        <div class="lbl">총 시도 횟수</div>
+      </div>
+      <div class="stat-item">
+        <div class="val" id="stat-time">0초</div>
+        <div class="lbl">걸린 시간</div>
+      </div>
+      <div class="stat-item">
+        <div class="val" id="stat-pairs">0</div>
+        <div class="lbl">맞춘 짝</div>
+      </div>
+      <div class="stat-item">
+        <div class="val" id="stat-mode">쉬움</div>
+        <div class="lbl">난이도</div>
+      </div>
+    </div>
+    <div class="result-btns">
+      <button class="btn btn-accent" onclick="restartGame()">🔄 같은 설정으로 다시</button>
+      <button class="btn btn-mint"   onclick="showScreen('mode')">🎮 난이도 바꾸기</button>
+      <button class="btn btn-ghost"  onclick="showScreen('register')">👫 친구 수정</button>
+    </div>
+  </div>
+</div>
+
+<!-- 숨겨진 파일 input (사진 업로드) -->
+<input type="file" id="photo-file-input" accept="image/*" style="display:none">
+
+<!-- =====================================================
+     JavaScript
+===================================================== -->
+<script>
+/* ==========================================================
+   전역 상태
+========================================================== */
+// 친구 데이터 배열: [{id, name, photoDataUrl}]
+let friends = [];
+// 현재 편집 중인 친구 행 인덱스 (사진 업로드 시 사용)
+let editingFriendIdx = -1;
+// 현재 선택된 게임 모드: 'easy' | 'hard'
+let currentMode = 'easy';
+// 반 이름
+let className = '';
+
+/* ---- 게임 플레이 상태 ---- */
+let cards = [];       // [{id, studentId, cardType, matched, flipped}]
+let flippedCards = []; // 현재 앞면이 보이는 카드 인덱스 (최대 2)
+let isLocked = false;  // 클릭 잠금 (매칭 판정 중)
+let matchCount = 0;    // 맞춘 짝 수
+let tryCount   = 0;    // 총 시도 횟수
+let gameStartTime = 0; // 게임 시작 타임스탬프
+
+/* ==========================================================
+   Web Audio API 사운드
+========================================================== */
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+/** 오디오 컨텍스트를 한 번만 생성 (첫 상호작용 이후) */
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  return audioCtx;
+}
+
+/** 카드 뒤집기 소리 (짧고 경쾌한 클릭) */
+function playFlip() {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + .07);
+    gain.gain.setValueAtTime(.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .1);
+    osc.start(); osc.stop(ctx.currentTime + .12);
+  } catch(e) {}
+}
+
+/** 매칭 성공 소리 (두 음 상승) */
+function playMatch() {
+  try {
+    const ctx = getAudioCtx();
+    [0, .15].forEach((delay, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.value = i === 0 ? 660 : 880;
+      gain.gain.setValueAtTime(.22, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + delay + .25);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + .28);
+    });
+  } catch(e) {}
+}
+
+/** 게임 완료 팡파레 (3음 화음) */
+function playFanfare() {
+  try {
+    const ctx = getAudioCtx();
+    const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+    notes.forEach((freq, i) => {
+      const delay = i * .12;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(.2, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + delay + .5);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + .55);
+    });
+  } catch(e) {}
+}
+
+/* ==========================================================
+   화면 전환
+========================================================== */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+/* ==========================================================
+   친구 등록 화면 초기화
+========================================================== */
+function initRegisterScreen() {
+  renderFriendList();
+
+  // 저장된 데이터 불러오기 (기기 저장 선택 시)
+  const saved = localStorage.getItem('friendCustomData');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      friends = data.friends || [];
+      document.getElementById('class-name-input').value = data.className || '';
+      // 저장 방식 라디오 복원
+      document.querySelector('input[name="save-mode"][value="local"]').checked = true;
+      renderFriendList();
+    } catch(e) { friends = []; }
+  }
+
+  // 초기 친구 2명 (빈 행) 추가
+  if (friends.length === 0) {
+    friends.push({ id: uid(), name: '', photoDataUrl: '' });
+    friends.push({ id: uid(), name: '', photoDataUrl: '' });
+    renderFriendList();
+  }
+}
+
+/** 짧은 고유 ID 생성 */
+function uid() {
+  return Math.random().toString(36).slice(2, 9);
+}
+
+/* ==========================================================
+   친구 목록 렌더링
+========================================================== */
+function renderFriendList() {
+  const list = document.getElementById('friends-list');
+  // 라벨 헤더 유지
+  list.innerHTML = `<div class="section-label" style="margin-bottom:12px;">친구 등록 (최소 2명, 최대 12명)</div>`;
+
+  friends.forEach((f, idx) => {
+    const row = document.createElement('div');
+    row.className = 'friend-row';
+    row.dataset.idx = idx;
+
+    // 아바타 (사진 있으면 img, 없으면 이모지)
+    const avatarHtml = f.photoDataUrl
+      ? `<img class="avatar-img" src="${f.photoDataUrl}" alt="사진">`
+      : `<div class="avatar-emoji">😊</div>`;
+
+    row.innerHTML = `
+      <div class="avatar-wrap">
+        ${avatarHtml}
+        <div class="avatar-upload-btn" onclick="openPhotoUpload(${idx})" title="사진 추가">📷</div>
+      </div>
+      <input
+        class="friend-name-input"
+        type="text"
+        placeholder="이름 또는 별명"
+        value="${escHtml(f.name)}"
+        maxlength="8"
+        oninput="updateFriendName(${idx}, this.value)"
+      >
+      <button class="friend-del-btn" onclick="removeFriend(${idx})" title="삭제">✕</button>
+    `;
+    list.appendChild(row);
+  });
+
+  // + 친구 추가 버튼 (최대 12명 미만일 때만)
+  if (friends.length < 12) {
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-friend-btn';
+    addBtn.textContent = '+ 친구 추가';
+    addBtn.onclick = addFriend;
+    list.appendChild(addBtn);
+  }
+}
+
+/** HTML 이스케이프 */
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/** 친구 이름 업데이트 */
+function updateFriendName(idx, val) {
+  friends[idx].name = val.trim();
+}
+
+/** 친구 추가 */
+function addFriend() {
+  if (friends.length >= 12) return;
+  friends.push({ id: uid(), name: '', photoDataUrl: '' });
+  renderFriendList();
+}
+
+/** 친구 삭제 */
+function removeFriend(idx) {
+  if (friends.length <= 1) return; // 최소 1행 유지
+  friends.splice(idx, 1);
+  renderFriendList();
+}
+
+/* ==========================================================
+   사진 업로드
+========================================================== */
+/** 파일 input 열기 */
+function openPhotoUpload(idx) {
+  editingFriendIdx = idx;
+  const input = document.getElementById('photo-file-input');
+  input.value = '';
+  input.click();
+}
+
+// 파일 선택 이벤트
+document.getElementById('photo-file-input').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file || editingFriendIdx < 0) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    // 이미지 리사이즈 (300×300 최대, 파일 크기 절감)
+    resizeImage(e.target.result, 300, function(dataUrl) {
+      friends[editingFriendIdx].photoDataUrl = dataUrl;
+      renderFriendList();
+      saveIfNeeded();
+    });
+  };
+  reader.readAsDataURL(file);
+});
+
+/** 이미지 리사이즈 (Canvas 사용) */
+function resizeImage(dataUrl, maxSize, callback) {
+  const img = new Image();
+  img.onload = function() {
+    const canvas = document.createElement('canvas');
+    const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1);
+    canvas.width  = Math.round(img.width  * ratio);
+    canvas.height = Math.round(img.height * ratio);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    callback(canvas.toDataURL('image/jpeg', .82));
+  };
+  img.src = dataUrl;
+}
+
+/* ==========================================================
+   로컬 저장
+========================================================== */
+function saveIfNeeded() {
+  const saveMode = document.querySelector('input[name="save-mode"]:checked').value;
+  if (saveMode === 'local') {
+    localStorage.setItem('friendCustomData', JSON.stringify({
+      className: document.getElementById('class-name-input').value,
+      friends
+    }));
+  }
+}
+
+/* ==========================================================
+   난이도 선택 화면으로 이동
+========================================================== */
+function goToMode() {
+  // 이름 sync (input 직접 읽기)
+  document.querySelectorAll('.friend-name-input').forEach((inp, idx) => {
+    if (friends[idx]) friends[idx].name = inp.value.trim();
+  });
+
+  // 유효한 친구 필터링 (이름 있는 것만)
+  const valid = friends.filter(f => f.name.length > 0);
+
+  const warn = document.getElementById('min-warn');
+  if (valid.length < 2) {
+    warn.classList.add('show');
+    warn.textContent = '⚠️ 이름이 입력된 친구를 2명 이상 추가해 주세요.';
+    return;
+  }
+  warn.classList.remove('show');
+
+  // 유효한 친구만 사용
+  friends = valid;
+  className = document.getElementById('class-name-input').value.trim();
+
+  // 로컬 저장
+  saveIfNeeded();
+
+  // 난이도 화면 레이블 업데이트
+  document.getElementById('mode-class-label').textContent =
+    className ? `${className} — 난이도를 골라보세요` : '난이도를 골라보세요';
+
+  showScreen('mode');
+}
+
+/* ==========================================================
+   어려움 모드 클릭 시 사진 필수 확인
+========================================================== */
+function onHardModeClick() {
+  const noPhoto = friends.filter(f => !f.photoDataUrl);
+  if (noPhoto.length > 0) {
+    const names = noPhoto.map(f => f.name).join(', ');
+    if (!confirm(
+      `어려움 모드는 사진이 있는 친구만 게임에 참여할 수 있어요.\n` +
+      `사진 없는 친구: ${names}\n\n` +
+      `사진이 있는 친구들끼리만 계속할까요?`
+    )) return;
+  }
+  startGame('hard');
+}
+
+/* ==========================================================
+   게임 시작
+========================================================== */
+function startGame(mode) {
+  currentMode = mode;
+
+  // 어려움 모드 — 사진 있는 친구만 사용
+  let activeFriends = friends;
+  if (mode === 'hard') {
+    activeFriends = friends.filter(f => f.photoDataUrl);
+    if (activeFriends.length < 2) {
+      alert('어려움 모드는 사진이 있는 친구가 최소 2명 필요해요.\n친구 사진을 먼저 추가해 주세요!');
+      showScreen('register');
+      return;
+    }
+  }
+
+  // 카드 덱 생성
+  cards = buildDeck(activeFriends, mode);
+
+  // 상태 초기화
+  flippedCards = [];
+  isLocked     = false;
+  matchCount   = 0;
+  tryCount     = 0;
+  gameStartTime = Date.now();
+
+  // UI 업데이트
+  const modeLabel = document.getElementById('game-mode-label');
+  modeLabel.textContent = mode === 'easy' ? '🌱 쉬움 (얼굴-얼굴)' : '🔥 어려움 (얼굴-이름)';
+  modeLabel.className = 'info-mode ' + mode;
+
+  document.getElementById('game-class-label').textContent = className || '친구 짝맞추기';
+  document.getElementById('score-total').textContent = activeFriends.length;
+  updateScoreUI();
+
+  // 카드 그리드 렌더링
+  renderCardGrid();
+
+  showScreen('game');
+
+  // 카드 공개 → 10초 후 뒤집기
+  revealAndHide();
+}
+
+/* ==========================================================
+   덱(카드 배열) 생성
+========================================================== */
+function buildDeck(friendList, mode) {
+  let deck = [];
+  friendList.forEach(f => {
+    if (mode === 'easy') {
+      // 쉬움: 같은 사진 카드 2장
+      deck.push({ id: uid(), studentId: f.id, cardType: 'photo', friend: f, matched: false, flipped: false });
+      deck.push({ id: uid(), studentId: f.id, cardType: 'photo', friend: f, matched: false, flipped: false });
+    } else {
+      // 어려움: 사진 카드 1장 + 이름 카드 1장
+      deck.push({ id: uid(), studentId: f.id, cardType: 'photo', friend: f, matched: false, flipped: false });
+      deck.push({ id: uid(), studentId: f.id, cardType: 'name',  friend: f, matched: false, flipped: false });
+    }
+  });
+  // 셔플
+  return deck.sort(() => Math.random() - .5);
+}
+
+/* ==========================================================
+   카드 그리드 렌더링
+========================================================== */
+function renderCardGrid() {
+  const grid = document.getElementById('card-grid');
+  grid.innerHTML = '';
+
+  // 카드 수에 따라 열 수 결정
+  const total = cards.length;
+  let cols = 4;
+  if (total <= 8)  cols = 4;
+  if (total <= 6)  cols = 3;
+  if (total <= 4)  cols = 2;
+  if (total >= 16) cols = 5;
+  if (total >= 22) cols = 6;
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  grid.style.maxWidth = `${cols * 110}px`;
+
+  cards.forEach((card, idx) => {
+    const el = document.createElement('div');
+    el.className = 'mem-card';
+    el.dataset.idx = idx;
+    el.onclick = () => onCardClick(idx);
+
+    // 카드 앞면 HTML
+    const frontHtml = buildCardFrontHtml(card);
+
+    el.innerHTML = `
+      <div class="card-inner">
+        <div class="card-back">
+          <div class="card-back-pattern">🌟</div>
+        </div>
+        <div class="card-front ${card.cardType === 'name' ? 'name-card' : ''}">
+          ${frontHtml}
+        </div>
+      </div>
+    `;
+    grid.appendChild(el);
+  });
+}
+
+/** 카드 앞면 내용 HTML 생성 */
+function buildCardFrontHtml(card) {
+  if (card.cardType === 'name') {
+    // 이름 카드: 보라 배경 + 흰 큰 글씨
+    return `<div class="card-name-big">${escHtml(card.friend.name)}</div>`;
+  }
+  // 사진 카드
+  const photoHtml = card.friend.photoDataUrl
+    ? `<img class="card-photo-img" src="${card.friend.photoDataUrl}" alt="${escHtml(card.friend.name)}">`
+    : `<div class="card-photo-emoji">😊</div>`;
+  return `
+    ${photoHtml}
+    <div class="card-name-label">${escHtml(card.friend.name)}</div>
+  `;
+}
+
+/* ==========================================================
+   카드 공개 → 10초 후 뒤집기
+========================================================== */
+function revealAndHide() {
+  // 모든 카드 공개
+  const cardEls = document.querySelectorAll('.mem-card');
+  cardEls.forEach(el => {
+    el.classList.add('flipped', 'no-flip');
+  });
+
+  // 오버레이 생성
+  const overlay = document.createElement('div');
+  overlay.className = 'reveal-overlay';
+  overlay.id = 'reveal-overlay';
+  overlay.innerHTML = `
+    <div class="reveal-msg">👀 친구들을 기억하세요!</div>
+    <div class="countdown" id="reveal-countdown">10</div>
+  `;
+  document.body.appendChild(overlay);
+
+  // 카운트다운
+  let count = 10;
+  const timer = setInterval(() => {
+    count--;
+    const el = document.getElementById('reveal-countdown');
+    if (el) el.textContent = count;
+    if (count <= 0) {
+      clearInterval(timer);
+      // 오버레이 제거 + 카드 뒤집기
+      overlay.remove();
+      cardEls.forEach(el => {
+        el.classList.remove('flipped', 'no-flip');
+      });
+    }
+  }, 1000);
+}
+
+/* ==========================================================
+   카드 클릭 처리
+========================================================== */
+function onCardClick(idx) {
+  // 잠금 상태거나 이미 매칭/뒤집힌 카드는 무시
+  if (isLocked) return;
+  if (cards[idx].matched) return;
+  if (flippedCards.includes(idx)) return;
+
+  // 카드 뒤집기
+  playFlip();
+  cards[idx].flipped = true;
+  flipCardEl(idx, true);
+  flippedCards.push(idx);
+
+  // 2장이 뒤집혔으면 매칭 판정
+  if (flippedCards.length === 2) {
+    tryCount++;
+    isLocked = true;
+    setTimeout(checkMatch, 900);
+  }
+}
+
+/** 카드 DOM 요소 뒤집기/복원 */
+function flipCardEl(idx, show) {
+  const el = document.querySelector(`.mem-card[data-idx="${idx}"]`);
+  if (!el) return;
+  if (show) el.classList.add('flipped');
+  else      el.classList.remove('flipped');
+}
+
+/* ==========================================================
+   매칭 판정
+========================================================== */
+function checkMatch() {
+  const [a, b] = flippedCards;
+  const ca = cards[a], cb = cards[b];
+
+  let isMatch = false;
+  if (currentMode === 'easy') {
+    // 쉬움: 같은 studentId (같은 친구의 사진 2장)
+    isMatch = ca.studentId === cb.studentId;
+  } else {
+    // 어려움: 같은 studentId + 다른 cardType (사진↔이름)
+    isMatch = ca.studentId === cb.studentId && ca.cardType !== cb.cardType;
+  }
+
+  if (isMatch) {
+    // 매칭 성공
+    playMatch();
+    ca.matched = cb.matched = true;
+    markMatched(a); markMatched(b);
+    matchCount++;
+    updateScoreUI();
+
+    // 모든 짝 완성 확인
+    const totalPairs = cards.length / 2;
+    if (matchCount >= totalPairs) {
+      setTimeout(showResult, 600);
+    }
+  } else {
+    // 매칭 실패 — 다시 뒤집기
+    setTimeout(() => {
+      flipCardEl(a, false);
+      flipCardEl(b, false);
+      cards[a].flipped = false;
+      cards[b].flipped = false;
+    }, 400);
+  }
+
+  flippedCards = [];
+  isLocked = false;
+}
+
+/** 매칭된 카드에 스타일 적용 */
+function markMatched(idx) {
+  const el = document.querySelector(`.mem-card[data-idx="${idx}"]`);
+  if (!el) return;
+  el.classList.add('flipped', 'no-flip');
+  const front = el.querySelector('.card-front');
+  if (front) front.classList.add('matched');
+}
+
+/* ==========================================================
+   점수 UI 업데이트
+========================================================== */
+function updateScoreUI() {
+  document.getElementById('score-current').textContent = matchCount;
+  const totalPairs = cards.length / 2;
+  document.getElementById('pairs-left').textContent = totalPairs - matchCount;
+}
+
+/* ==========================================================
+   결과 화면
+========================================================== */
+function showResult() {
+  playFanfare();
+
+  const elapsed = Math.round((Date.now() - gameStartTime) / 1000);
+  const totalPairs = cards.length / 2;
+
+  // 별점 계산 (시도 횟수 기준)
+  const perfect = totalPairs;        // 완벽: 시도=짝수
+  const good    = perfect * 1.7;     // 양호
+  let stars = tryCount <= perfect ? 3 : tryCount <= good ? 2 : 1;
+
+  document.getElementById('result-trophy').textContent = stars === 3 ? '🏆' : stars === 2 ? '🥈' : '🥉';
+  document.getElementById('result-title').textContent  = stars === 3 ? '완벽해요! 🎉' : stars === 2 ? '잘 했어요!' : '해냈어요!';
+  document.getElementById('result-sub').textContent    = `${className ? className + ' ' : ''}모든 짝을 맞췄어요!`;
+  document.getElementById('result-stars').textContent  = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+
+  document.getElementById('stat-tries').textContent = tryCount + '번';
+  document.getElementById('stat-time').textContent  = elapsed + '초';
+  document.getElementById('stat-pairs').textContent = totalPairs + '쌍';
+  document.getElementById('stat-mode').textContent  = currentMode === 'easy' ? '🌱 쉬움' : '🔥 어려움';
+
+  showScreen('result');
+}
+
+/* ==========================================================
+   다시 시작
+========================================================== */
+function restartGame() {
+  startGame(currentMode);
+}
+
+/* ==========================================================
+   초기화
+========================================================== */
+initRegisterScreen();
+</script>
+</body>
+</html>
