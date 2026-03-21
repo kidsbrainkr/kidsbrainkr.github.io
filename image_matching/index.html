@@ -270,12 +270,77 @@ body{
   .card-emoji{font-size:1.4rem}
   .choice-btn{padding:6px 10px;font-size:.78rem}
 }
+
+/* ===== MODE SELECTION ===== */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:700px;margin:0 auto 30px;padding:0 16px}
+@media(max-width:520px){.mode-grid{grid-template-columns:1fr}}
+.mode-card{background:#fff;border:2px solid #e8e8e8;border-radius:var(--r);padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;font-family:var(--font);width:100%}
+.mode-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:var(--sh2)}
+.mode-icon{font-size:3rem;margin-bottom:12px}
+.mode-card h3{font-size:1.1rem;color:var(--txt);margin-bottom:8px;font-weight:700}
+.mode-card p{font-size:.85rem;color:var(--txt-lt);line-height:1.4}
+.mode-back{text-align:center;padding-bottom:20px}
+
+/* ===== FRIEND SETUP ===== */
+.friend-list-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.student-list{display:flex;flex-direction:column;gap:10px}
+.student-row{display:flex;align-items:center;gap:10px;background:#fafafa;border-radius:8px;padding:10px 12px;border:1px solid #eee;flex-wrap:wrap}
+.student-photo-preview{width:46px;height:46px;border-radius:50%;border:2px solid #e8e8e8;flex-shrink:0;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:1.3rem;overflow:hidden}
+.student-photo-preview img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.student-name-input{flex:1;min-width:80px;padding:8px 12px;border:1.5px solid #e8e8e8;border-radius:8px;font-size:.9rem;font-family:var(--font)}
+.student-name-input:focus{outline:none;border-color:var(--accent)}
+.photo-upload-btn{padding:6px 12px;border:1.5px dashed #ccc;border-radius:8px;font-size:.78rem;cursor:pointer;white-space:nowrap;background:#fff;font-family:var(--font);transition:border-color .18s;flex-shrink:0}
+.photo-upload-btn:hover{border-color:var(--accent);color:var(--accent)}
+.photo-upload-btn.has-photo{border-style:solid;border-color:#2ECC71;color:#1a9e60}
+.btn-remove-student{background:none;border:none;color:#ccc;font-size:1.1rem;cursor:pointer;padding:4px;transition:color .18s;flex-shrink:0}
+.btn-remove-student:hover{color:var(--err)}
+.privacy-notice{font-size:.8rem;color:#E67E22;background:#FFF8F0;border:1px solid #FDEBD0;border-radius:8px;padding:8px 12px;margin-top:12px}
+
+/* ===== FRIEND GAME CARDS ===== */
+.card.photo-card .card-face-up{background:#fff;border:2px solid #4ECDC4;flex-direction:column;gap:4px}
+.card.name-card .card-face-up{background:linear-gradient(135deg,#667eea,#764ba2);border:none}
+.friend-photo{width:72%;height:72%;object-fit:cover;border-radius:8px}
+.friend-photo-name{font-size:.6rem;color:var(--txt-lt);font-weight:600;text-align:center}
+.friend-name-text{font-size:1.3rem;font-weight:800;color:#fff;text-align:center;padding:6px;word-break:keep-all;line-height:1.2}
+.card.matched.photo-card .card-face-up{background:linear-gradient(135deg,#D4F4E8,#B8EDD8);border-color:#7EDCB8}
+.card.matched.name-card .card-face-up{background:linear-gradient(135deg,#D4F4E8,#B8EDD8)}
+.card.matched .friend-name-text{color:var(--txt)}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.card.wrong-type{animation:shake .3s ease}
+
+/* ===== SAVED SETS LIST ===== */
+.set-row{display:flex;justify-content:space-between;align-items:center;padding:12px 8px;border-bottom:1px solid #f5f5f5;gap:10px}
+.set-row:last-child{border-bottom:none}
+.set-info{flex:1}
+.set-name{font-weight:700;font-size:.95rem}
+.set-meta{font-size:.78rem;color:var(--txt-lt);margin-top:2px}
+.set-actions{display:flex;gap:6px;flex-shrink:0}
 </style>
 </head>
 <body>
 
+<!-- ===== MODE SELECTION ===== -->
+<div id="screen-mode" class="screen active">
+  <header class="game-header">
+    <h1>🧠 두뇌 짝 맞추기</h1>
+    <p class="subtitle">게임 모드를 선택하세요</p>
+  </header>
+  <div class="mode-grid">
+    <button class="mode-card" id="btn-mode-emoji">
+      <div class="mode-icon">🎮</div>
+      <h3>기본 기억력 게임</h3>
+      <p>과일·동물·우주 등 다양한 카테고리로 짝 맞추기</p>
+    </button>
+    <button class="mode-card" id="btn-mode-friend">
+      <div class="mode-icon">👫</div>
+      <h3>친구 얼굴 이름 맞추기</h3>
+      <p>친구 사진과 이름 카드를 짝지어 서로를 알아가요</p>
+    </button>
+  </div>
+</div>
+
 <!-- ===== START SCREEN ===== -->
-<div id="screen-start" class="screen active">
+<div id="screen-start" class="screen">
   <header class="game-header">
     <h1>🧠 두뇌 짝 맞추기</h1>
     <p class="subtitle">기억력 카드 게임</p>
@@ -427,6 +492,87 @@ body{
     <button class="btn-primary" id="btn-play-again">🔄 다시 플레이</button>
     <button class="btn-secondary" id="btn-change-settings">⚙️ 설정 변경</button>
     <button class="btn-small" id="btn-result-home">🏠 홈</button>
+  </div>
+</div>
+
+<!-- ===== FRIEND SETUP SCREEN ===== -->
+<div id="screen-friend-setup" class="screen">
+  <header class="game-header">
+    <h1>👫 친구 등록</h1>
+    <p class="subtitle">반 친구들의 사진과 이름을 등록해요</p>
+  </header>
+
+  <div class="setup-panel">
+    <div class="setup-section">
+      <label class="section-label">🏫 반 이름 <span style="font-weight:400;color:var(--txt-lt)">(선택)</span></label>
+      <input type="text" id="friend-class-name" class="name-input" placeholder="예: 무지개반">
+    </div>
+    <div class="setup-section">
+      <label class="section-label">👤 등록자 이름 <span style="font-weight:400;color:var(--txt-lt)">(선택)</span></label>
+      <input type="text" id="friend-owner-name" class="name-input" placeholder="예: 선생님A">
+    </div>
+  </div>
+
+  <div class="setup-panel">
+    <div class="setup-section">
+      <div class="friend-list-header">
+        <label class="section-label" style="margin-bottom:0">👦 친구 목록</label>
+        <button class="btn-small" id="btn-add-student">+ 친구 추가</button>
+      </div>
+      <div id="student-list" class="student-list" style="margin-top:12px"></div>
+      <p class="hint-text" id="student-count-hint" style="margin-top:8px">최소 2명 이상 등록하세요</p>
+    </div>
+  </div>
+
+  <div class="setup-panel">
+    <div class="setup-section">
+      <label class="section-label">💾 저장 방식</label>
+      <div class="btn-group" id="save-mode-group">
+        <button class="choice-btn active" data-savemode="none">저장 안 함</button>
+        <button class="choice-btn" data-savemode="local">이 기기에 저장</button>
+        <button class="choice-btn" style="opacity:.4;cursor:not-allowed" disabled>서버 저장 (준비중)</button>
+      </div>
+      <p class="hint-text" id="save-mode-hint" style="margin-top:6px">이번 게임에서만 사용되고 저장되지 않습니다</p>
+    </div>
+    <div class="setup-section setup-row">
+      <div class="audio-toggle">
+        <label class="section-label">📸 사진 저장</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="photo-save-toggle">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="audio-toggle">
+        <label class="section-label">📋 기록 저장</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="record-save-toggle">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+    <p class="privacy-notice">⚠️ 아이 사진은 민감할 수 있으므로 저장 여부를 직접 선택해 주세요</p>
+  </div>
+
+  <div id="friend-setup-error" class="error-msg hidden"></div>
+  <div class="start-actions">
+    <button class="btn-small" id="btn-friend-load">📂 불러오기</button>
+    <button class="btn-small" id="btn-friend-reset">🗑 초기화</button>
+    <button class="btn-secondary" id="btn-friend-save">💾 저장</button>
+    <button class="btn-primary" id="btn-friend-start">🎮 게임 시작!</button>
+  </div>
+  <div class="mode-back">
+    <button class="btn-small" id="btn-back-to-mode">← 모드 선택으로</button>
+  </div>
+</div>
+
+<!-- ===== SAVED SETS MODAL ===== -->
+<div id="modal-friend-sets" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2>📂 저장된 친구 목록</h2>
+    <div id="friend-sets-list" class="tab-content" style="min-height:60px"></div>
+    <div style="text-align:center;margin-top:16px">
+      <button class="btn-secondary" id="btn-close-friend-sets">닫기</button>
+    </div>
   </div>
 </div>
 
@@ -1054,16 +1200,23 @@ function buildDeck() {
 
 function renderStatus() {
   const {settings,currentPlayerIndex,moves,matchedCardIds} = state;
-  document.getElementById('stat-player').textContent     = settings.playerNames[currentPlayerIndex];
-  document.getElementById('stat-difficulty').textContent = diffLabel(settings.cardCount,settings.previewSeconds);
+  document.getElementById('stat-player').textContent     = state.gameMode === 'friend'
+    ? (friendState.className || '친구 게임')
+    : settings.playerNames[currentPlayerIndex];
+  document.getElementById('stat-difficulty').textContent = state.gameMode === 'friend'
+    ? `👫 ${friendState.students.length}명`
+    : diffLabel(settings.cardCount,settings.previewSeconds);
   document.getElementById('stat-moves').textContent      = moves;
-  document.getElementById('stat-pairs').textContent      = settings.cardCount/2 - matchedCardIds.size/2;
+  const totalPairs = state.gameMode === 'friend' ? friendState.students.length : settings.cardCount/2;
+  document.getElementById('stat-pairs').textContent      = totalPairs - matchedCardIds.size/2;
 }
 
 function renderCards() {
   const board = document.getElementById('card-board');
   board.innerHTML = '';
-  const cols = gridCols(state.settings.cardCount);
+  const cols = state.gameMode === 'friend'
+    ? getFriendGridCols(state.deck.length)
+    : gridCols(state.settings.cardCount);
   board.style.gridTemplateColumns = `repeat(${cols},1fr)`;
   board.style.maxWidth = `${cols*118+(cols-1)*10+32}px`;
 
@@ -1074,9 +1227,20 @@ function renderCards() {
     const flipped = state.isPreviewPhase || state.matchedCardIds.has(card.uid) || state.openedCards.includes(card.uid);
     if (flipped) el.classList.add('flipped');
     if (state.matchedCardIds.has(card.uid)) el.classList.add('matched');
+
+    let faceUpHTML;
+    if (state.gameMode === 'friend') {
+      el.classList.add(card.cardType === 'photo' ? 'photo-card' : 'name-card');
+      faceUpHTML = card.cardType === 'photo'
+        ? `<img class="friend-photo" src="${card.imageData}" alt="${card.displayValue}"><span class="friend-photo-name">${card.displayValue}</span>`
+        : `<span class="friend-name-text">${card.displayValue}</span>`;
+    } else {
+      faceUpHTML = `<span class="card-emoji">${card.emoji}</span><span class="card-name">${card.name}</span>`;
+    }
+
     el.innerHTML = `<div class="card-inner">
       <div class="card-face-down"><span class="card-back-icon">🎴</span></div>
-      <div class="card-face-up"><span class="card-emoji">${card.emoji}</span><span class="card-name">${card.name}</span></div>
+      <div class="card-face-up">${faceUpHTML}</div>
     </div>`;
     el.addEventListener('click', ()=>handleCardClick(card.uid));
     board.appendChild(el);
@@ -1102,7 +1266,8 @@ function startRound() {
   clearInterval(state.timerInterval);  state.timerInterval = null;
   clearInterval(state.previewTimer);   state.previewTimer  = null;
   clearInterval(state.timeLimitInterval); state.timeLimitInterval = null;
-  state.deck=buildDeck(); state.openedCards=[]; state.matchedCardIds=new Set();
+  state.deck = state.gameMode === 'friend' ? buildFriendDeck() : buildDeck();
+  state.openedCards=[]; state.matchedCardIds=new Set();
   state.moves=0; state.combo=0; state.maxCombo=0;
   state.isBusy=false; state.isPreviewPhase=true; state.startTime=null;
   document.getElementById('stat-timer').textContent='00:00';
@@ -1177,13 +1342,24 @@ function handleCardClick(uid) {
 function checkMatch() {
   const [u1,u2]=state.openedCards;
   const c1=state.deck.find(c=>c.uid===u1), c2=state.deck.find(c=>c.uid===u2);
-  if(c1.id===c2.id){
+  const isMatch = state.gameMode === 'friend'
+    ? (c1.studentId === c2.studentId && c1.cardType !== c2.cardType)
+    : (c1.id === c2.id);
+  // Friend mode: same type (both photo or both name) → shake and flip back fast
+  if (state.gameMode === 'friend' && !isMatch && c1.cardType === c2.cardType) {
+    [u1,u2].forEach(uid => {
+      const el = document.querySelector(`.card[data-uid="${uid}"]`);
+      if(el){ el.classList.add('wrong-type'); setTimeout(()=>el?.classList.remove('wrong-type'),350); }
+    });
+  }
+  if(isMatch){
     AudioSys.playMatch();
     [u1,u2].forEach(uid=>{
       state.matchedCardIds.add(uid);
       document.querySelector(`.card[data-uid="${uid}"]`).classList.add('matched');
     });
-    document.getElementById('stat-pairs').textContent=state.settings.cardCount/2-state.matchedCardIds.size/2;
+    const totalPairs = state.gameMode === 'friend' ? friendState.students.length : state.settings.cardCount/2;
+    document.getElementById('stat-pairs').textContent=totalPairs-state.matchedCardIds.size/2;
     // 콤보 처리
     state.combo++;
     if(state.combo > state.maxCombo) state.maxCombo = state.combo;
@@ -1191,7 +1367,7 @@ function checkMatch() {
     document.getElementById('stat-combo').textContent = state.combo;
     document.getElementById('stat-combo-wrap').style.display = '';
     state.openedCards=[]; state.isBusy=false;
-    if(state.matchedCardIds.size===state.settings.cardCount) setTimeout(finishRound,350);
+    if(state.matchedCardIds.size===state.deck.length) setTimeout(finishRound,350);
   } else {
     [u1,u2].forEach(uid=>document.querySelector(`.card[data-uid="${uid}"]`).classList.remove('flipped'));
     state.combo = 0;
@@ -1445,7 +1621,9 @@ function initEvents() {
   document.getElementById('btn-home').addEventListener('click',()=>{
     clearInterval(state.previewTimer); clearInterval(state.timerInterval);
     clearInterval(state.timeLimitInterval);
-    AudioSys.stopBGM(); renderStartScreen();
+    AudioSys.stopBGM();
+    if (state.gameMode === 'friend') showScreen('friend-setup');
+    else renderStartScreen();
   });
 
   // 결과 화면
@@ -1453,8 +1631,366 @@ function initEvents() {
     state.currentPlayerIndex=0; state.playerResults=[];
     showScreen('game'); AudioSys.init(); startRound();
   });
-  document.getElementById('btn-change-settings').addEventListener('click',()=>renderStartScreen());
-  document.getElementById('btn-result-home').addEventListener('click',()=>renderStartScreen());
+  document.getElementById('btn-change-settings').addEventListener('click',()=>{
+    if(state.gameMode==='friend') showScreen('friend-setup'); else renderStartScreen();
+  });
+  document.getElementById('btn-result-home').addEventListener('click',()=>showScreen('mode'));
+}
+
+// =====================================================================
+// FRIEND STATE
+// =====================================================================
+const friendState = {
+  className: '',
+  ownerName: '',
+  saveMode: 'none',
+  photoSaveEnabled: false,
+  recordSaveEnabled: false,
+  students: [],
+  currentSetId: null,
+};
+
+const FSK = {
+  sets:    'imageMatching.friendSets',
+  records: 'imageMatching.friendGameRecords',
+};
+
+// =====================================================================
+// FRIEND STORAGE
+// =====================================================================
+function loadFriendSets() {
+  try { return JSON.parse(localStorage.getItem(FSK.sets) || '[]'); } catch { return []; }
+}
+function saveFriendSetsToStorage(sets) {
+  try { localStorage.setItem(FSK.sets, JSON.stringify(sets)); } catch {}
+}
+function deleteFriendSetById(setId) {
+  saveFriendSetsToStorage(loadFriendSets().filter(s => s.setId !== setId));
+}
+
+function persistFriendSet() {
+  if (friendState.saveMode !== 'local') return;
+  const err = validateFriendSetup();
+  if (err) { showFriendError(err); return; }
+
+  const sets  = loadFriendSets();
+  const setId = friendState.currentSetId || `set_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
+  friendState.currentSetId = setId;
+
+  const setData = {
+    setId,
+    className: friendState.className,
+    ownerName: friendState.ownerName,
+    createdAt: new Date().toISOString(),
+    students: friendState.students.map(s => ({
+      studentId: s.studentId,
+      displayName: s.displayName,
+      photoData: friendState.photoSaveEnabled ? s.photoData : null,
+      photoFileName: s.photoFileName,
+    })),
+  };
+
+  const idx = sets.findIndex(s => s.setId === setId);
+  if (idx >= 0) sets[idx] = setData; else sets.unshift(setData);
+  saveFriendSetsToStorage(sets);
+  showSaveToast();
+}
+
+// =====================================================================
+// STUDENT MANAGEMENT
+// =====================================================================
+function addStudent(data = {}) {
+  friendState.students.push({
+    studentId: `student_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,
+    displayName: data.displayName || '',
+    photoData:   data.photoData   || null,
+    photoFileName: data.photoFileName || null,
+  });
+  renderStudentList();
+}
+
+function removeStudent(sid) {
+  friendState.students = friendState.students.filter(s => s.studentId !== sid);
+  renderStudentList();
+}
+
+function renderStudentList() {
+  const container = document.getElementById('student-list');
+  container.innerHTML = '';
+
+  friendState.students.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'student-row';
+    const photoHTML = s.photoData
+      ? `<img src="${s.photoData}" alt="${s.displayName}">`
+      : '📷';
+    row.innerHTML = `
+      <div class="student-photo-preview" id="prev-${s.studentId}">${photoHTML}</div>
+      <input type="text" class="student-name-input" placeholder="이름 입력" value="${s.displayName}" data-sid="${s.studentId}">
+      <label class="photo-upload-btn ${s.photoData ? 'has-photo' : ''}" id="ulabel-${s.studentId}">
+        ${s.photoData ? '✅ 사진 완료' : '📷 사진 추가'}
+        <input type="file" accept="image/*" style="display:none" data-sid="${s.studentId}" class="photo-file-input">
+      </label>
+      <button class="btn-remove-student" data-sid="${s.studentId}" title="삭제">✕</button>`;
+    container.appendChild(row);
+
+    row.querySelector('.student-name-input').addEventListener('input', e => {
+      const st = friendState.students.find(x => x.studentId === e.target.dataset.sid);
+      if (st) st.displayName = e.target.value.trim();
+    });
+    row.querySelector('.photo-file-input').addEventListener('change', e => {
+      if (e.target.files[0]) handlePhotoUpload(e.target.files[0], s.studentId);
+      e.target.value = '';
+    });
+    row.querySelector('.btn-remove-student').addEventListener('click', e => {
+      removeStudent(e.target.dataset.sid);
+    });
+  });
+
+  updateFriendHints();
+}
+
+function handlePhotoUpload(file, sid) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const st = friendState.students.find(s => s.studentId === sid);
+    if (!st) return;
+    st.photoData     = e.target.result;
+    st.photoFileName = file.name;
+    renderStudentList();
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateFriendHints() {
+  const n   = friendState.students.length;
+  const hint = document.getElementById('student-count-hint');
+  if (hint) hint.textContent = n === 0
+    ? '최소 2명 이상 등록하세요'
+    : `${n}명 등록됨 → 카드 ${n * 2}장`;
+}
+
+// =====================================================================
+// FRIEND SETUP VALIDATION & UI
+// =====================================================================
+function validateFriendSetup() {
+  if (friendState.students.length < 2) return '친구를 최소 2명 이상 등록해 주세요.';
+  for (const s of friendState.students) {
+    if (!s.displayName) return '모든 친구의 이름을 입력해 주세요.';
+    if (!s.photoData)   return '모든 친구의 사진을 등록해 주세요.';
+  }
+  return null;
+}
+
+function showFriendError(msg) {
+  const el = document.getElementById('friend-setup-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 3500);
+}
+
+function resetFriendSetup() {
+  friendState.className      = '';
+  friendState.ownerName      = '';
+  friendState.saveMode       = 'none';
+  friendState.photoSaveEnabled  = false;
+  friendState.recordSaveEnabled = false;
+  friendState.students       = [];
+  friendState.currentSetId   = null;
+  document.getElementById('friend-class-name').value  = '';
+  document.getElementById('friend-owner-name').value  = '';
+  document.getElementById('photo-save-toggle').checked  = false;
+  document.getElementById('record-save-toggle').checked = false;
+  document.querySelectorAll('#save-mode-group .choice-btn')
+    .forEach(b => b.classList.toggle('active', b.dataset.savemode === 'none'));
+  document.getElementById('save-mode-hint').textContent =
+    '이번 게임에서만 사용되고 저장되지 않습니다';
+  renderStudentList();
+}
+
+// =====================================================================
+// SAVED SETS MODAL
+// =====================================================================
+function openFriendSetsModal() {
+  const sets = loadFriendSets();
+  const el   = document.getElementById('friend-sets-list');
+  if (!sets.length) {
+    el.innerHTML = '<p class="empty-msg">저장된 친구 목록이 없어요.</p>';
+  } else {
+    el.innerHTML = sets.map(s => {
+      const date = new Date(s.createdAt).toLocaleDateString('ko-KR');
+      return `<div class="set-row">
+        <div class="set-info">
+          <div class="set-name">${s.className || '(반 이름 없음)'}</div>
+          <div class="set-meta">${s.ownerName || ''} · 학생 ${s.students.length}명 · ${date}</div>
+        </div>
+        <div class="set-actions">
+          <button class="btn-small" data-load="${s.setId}">불러오기</button>
+          <button class="btn-small" data-del="${s.setId}" style="color:var(--err)">삭제</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    el.querySelectorAll('[data-load]').forEach(btn =>
+      btn.addEventListener('click', () => {
+        const set = loadFriendSets().find(s => s.setId === btn.dataset.load);
+        if (!set) return;
+        friendState.className    = set.className;
+        friendState.ownerName    = set.ownerName;
+        friendState.currentSetId = set.setId;
+        friendState.students     = set.students.map(s => ({ ...s }));
+        document.getElementById('friend-class-name').value = set.className;
+        document.getElementById('friend-owner-name').value = set.ownerName;
+        renderStudentList();
+        document.getElementById('modal-friend-sets').classList.add('hidden');
+        if (!friendState.students.some(s => s.photoData)) {
+          showFriendError('⚠️ 저장된 사진이 없습니다. 사진을 다시 등록해 주세요.');
+        }
+      }));
+
+    el.querySelectorAll('[data-del]').forEach(btn =>
+      btn.addEventListener('click', () => {
+        if (!confirm('이 친구 목록을 삭제할까요?')) return;
+        deleteFriendSetById(btn.dataset.del);
+        openFriendSetsModal();
+      }));
+  }
+  document.getElementById('modal-friend-sets').classList.remove('hidden');
+}
+
+// =====================================================================
+// FRIEND DECK BUILD
+// =====================================================================
+function buildFriendDeck() {
+  const deck = [];
+  friendState.students.forEach(s => {
+    deck.push({
+      cardId:       `card_${s.studentId}_photo`,
+      studentId:    s.studentId,
+      cardType:     'photo',
+      displayValue: s.displayName,
+      imageData:    s.photoData,
+      uid:          `${s.studentId}-photo`,
+      id:           s.studentId,
+    });
+    deck.push({
+      cardId:       `card_${s.studentId}_name`,
+      studentId:    s.studentId,
+      cardType:     'name',
+      displayValue: s.displayName,
+      uid:          `${s.studentId}-name`,
+      id:           s.studentId,
+    });
+  });
+  return shuffle(deck);
+}
+
+function getFriendGridCols(total) {
+  if (total <= 4)  return 2;
+  if (total <= 8)  return 4;
+  if (total <= 12) return 4;
+  if (total <= 16) return 4;
+  return Math.ceil(Math.sqrt(total));
+}
+
+// =====================================================================
+// START FRIEND GAME
+// =====================================================================
+function startFriendGame() {
+  const err = validateFriendSetup();
+  if (err) { showFriendError(err); return; }
+
+  friendState.className = document.getElementById('friend-class-name').value.trim();
+  friendState.ownerName = document.getElementById('friend-owner-name').value.trim();
+
+  if (friendState.saveMode === 'local') persistFriendSet();
+
+  state.gameMode       = 'friend';
+  state.playerResults  = [];
+  state.currentPlayerIndex = 0;
+
+  AudioSys.init();
+  AudioSys.setBGM(state.settings.bgmEnabled);
+  AudioSys.setSFX(state.settings.sfxEnabled);
+
+  showScreen('game');
+  startRound();
+}
+
+// =====================================================================
+// FRIEND EVENTS
+// =====================================================================
+function initFriendEvents() {
+  // Mode selection
+  document.getElementById('btn-mode-emoji').addEventListener('click', () => {
+    state.gameMode = 'emoji';
+    renderStartScreen();
+  });
+  document.getElementById('btn-mode-friend').addEventListener('click', () => {
+    showScreen('friend-setup');
+    if (friendState.students.length === 0) renderStudentList();
+  });
+
+  // Back to mode
+  document.getElementById('btn-back-to-mode').addEventListener('click', () =>
+    showScreen('mode'));
+
+  // Add student
+  document.getElementById('btn-add-student').addEventListener('click', () => addStudent());
+
+  // Save mode buttons
+  document.querySelectorAll('#save-mode-group .choice-btn').forEach(btn => {
+    if (btn.disabled) return;
+    btn.addEventListener('click', () => {
+      friendState.saveMode = btn.dataset.savemode;
+      document.querySelectorAll('#save-mode-group .choice-btn')
+        .forEach(b => b.classList.toggle('active', b === btn));
+      document.getElementById('save-mode-hint').textContent = friendState.saveMode === 'local'
+        ? '현재 브라우저에만 저장되며 다른 기기에서는 보이지 않습니다'
+        : '이번 게임에서만 사용되고 저장되지 않습니다';
+    });
+  });
+
+  // Photo save toggle
+  document.getElementById('photo-save-toggle').addEventListener('change', e => {
+    friendState.photoSaveEnabled = e.target.checked;
+  });
+
+  // Record save toggle
+  document.getElementById('record-save-toggle').addEventListener('change', e => {
+    friendState.recordSaveEnabled = e.target.checked;
+  });
+
+  // Save
+  document.getElementById('btn-friend-save').addEventListener('click', () => {
+    friendState.className = document.getElementById('friend-class-name').value.trim();
+    friendState.ownerName = document.getElementById('friend-owner-name').value.trim();
+    persistFriendSet();
+  });
+
+  // Load
+  document.getElementById('btn-friend-load').addEventListener('click', () => {
+    const sets = loadFriendSets();
+    if (!sets.length) { showFriendError('저장된 친구 목록이 없어요.'); return; }
+    openFriendSetsModal();
+  });
+
+  // Reset
+  document.getElementById('btn-friend-reset').addEventListener('click', () => {
+    if (friendState.students.length && !confirm('입력한 내용을 모두 초기화할까요?')) return;
+    resetFriendSetup();
+  });
+
+  // Start game
+  document.getElementById('btn-friend-start').addEventListener('click', startFriendGame);
+
+  // Close saved sets modal
+  document.getElementById('btn-close-friend-sets').addEventListener('click', () =>
+    document.getElementById('modal-friend-sets').classList.add('hidden'));
+  document.getElementById('modal-friend-sets').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-friend-sets'))
+      document.getElementById('modal-friend-sets').classList.add('hidden');
+  });
 }
 
 // =====================================================================
@@ -1473,7 +2009,8 @@ async function init() {
   }
 
   initEvents();
-  renderStartScreen();
+  initFriendEvents();
+  showScreen('mode');
 }
 
 init();
