@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>생활 루틴 도구</title>
+  <style>
+    :root { --bg:#f8f3ea; --panel:#fffdf8; --text:#2f3a44; --muted:#6f7b85; --accent:#ff7a45; --accent2:#45b6c9; --shadow:0 16px 40px rgba(47,58,68,.12); --radius:24px; --font:"Segoe UI","Malgun Gothic",sans-serif; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; font-family:var(--font); color:var(--text); background:radial-gradient(circle at top left, rgba(255,122,69,.14), transparent 30%), radial-gradient(circle at bottom right, rgba(69,182,201,.18), transparent 32%), var(--bg); }
+    .page { width:min(1100px, calc(100% - 32px)); margin:0 auto; padding:40px 0 48px; }
+    .hero,.card { background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow); }
+    .hero { padding:32px; margin-bottom:24px; }
+    h1 { margin:0; font-size:clamp(2rem,4vw,3.2rem); line-height:1.05; }
+    .hero p { margin:12px 0 0; color:var(--muted); line-height:1.7; max-width:60ch; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:18px; }
+    .card { display:block; text-decoration:none; color:inherit; padding:22px; min-height:220px; transition:transform 180ms ease, box-shadow 180ms ease; }
+    .card:hover { transform:translateY(-4px); box-shadow:0 20px 46px rgba(47,58,68,.16); }
+    .icon { font-size:2.4rem; margin-bottom:14px; }
+    .card h2 { margin:0; font-size:1.3rem; }
+    .card p { margin:10px 0 0; color:var(--muted); line-height:1.6; font-size:.95rem; }
+    .tag { display:inline-block; margin-top:14px; padding:7px 12px; border-radius:999px; background:#fff1e9; color:var(--accent); font-size:.82rem; font-weight:700; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <h1>생활 루틴 도구</h1>
+      <p>교실에서 바로 띄워 쓸 수 있는 웹 기반 루틴 지원 도구 모음입니다. 정리 시간, 손씻기, 하루 일과, 역할 배정 장면에서 바로 사용할 수 있게 구성했습니다.</p>
+    </section>
+    <section class="grid">
+      <a class="card" href="./cleanup_timer/"><div class="icon">🌈</div><h2>정리 시간 타이머</h2><p>무지개가 줄어드는 화면으로 정리 시간을 직관적으로 보여줍니다.</p><span class="tag">3/5/10/15분 + 직접 입력</span></a>
+      <a class="card" href="./daily_schedule/"><div class="icon">🗓️</div><h2>하루 일과 순서판</h2><p>지금, 다음, 그다음 활동을 큰 카드로 보여주는 일정 보드입니다.</p><span class="tag">현재-다음-이후 구조</span></a>
+      <a class="card" href="./handwashing_timer/"><div class="icon">🫧</div><h2>손씻기 순서 타이머</h2><p>손씻기 단계를 따라가며 20초 또는 30초 타이머를 함께 보여줍니다.</p><span class="tag">순서 + 시간 안내</span></a>
+      <a class="card" href="./cleanup_steps/"><div class="icon">🧺</div><h2>정리 순서 보드</h2><p>정리를 어떤 순서로 해야 하는지 단계별로 시각 안내합니다.</p><span class="tag">단계 진행형</span></a>
+      <a class="card" href="./helper_board/"><div class="icon">⭐</div><h2>오늘의 도우미 보드</h2><p>역할별로 오늘의 도우미를 정하고 큰 화면에 보여줄 수 있습니다.</p><span class="tag">랜덤 배정 + 수동 수정</span></a>
+    </section>
+  </main>
+</body>
+</html>

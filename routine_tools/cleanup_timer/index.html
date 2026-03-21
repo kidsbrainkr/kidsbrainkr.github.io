@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>정리 시간 타이머</title>
+  <style>
+    :root {
+      --bg: #f9f5ff;
+      --panel: rgba(255, 255, 255, 0.9);
+      --text: #26323d;
+      --muted: #63707c;
+      --accent: #ff9a62;
+      --accent-2: #53c8c0;
+      --accent-3: #7d82ff;
+      --shadow: 0 18px 48px rgba(38, 50, 61, 0.14);
+      --radius: 26px;
+      --font: "Segoe UI", "Malgun Gothic", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255, 154, 98, 0.18), transparent 30%),
+        radial-gradient(circle at top right, rgba(125, 130, 255, 0.16), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(83, 200, 192, 0.18), transparent 30%),
+        var(--bg);
+    }
+
+    .page {
+      width: min(1200px, calc(100% - 24px));
+      margin: 0 auto;
+      padding: 18px 0 28px;
+    }
+
+    .toolbar,
+    .panel {
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    .tool-actions,
+    .top-controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .music-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+
+    .panel {
+      padding: 20px;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .btn,
+    .preset,
+    .music-style {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(38, 50, 61, 0.08);
+    }
+
+    .preset.active,
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent), #ffba70);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .btn.secondary {
+      background: linear-gradient(135deg, var(--accent-2), #79ddd5);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .btn.music-on {
+      background: linear-gradient(135deg, var(--accent-3), #a48dff);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .music-style.active {
+      background: linear-gradient(135deg, var(--accent-3), #a48dff);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .minutes-input {
+      width: 100px;
+      border: 2px solid #e5e8ec;
+      border-radius: 16px;
+      padding: 12px 14px;
+      text-align: center;
+      background: #fff;
+    }
+
+    .display {
+      text-align: center;
+      padding: 10px 10px 22px;
+    }
+
+    .mascot-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+      font-weight: 800;
+      color: var(--accent-3);
+      letter-spacing: 0.08em;
+    }
+
+    .guide {
+      color: var(--muted);
+      font-size: 1.1rem;
+      margin: 0 0 8px;
+    }
+
+    .timer {
+      font-size: clamp(3.6rem, 9vw, 8rem);
+      font-weight: 900;
+      line-height: 1;
+      margin: 0 0 24px;
+      letter-spacing: -0.04em;
+    }
+
+    .rainbow {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 10px;
+      height: min(42vw, 320px);
+      margin-bottom: 12px;
+    }
+
+    .arc {
+      width: min(11vw, 72px);
+      border-radius: 999px 999px 24px 24px;
+      transition: transform 240ms ease, opacity 240ms ease, filter 240ms ease;
+      box-shadow: 0 10px 18px rgba(38, 50, 61, 0.12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .arc::after {
+      content: "*";
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: clamp(0.9rem, 1.8vw, 1.3rem);
+      opacity: 0.55;
+      color: #fff;
+      font-weight: 900;
+    }
+
+    .arc.hidden {
+      opacity: 0.12;
+      transform: scaleY(0.28);
+      filter: grayscale(0.8);
+    }
+
+    .message {
+      margin: 18px 0 0;
+      font-size: clamp(1.2rem, 2.6vw, 2rem);
+      font-weight: 700;
+    }
+
+    .small {
+      color: var(--muted);
+      margin-top: 10px;
+      font-size: 0.95rem;
+    }
+
+    .final {
+      color: #d94d2b;
+    }
+
+    @media (max-width: 680px) {
+      .page { width: min(100% - 14px, 900px); }
+      .arc { width: 11vw; }
+      .toolbar { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="toolbar">
+      <h1>🌈⭐ 정리 시간 타이머</h1>
+      <div class="tool-actions">
+        <button class="btn" id="musicBtn" type="button">BGM 켜기</button>
+        <button class="btn" id="homeBtn" type="button">홈</button>
+        <button class="btn" id="fullscreenBtn" type="button">전체화면</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="music-row">
+        <button class="music-style active" data-style="dreamy" type="button">포근한 별빛</button>
+        <button class="music-style" data-style="rainbow" type="button">밝은 무지개</button>
+        <button class="music-style" data-style="calm" type="button">차분한 정리</button>
+      </div>
+
+      <div class="top-controls">
+        <button class="preset active" data-minutes="3" type="button">3분</button>
+        <button class="preset" data-minutes="5" type="button">5분</button>
+        <button class="preset" data-minutes="10" type="button">10분</button>
+        <button class="preset" data-minutes="15" type="button">15분</button>
+        <input class="minutes-input" id="customMinutes" type="number" min="1" max="60" value="3">
+        <button class="btn" id="applyCustomBtn" type="button">직접 적용</button>
+        <button class="btn primary" id="startBtn" type="button">시작</button>
+        <button class="btn secondary" id="pauseBtn" type="button">일시정지</button>
+        <button class="btn" id="resetBtn" type="button">다시 시작</button>
+      </div>
+
+      <div class="display">
+        <div class="mascot-row">별 무지개 반짝별</div>
+        <p class="guide">정리할 시간이에요</p>
+        <div class="timer" id="timerText">03:00</div>
+
+        <div class="rainbow">
+          <div class="arc" style="height: 38%; background:#ff6b6b;"></div>
+          <div class="arc" style="height: 48%; background:#ff9f43;"></div>
+          <div class="arc" style="height: 58%; background:#ffd166;"></div>
+          <div class="arc" style="height: 68%; background:#7bd88f;"></div>
+          <div class="arc" style="height: 78%; background:#5ac8fa;"></div>
+          <div class="arc" style="height: 88%; background:#7a7cff;"></div>
+          <div class="arc" style="height: 98%; background:#c77dff;"></div>
+        </div>
+
+        <div class="message" id="messageText">천천히 정리해요</div>
+        <div class="small" id="progressText">무지개가 줄어들면 시간이 거의 끝나요</div>
+      </div>
+    </section>
+  </main>
+
+  <audio id="bgmAudio" loop preload="auto"></audio>
+
+  <script>
+    const presetButtons = [...document.querySelectorAll(".preset")];
+    const timerText = document.getElementById("timerText");
+    const messageText = document.getElementById("messageText");
+    const progressText = document.getElementById("progressText");
+    const rainbowArcs = [...document.querySelectorAll(".arc")];
+    const customMinutes = document.getElementById("customMinutes");
+    const musicBtn = document.getElementById("musicBtn");
+    const musicStyleButtons = [...document.querySelectorAll(".music-style")];
+    const bgmAudio = document.getElementById("bgmAudio");
+
+    let durationSeconds = 180;
+    let remainingSeconds = 180;
+    let intervalId = null;
+    let running = false;
+
+    let audioContext = null;
+    let bgmIntervalId = null;
+    let bgmEnabled = false;
+    let useExternalBgm = false;
+    let selectedMusicStyle = "dreamy";
+
+    const bgmSources = {
+      dreamy: "./bgm-dreamy.mp3",
+      rainbow: "./bgm-rainbow.mp3",
+      calm: "./bgm-calm.mp3"
+    };
+
+    function loadSelectedBgm() {
+      useExternalBgm = false;
+      bgmAudio.pause();
+      bgmAudio.currentTime = 0;
+      bgmAudio.src = bgmSources[selectedMusicStyle];
+      bgmAudio.load();
+    }
+
+    function ensureAudioContext() {
+      if (!audioContext) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContextClass();
+      }
+      if (audioContext.state === "suspended") {
+        audioContext.resume();
+      }
+    }
+
+    function playTone(frequency, startOffset, duration, gainValue) {
+      if (!audioContext) return;
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.value = frequency;
+      gainNode.gain.value = 0;
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      const startTime = audioContext.currentTime + startOffset;
+      gainNode.gain.linearRampToValueAtTime(gainValue, startTime + 0.03);
+      gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration + 0.02);
+    }
+
+    function playBgmPhrase() {
+      if (!bgmEnabled) return;
+      ensureAudioContext();
+      const notes = [523.25, 659.25, 783.99, 659.25];
+      notes.forEach((frequency, index) => {
+        playTone(frequency, index * 0.45, 0.35, 0.035);
+      });
+    }
+
+    function startBgm() {
+      if (!bgmEnabled) return;
+
+      if (useExternalBgm) {
+        bgmAudio.currentTime = 0;
+        bgmAudio.play().catch(() => {
+          useExternalBgm = false;
+          startBgm();
+        });
+        return;
+      }
+
+      if (bgmIntervalId) return;
+      playBgmPhrase();
+      bgmIntervalId = window.setInterval(playBgmPhrase, 1800);
+    }
+
+    function stopBgm() {
+      bgmAudio.pause();
+      bgmAudio.currentTime = 0;
+      if (bgmIntervalId) {
+        window.clearInterval(bgmIntervalId);
+        bgmIntervalId = null;
+      }
+    }
+
+    function toggleBgm() {
+      bgmEnabled = !bgmEnabled;
+      musicBtn.textContent = bgmEnabled ? "BGM 끄기" : "BGM 켜기";
+      musicBtn.classList.toggle("music-on", bgmEnabled);
+
+      if (bgmEnabled) {
+        ensureAudioContext();
+        if (running) startBgm();
+      } else {
+        stopBgm();
+      }
+    }
+
+    function formatTime(totalSeconds) {
+      const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+      return `${minutes}:${seconds}`;
+    }
+
+    function stopTimer() {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+      running = false;
+      stopBgm();
+    }
+
+    function updateRainbow() {
+      const progress = durationSeconds === 0 ? 0 : remainingSeconds / durationSeconds;
+      rainbowArcs.forEach((arc, index) => {
+        const threshold = (index + 1) / rainbowArcs.length;
+        arc.classList.toggle("hidden", progress < threshold);
+      });
+    }
+
+    function updateMessage() {
+      if (remainingSeconds === 0) {
+        messageText.textContent = "정리 끝, 모두 모여요";
+        messageText.classList.add("final");
+        progressText.textContent = "잘했어요. 이제 다음 활동으로 넘어가요";
+        return;
+      }
+
+      messageText.classList.remove("final");
+
+      if (remainingSeconds <= 30) {
+        messageText.textContent = "조금만 더 정리해요";
+        progressText.textContent = "마지막 시간이 줄어들고 있어요";
+        return;
+      }
+
+      if (remainingSeconds <= 60) {
+        messageText.textContent = "이제 마무리해요";
+        progressText.textContent = "무지개가 거의 다 사라졌어요";
+        return;
+      }
+
+      messageText.textContent = "천천히 정리해요";
+      progressText.textContent = "무지개가 줄어들면 시간이 거의 끝나요";
+    }
+
+    function updateScreen() {
+      timerText.textContent = formatTime(remainingSeconds);
+      updateRainbow();
+      updateMessage();
+    }
+
+    function selectPreset(minutes) {
+      durationSeconds = minutes * 60;
+      remainingSeconds = durationSeconds;
+      presetButtons.forEach((button) => {
+        button.classList.toggle("active", Number(button.dataset.minutes) === minutes);
+      });
+      customMinutes.value = String(minutes);
+      stopTimer();
+      updateScreen();
+    }
+
+    function startTimer() {
+      if (running) return;
+      if (remainingSeconds === 0) {
+        remainingSeconds = durationSeconds;
+      }
+
+      ensureAudioContext();
+      running = true;
+      startBgm();
+
+      intervalId = window.setInterval(() => {
+        remainingSeconds -= 1;
+        if (remainingSeconds <= 0) {
+          remainingSeconds = 0;
+          stopTimer();
+        }
+        updateScreen();
+      }, 1000);
+    }
+
+    function resetTimer() {
+      stopTimer();
+      remainingSeconds = durationSeconds;
+      updateScreen();
+    }
+
+    presetButtons.forEach((button) => {
+      button.addEventListener("click", () => selectPreset(Number(button.dataset.minutes)));
+    });
+
+    musicStyleButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedMusicStyle = button.dataset.style;
+        musicStyleButtons.forEach((item) => {
+          item.classList.toggle("active", item === button);
+        });
+        const wasRunning = running;
+        stopBgm();
+        loadSelectedBgm();
+        if (bgmEnabled && wasRunning) {
+          startBgm();
+        }
+      });
+    });
+
+    document.getElementById("applyCustomBtn").addEventListener("click", () => {
+      const minutes = Math.max(1, Math.min(60, Number(customMinutes.value) || 1));
+      selectPreset(minutes);
+    });
+
+    document.getElementById("startBtn").addEventListener("click", startTimer);
+    document.getElementById("pauseBtn").addEventListener("click", stopTimer);
+    document.getElementById("resetBtn").addEventListener("click", resetTimer);
+    document.getElementById("fullscreenBtn").addEventListener("click", async () => {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    });
+    document.getElementById("homeBtn").addEventListener("click", () => {
+      window.location.href = "../";
+    });
+    musicBtn.addEventListener("click", toggleBgm);
+    bgmAudio.addEventListener("canplaythrough", () => {
+      useExternalBgm = true;
+    });
+    bgmAudio.addEventListener("error", () => {
+      useExternalBgm = false;
+    });
+
+    loadSelectedBgm();
+    updateScreen();
+  </script>
+</body>
+</html>
