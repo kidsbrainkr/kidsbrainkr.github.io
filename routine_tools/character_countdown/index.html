@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>캐릭터 친구 카운트다운 ✨</title>
+  <style>
+    /* ===== CSS 변수 ===== */
+    :root {
+      --bg: #FFF8F0;
+      --accent: #FF6B35;
+      --accent2: #4ECDC4;
+      --warning: #FF3B30;
+      --card-bg: #FFFFFF;
+      --shadow: 0 4px 16px rgba(0,0,0,0.10);
+      --shadow-hover: 0 8px 24px rgba(0,0,0,0.18);
+      --radius: 50%;
+      --font: 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    }
+
+    /* ===== 기본 리셋 ===== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: var(--font);
+      background: var(--bg);
+      color: #333;
+    }
+
+    /* ===== 화면 전환 레이어 ===== */
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2vh 3vw;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.96);
+    }
+
+    /* ===== 설정 화면 ===== */
+    #setup-screen {
+      gap: 2.4vh;
+      background: var(--bg);
+    }
+
+    #setup-screen h1 {
+      font-size: clamp(1.4rem, 4vw, 2.2rem);
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      text-align: center;
+    }
+
+    #setup-screen .subtitle {
+      font-size: clamp(0.85rem, 2vw, 1.05rem);
+      color: #888;
+      text-align: center;
+      margin-top: -0.8vh;
+    }
+
+    /* 섹션 라벨 */
+    .section-label {
+      font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+      font-weight: 700;
+      color: #555;
+      align-self: flex-start;
+      margin-bottom: 0.3vh;
+    }
+
+    /* 설정 카드 */
+    .setup-card {
+      background: #fff;
+      border-radius: 1.2rem;
+      padding: 1.6vh 2.4vw;
+      box-shadow: var(--shadow);
+      width: min(96vw, 540px);
+      display: flex;
+      flex-direction: column;
+      gap: 1.2vh;
+    }
+
+    /* 프리셋 버튼 그룹 */
+    .preset-group {
+      display: flex;
+      gap: 0.8vw;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      flex: 1 1 auto;
+      min-width: 60px;
+      padding: 1vh 0.8vw;
+      font-size: clamp(0.9rem, 2.2vw, 1.1rem);
+      font-weight: 700;
+      font-family: var(--font);
+      border: 2.5px solid #E0E0E0;
+      border-radius: 0.8rem;
+      background: #FAFAFA;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      color: #555;
+    }
+
+    .preset-btn:hover,
+    .preset-btn.active {
+      border-color: var(--accent);
+      background: #FFF0E8;
+      color: var(--accent);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(255,107,53,0.2);
+    }
+
+    /* 직접 입력 */
+    .custom-input-row {
+      display: flex;
+      align-items: center;
+      gap: 0.8vw;
+    }
+
+    .custom-input-row label {
+      font-size: clamp(0.82rem, 1.8vw, 0.95rem);
+      color: #666;
+      white-space: nowrap;
+    }
+
+    .custom-input-row input {
+      width: 60px;
+      padding: 0.6vh 0.6vw;
+      font-size: clamp(0.9rem, 2vw, 1.05rem);
+      font-family: var(--font);
+      border: 2px solid #DDD;
+      border-radius: 0.6rem;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.18s;
+    }
+
+    .custom-input-row input:focus {
+      border-color: var(--accent);
+    }
+
+    /* 테마 선택 */
+    .theme-group {
+      display: flex;
+      gap: 1.2vw;
+      justify-content: center;
+    }
+
+    .theme-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5vh;
+      padding: 1.2vh 2vw;
+      border: 2.5px solid #E0E0E0;
+      border-radius: 1rem;
+      background: #FAFAFA;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      font-family: var(--font);
+      min-width: 80px;
+    }
+
+    .theme-btn .theme-icon {
+      font-size: clamp(1.4rem, 3.5vw, 2rem);
+      line-height: 1;
+    }
+
+    .theme-btn .theme-name {
+      font-size: clamp(0.75rem, 1.6vw, 0.88rem);
+      font-weight: 700;
+      color: #666;
+    }
+
+    .theme-btn:hover,
+    .theme-btn.active {
+      border-color: var(--accent2);
+      background: #E8FAFA;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(78,205,196,0.25);
+    }
+
+    .theme-btn.active .theme-name {
+      color: var(--accent2);
+    }
+
+    /* 시작 버튼 */
+    #start-btn {
+      width: min(96vw, 540px);
+      padding: 1.8vh 0;
+      font-size: clamp(1.1rem, 3vw, 1.4rem);
+      font-weight: 800;
+      font-family: var(--font);
+      background: linear-gradient(135deg, var(--accent), #FF9A5C);
+      color: #fff;
+      border: none;
+      border-radius: 1.2rem;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(255,107,53,0.35);
+      transition: all 0.2s ease;
+      letter-spacing: 0.02em;
+    }
+
+    #start-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(255,107,53,0.45);
+    }
+
+    #start-btn:active {
+      transform: translateY(0);
+    }
+
+    /* ===== 타이머 화면 ===== */
+    #timer-screen {
+      justify-content: flex-start;
+      padding-top: 1.5vh;
+      background: var(--bg);
+      gap: 0;
+    }
+
+    /* 캐릭터 격자 영역 */
+    #character-grid {
+      display: grid;
+      /* 열 수는 JS에서 동적으로 설정 */
+      gap: min(1.4vw, 14px);
+      padding: min(1.5vw, 16px);
+      flex: 1;
+      align-content: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    /* 캐릭터 카드 */
+    .char-card {
+      width: min(10vw, 80px);
+      height: min(10vw, 80px);
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1.6rem, 3.5vw, 2.5rem);
+      line-height: 1;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      cursor: default;
+      user-select: none;
+      position: relative;
+    }
+
+    .char-card:hover {
+      transform: scale(1.06);
+      box-shadow: var(--shadow-hover);
+    }
+
+    /* 사라질 때 팝 애니메이션 */
+    @keyframes popOut {
+      0%   { transform: scale(1);   opacity: 1; }
+      30%  { transform: scale(1.25); opacity: 1; }
+      100% { transform: scale(0);   opacity: 0; }
+    }
+
+    .char-card.leaving {
+      animation: popOut 0.45s cubic-bezier(0.36,0.07,0.19,0.97) forwards;
+      pointer-events: none;
+    }
+
+    /* 마지막 3개 경고 */
+    @keyframes warnPulse {
+      0%, 100% { box-shadow: 0 0 0 3px var(--warning), var(--shadow); }
+      50%       { box-shadow: 0 0 0 6px rgba(255,59,48,0.4), var(--shadow); }
+    }
+
+    .char-card.warning {
+      border: 3px solid var(--warning);
+      animation: warnPulse 0.7s ease-in-out infinite;
+    }
+
+    /* 타이머 하단 패널 */
+    #timer-bottom {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6vh;
+      padding: 0.8vh 2vw 1.2vh;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(6px);
+      border-top: 1px solid rgba(0,0,0,0.06);
+    }
+
+    /* 유도 문구 */
+    #guide-text {
+      font-size: clamp(0.9rem, 2.2vw, 1.15rem);
+      font-weight: 700;
+      color: #555;
+      text-align: center;
+      min-height: 1.6em;
+      transition: color 0.4s;
+    }
+
+    #guide-text.done {
+      color: var(--accent);
+      font-size: clamp(1rem, 2.6vw, 1.3rem);
+    }
+
+    /* 남은 시간 */
+    #time-display {
+      font-size: clamp(3rem, 8vw, 5rem);
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.03em;
+    }
+
+    #time-display.warning-time {
+      color: var(--warning);
+    }
+
+    /* 컨트롤 버튼 */
+    #controls {
+      display: flex;
+      gap: 1.4vw;
+      align-items: center;
+    }
+
+    .ctrl-btn {
+      width: clamp(36px, 5vw, 48px);
+      height: clamp(36px, 5vw, 48px);
+      border-radius: 50%;
+      border: 2px solid #DDD;
+      background: #fff;
+      font-size: clamp(1rem, 2.2vw, 1.3rem);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.18s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .ctrl-btn:hover {
+      border-color: var(--accent);
+      background: #FFF0E8;
+      transform: scale(1.1);
+    }
+
+    /* 전체화면 버튼 래퍼 */
+    #fullscreen-btn {
+      font-size: clamp(0.9rem, 2vw, 1.15rem);
+    }
+
+    /* ===== 완료 오버레이 ===== */
+    #done-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,248,240,0.92);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2vh;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+    }
+
+    #done-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #done-overlay .done-emoji {
+      font-size: clamp(3rem, 10vw, 6rem);
+      animation: bounceIn 0.6s cubic-bezier(0.36,0.07,0.19,0.97) forwards;
+    }
+
+    @keyframes bounceIn {
+      0%   { transform: scale(0); }
+      60%  { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+
+    #done-overlay .done-msg {
+      font-size: clamp(1.4rem, 4vw, 2.4rem);
+      font-weight: 900;
+      color: var(--accent);
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    #done-overlay .done-sub {
+      font-size: clamp(0.9rem, 2.2vw, 1.2rem);
+      color: #888;
+    }
+
+    #done-restart-btn {
+      margin-top: 1vh;
+      padding: 1.2vh 4vw;
+      font-size: clamp(1rem, 2.4vw, 1.2rem);
+      font-weight: 700;
+      font-family: var(--font);
+      background: linear-gradient(135deg, var(--accent2), #3BB5AE);
+      color: #fff;
+      border: none;
+      border-radius: 1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(78,205,196,0.4);
+      transition: transform 0.18s, box-shadow 0.18s;
+    }
+
+    #done-restart-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(78,205,196,0.5);
+    }
+
+    /* ===== 반응형: 작은 화면 ===== */
+    @media (max-height: 600px) {
+      #timer-bottom {
+        padding: 0.4vh 2vw 0.6vh;
+        gap: 0.2vh;
+      }
+      #time-display {
+        font-size: clamp(2rem, 6vw, 3.5rem);
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== 설정 화면 ===== -->
+<div id="setup-screen" class="screen">
+  <h1>🎉 캐릭터 친구 카운트다운</h1>
+  <p class="subtitle">정리시간에 친구들이 하나씩 집에 가요!</p>
+
+  <div class="setup-card">
+    <!-- 시간 프리셋 -->
+    <span class="section-label">⏱ 시간 선택</span>
+    <div class="preset-group">
+      <button class="preset-btn" data-min="3">3분</button>
+      <button class="preset-btn active" data-min="5">5분</button>
+      <button class="preset-btn" data-min="10">10분</button>
+      <button class="preset-btn" data-min="15">15분</button>
+    </div>
+
+    <!-- 직접 입력 -->
+    <div class="custom-input-row">
+      <label>직접 입력:</label>
+      <input type="number" id="custom-min" min="0" max="59" placeholder="분" />
+      <label>분</label>
+      <input type="number" id="custom-sec" min="0" max="59" placeholder="초" />
+      <label>초</label>
+    </div>
+  </div>
+
+  <div class="setup-card">
+    <!-- 캐릭터 테마 -->
+    <span class="section-label">🎨 캐릭터 테마</span>
+    <div class="theme-group">
+      <button class="theme-btn active" data-theme="animals">
+        <span class="theme-icon">🐶</span>
+        <span class="theme-name">동물</span>
+      </button>
+      <button class="theme-btn" data-theme="food">
+        <span class="theme-icon">🍎</span>
+        <span class="theme-name">음식</span>
+      </button>
+      <button class="theme-btn" data-theme="vehicles">
+        <span class="theme-icon">🚗</span>
+        <span class="theme-name">탈것</span>
+      </button>
+    </div>
+  </div>
+
+  <button id="start-btn">▶ 시작하기!</button>
+</div>
+
+<!-- ===== 타이머 화면 ===== -->
+<div id="timer-screen" class="screen hidden">
+  <!-- 캐릭터 격자 -->
+  <div id="character-grid"></div>
+
+  <!-- 하단 패널 -->
+  <div id="timer-bottom">
+    <div id="guide-text">친구들이 집에 가고 있어요 🏠 우리도 정리해요!</div>
+    <div id="time-display">00:00</div>
+    <div id="controls">
+      <button class="ctrl-btn" id="pause-btn" title="일시정지/재시작">⏸</button>
+      <button class="ctrl-btn" id="mute-btn"  title="음소거">🔊</button>
+      <button class="ctrl-btn" id="fullscreen-btn" title="전체화면">⛶</button>
+      <button class="ctrl-btn" id="reset-btn" title="처음으로">🔄</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 완료 오버레이 ===== -->
+<div id="done-overlay">
+  <div class="done-emoji">🎉</div>
+  <div class="done-msg">모두 집에 갔어요!<br>우리도 정리 끝 👏</div>
+  <div class="done-sub">수고했어요! 정말 잘했어요 ⭐</div>
+  <button id="done-restart-btn">🔄 다시 하기</button>
+</div>
+
+<script>
+/* ===================================================
+   캐릭터 친구 카운트다운 — 메인 스크립트
+   유치원/어린이집 정리시간 타이머
+   =================================================== */
+
+// ─── 상수: 테마별 이모지 목록 ───────────────────────────
+const THEMES = {
+  animals:  ['🐶','🐱','🐰','🐻','🐧','🐸','🦊','🐨','🐯','🦁'],
+  food:     ['🍎','🍌','🍇','🍊','🍓','🍑','🍒','🍋','🍉','🍍'],
+  vehicles: ['🚗','🚌','✈️','🚀','🚲','🚢','🚁','🚂','🏎️','🛵'],
+};
+
+// ─── 프리셋별 캐릭터 개수 ────────────────────────────────
+const PRESET_COUNTS = {
+  180:  18,  // 3분  → 18개  (10초마다 1개)
+  300:  20,  // 5분  → 20개  (15초마다 1개)
+  600:  20,  // 10분 → 20개  (30초마다 1개)
+  900:  15,  // 15분 → 15개  (60초마다 1개)
+};
+
+// ─── 상태 변수 ──────────────────────────────────────────
+let totalSeconds   = 300;   // 전체 시간 (초)
+let remainSeconds  = 300;   // 남은 시간 (초)
+let totalChars     = 20;    // 캐릭터 총 개수
+let remainChars    = 20;    // 현재 남아있는 캐릭터 수
+let selectedTheme  = 'animals';
+let timerInterval  = null;
+let isPaused       = false;
+let isMuted        = false;
+let audioCtx       = null;  // Web Audio API 컨텍스트 (지연 생성)
+let warningSounded = false;  // 마지막 3개 경고음 재생 여부
+let doneTriggered  = false;  // 종료 처리 여부
+
+// ─── DOM 참조 ────────────────────────────────────────────
+const setupScreen    = document.getElementById('setup-screen');
+const timerScreen    = document.getElementById('timer-screen');
+const charGrid       = document.getElementById('character-grid');
+const guideText      = document.getElementById('guide-text');
+const timeDisplay    = document.getElementById('time-display');
+const doneOverlay    = document.getElementById('done-overlay');
+const pauseBtn       = document.getElementById('pause-btn');
+const muteBtn        = document.getElementById('mute-btn');
+const fullscreenBtn  = document.getElementById('fullscreen-btn');
+const resetBtn       = document.getElementById('reset-btn');
+const startBtn       = document.getElementById('start-btn');
+const doneRestartBtn = document.getElementById('done-restart-btn');
+
+// ─── 설정 화면: 프리셋 버튼 ─────────────────────────────
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    // 다른 프리셋 비활성화
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // 직접 입력 초기화
+    document.getElementById('custom-min').value = '';
+    document.getElementById('custom-sec').value = '';
+  });
+});
+
+// ─── 설정 화면: 직접 입력 시 프리셋 해제 ────────────────
+['custom-min','custom-sec'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  });
+});
+
+// ─── 설정 화면: 테마 선택 ────────────────────────────────
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedTheme = btn.dataset.theme;
+  });
+});
+
+// ─── 시간 계산: 설정값 → 초 ─────────────────────────────
+function getSelectedSeconds() {
+  // 직접 입력 우선
+  const cMin = parseInt(document.getElementById('custom-min').value) || 0;
+  const cSec = parseInt(document.getElementById('custom-sec').value) || 0;
+  const customTotal = cMin * 60 + cSec;
+  if (customTotal > 0) return customTotal;
+
+  // 프리셋 선택
+  const activePreset = document.querySelector('.preset-btn.active');
+  if (activePreset) return parseInt(activePreset.dataset.min) * 60;
+
+  return 300; // 기본값 5분
+}
+
+// ─── 캐릭터 수 결정: 총 시간에 따라 ────────────────────
+function getCharCount(secs) {
+  if (PRESET_COUNTS[secs]) return PRESET_COUNTS[secs];
+  // 직접 입력: 시간에 비례해서 10~20개 사이로 결정
+  if (secs <= 120)  return 12;
+  if (secs <= 240)  return 16;
+  if (secs <= 480)  return 18;
+  if (secs <= 720)  return 20;
+  if (secs <= 1200) return 20;
+  return 15;
+}
+
+// ─── 격자 열 수 결정 ─────────────────────────────────────
+function getGridCols(count) {
+  if (count <= 12) return 4;
+  if (count <= 16) return 4;
+  if (count <= 18) return 6;  // 3행×6열
+  if (count <= 20) return 5;  // 4행×5열
+  return 5;
+}
+
+// ─── 격자에 캐릭터 카드 생성 ────────────────────────────
+function buildGrid(count, theme) {
+  charGrid.innerHTML = '';
+  const emojis = THEMES[theme];
+  const cols = getGridCols(count);
+  charGrid.style.gridTemplateColumns = `repeat(${cols}, min-content)`;
+
+  for (let i = 0; i < count; i++) {
+    const card = document.createElement('div');
+    card.className = 'char-card';
+    card.dataset.idx = i;
+    // 이모지 순환 배치
+    card.textContent = emojis[i % emojis.length];
+    charGrid.appendChild(card);
+  }
+}
+
+// ─── 시간 포맷: 초 → MM:SS ──────────────────────────────
+function formatTime(secs) {
+  const m = Math.floor(secs / 60).toString().padStart(2, '0');
+  const s = (secs % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+// ─── Web Audio API: 지연 초기화 ─────────────────────────
+function ensureAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  // Safari에서 일시정지된 컨텍스트 재개
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+// ─── 오디오: 짧은 퐁 소리 (캐릭터 퇴장 시) ─────────────
+function playPop() {
+  if (isMuted) return;
+  try {
+    ensureAudioCtx();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(520, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(320, audioCtx.currentTime + 0.18);
+    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.25);
+  } catch(e) { /* 오디오 오류 무시 */ }
+}
+
+// ─── 오디오: 경고음 3번 (마지막 3개) ───────────────────
+function playWarning() {
+  if (isMuted) return;
+  try {
+    ensureAudioCtx();
+    [0, 0.3, 0.6].forEach(delay => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(440, audioCtx.currentTime + delay);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + 0.2);
+      osc.start(audioCtx.currentTime + delay);
+      osc.stop(audioCtx.currentTime + delay + 0.22);
+    });
+  } catch(e) { /* 오디오 오류 무시 */ }
+}
+
+// ─── 오디오: 팡파레 (종료) ──────────────────────────────
+function playFanfare() {
+  if (isMuted) return;
+  try {
+    ensureAudioCtx();
+    // 도-미-솔-도 상승 화음
+    const notes = [523, 659, 784, 1047];
+    notes.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'triangle';
+      const t = audioCtx.currentTime + i * 0.15;
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.3, t + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      osc.start(t);
+      osc.stop(t + 0.55);
+    });
+  } catch(e) { /* 오디오 오류 무시 */ }
+}
+
+// ─── 캐릭터 하나 제거 (페이드아웃 + 팝 효과) ────────────
+function removeOneChar() {
+  // 현재 남아있는 카드 목록
+  const visible = charGrid.querySelectorAll('.char-card:not(.leaving):not([style*="visibility: hidden"])');
+  if (visible.length === 0) return;
+
+  // 랜덤으로 하나 선택
+  const target = visible[Math.floor(Math.random() * visible.length)];
+  target.classList.add('leaving');
+
+  // 퐁 소리
+  playPop();
+
+  // 애니메이션 후 완전히 숨김 (격자 자리 유지)
+  target.addEventListener('animationend', () => {
+    target.style.visibility = 'hidden';
+    target.style.opacity = '0';
+    target.classList.remove('leaving');
+    // 경고 클래스도 제거
+    target.classList.remove('warning');
+    remainChars--;
+    checkWarning();
+  }, { once: true });
+}
+
+// ─── 마지막 3개 경고 처리 ────────────────────────────────
+function checkWarning() {
+  const visible = charGrid.querySelectorAll('.char-card:not([style*="visibility: hidden"])');
+  if (visible.length <= 3 && visible.length > 0) {
+    // 아직 경고 스타일 미적용 카드에 적용
+    visible.forEach(card => {
+      if (!card.classList.contains('warning')) {
+        card.classList.add('warning');
+      }
+    });
+    // 경고음 한 번만
+    if (!warningSounded) {
+      warningSounded = true;
+      playWarning();
+    }
+    // 시간 표시 빨간색
+    timeDisplay.classList.add('warning-time');
+  }
+}
+
+// ─── 타이머 1초 tick ─────────────────────────────────────
+function tick() {
+  if (isPaused) return;
+
+  remainSeconds--;
+  timeDisplay.textContent = formatTime(remainSeconds);
+
+  // 몇 초마다 캐릭터 1개 제거할지 계산
+  const interval = totalSeconds / totalChars;
+  // 이미 제거했어야 할 누적 캐릭터 수
+  const expectedGone = Math.floor((totalSeconds - remainSeconds) / interval);
+  const currentGone  = totalChars - charGrid.querySelectorAll('.char-card:not([style*="visibility: hidden"]):not(.leaving)').length;
+
+  if (expectedGone > currentGone) {
+    removeOneChar();
+  }
+
+  // 종료 체크
+  if (remainSeconds <= 0 && !doneTriggered) {
+    endTimer();
+  }
+}
+
+// ─── 타이머 종료 ─────────────────────────────────────────
+function endTimer() {
+  doneTriggered = true;
+  clearInterval(timerInterval);
+  timerInterval = null;
+  timeDisplay.textContent = '00:00';
+
+  // 남은 캐릭터 전부 제거
+  charGrid.querySelectorAll('.char-card:not([style*="visibility: hidden"])').forEach(card => {
+    card.style.visibility = 'hidden';
+  });
+
+  // 팡파레 + 완료 오버레이
+  playFanfare();
+  guideText.textContent = '모두 집에 갔어요! 우리도 정리 끝 👏';
+  guideText.classList.add('done');
+
+  setTimeout(() => {
+    doneOverlay.classList.add('visible');
+  }, 600);
+}
+
+// ─── 타이머 시작 ─────────────────────────────────────────
+function startTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(tick, 1000);
+}
+
+// ─── 설정 화면 → 타이머 화면 전환 ──────────────────────
+startBtn.addEventListener('click', () => {
+  // AudioContext: 사용자 제스처에서 초기화
+  ensureAudioCtx();
+
+  totalSeconds  = getSelectedSeconds();
+  remainSeconds = totalSeconds;
+  totalChars    = getCharCount(totalSeconds);
+  remainChars   = totalChars;
+  warningSounded = false;
+  doneTriggered  = false;
+  isPaused       = false;
+
+  // 그리드 생성
+  buildGrid(totalChars, selectedTheme);
+
+  // 시간 표시 초기화
+  timeDisplay.textContent = formatTime(remainSeconds);
+  timeDisplay.classList.remove('warning-time');
+  guideText.textContent = '친구들이 집에 가고 있어요 🏠 우리도 정리해요!';
+  guideText.classList.remove('done');
+  pauseBtn.textContent = '⏸';
+
+  // 화면 전환
+  setupScreen.classList.add('hidden');
+  timerScreen.classList.remove('hidden');
+  doneOverlay.classList.remove('visible');
+
+  // 타이머 시작
+  startTimer();
+});
+
+// ─── 일시정지 / 재시작 ───────────────────────────────────
+pauseBtn.addEventListener('click', () => {
+  isPaused = !isPaused;
+  pauseBtn.textContent = isPaused ? '▶' : '⏸';
+});
+
+// ─── 음소거 토글 ─────────────────────────────────────────
+muteBtn.addEventListener('click', () => {
+  isMuted = !isMuted;
+  muteBtn.textContent = isMuted ? '🔇' : '🔊';
+});
+
+// ─── 전체화면 토글 ───────────────────────────────────────
+fullscreenBtn.addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+});
+
+document.addEventListener('fullscreenchange', () => {
+  fullscreenBtn.textContent = document.fullscreenElement ? '⊡' : '⛶';
+});
+
+// ─── 처음으로 (설정 화면으로 되돌아가기) ─────────────────
+function goToSetup() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  doneOverlay.classList.remove('visible');
+  timerScreen.classList.add('hidden');
+  setupScreen.classList.remove('hidden');
+}
+
+resetBtn.addEventListener('click', goToSetup);
+doneRestartBtn.addEventListener('click', goToSetup);
+
+/* ===== 초기 로딩 완료 ===== */
+</script>
+</body>
+</html>

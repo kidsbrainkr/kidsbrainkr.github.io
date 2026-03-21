@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏠 집 찾기 게임 (만 3세)</title>
+<style>
+/* ===== CSS 변수 ===== */
+:root {
+  --bg:        #FFF8F0;
+  --accent:    #FF6B35;
+  --accent-dk: #E55A24;
+  --mint:      #4ECDC4;
+  --mint-dk:   #3BBDB4;
+  --ok:        #2ECC71;
+  --wrong:     #E74C3C;
+  --txt:       #333;
+  --txt-lt:    #888;
+  --card-bg:   #FFFFFF;
+  --sh:        0 4px 16px rgba(0,0,0,.12);
+  --sh2:       0 8px 32px rgba(0,0,0,.18);
+  --r:         16px;
+  --r-lg:      24px;
+  --font:      'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+}
+
+/* ===== 기본 리셋 ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 15% 15%, rgba(255,107,53,.07) 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(78,205,196,.07) 0%, transparent 45%);
+  color: var(--txt);
+  font-family: var(--font);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 16px 16px 48px;
+}
+
+/* ===== 화면 전환 ===== */
+.screen { display: none; width: 100%; max-width: 640px; margin: 0 auto; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ===== 공통 제목 ===== */
+.game-header {
+  text-align: center;
+  padding: 24px 0 18px;
+}
+.game-header h1 {
+  font-size: 2.2rem;
+  color: var(--accent);
+  text-shadow: 2px 3px 8px rgba(255,107,53,.25);
+  line-height: 1.2;
+}
+.game-header .sub {
+  color: var(--txt-lt);
+  font-size: 0.95rem;
+  margin-top: 6px;
+}
+
+/* ===== 진행 바 ===== */
+.progress-wrap {
+  margin: 0 0 20px;
+}
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--txt-lt);
+  margin-bottom: 6px;
+  padding: 0 2px;
+}
+.progress-bar {
+  height: 10px;
+  background: #E8E0D8;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--mint));
+  border-radius: 999px;
+  transition: width .4s ease;
+}
+
+/* ===== 질문 영역 (상단 동물/물건) ===== */
+.question-area {
+  background: var(--card-bg);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh2);
+  padding: 32px 24px 28px;
+  text-align: center;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+}
+/* 질문 카드 배경 장식 */
+.question-area::before {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(78,205,196,.12), transparent 70%);
+  border-radius: 50%;
+}
+.question-label {
+  font-size: 0.95rem;
+  color: var(--txt-lt);
+  font-weight: 600;
+  margin-bottom: 12px;
+  letter-spacing: .03em;
+}
+/* 동물/물건 이모지 크게 표시 */
+.question-emoji {
+  font-size: 5.5rem;
+  line-height: 1;
+  display: block;
+  margin: 0 auto 14px;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.15));
+  transition: transform .3s ease;
+  user-select: none;
+}
+.question-emoji.bounce {
+  animation: bounceQ .5s ease;
+}
+@keyframes bounceQ {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18) rotate(-3deg); }
+  70%  { transform: scale(.92) rotate(2deg); }
+  100% { transform: scale(1); }
+}
+.question-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.question-hint {
+  font-size: 1rem;
+  color: var(--txt-lt);
+}
+
+/* ===== 선택지 카드 3개 ===== */
+.choices-label {
+  font-size: 0.95rem;
+  color: var(--txt-lt);
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 14px;
+  letter-spacing: .03em;
+}
+.choices-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+/* 개별 선택지 카드 */
+.choice-card {
+  background: var(--card-bg);
+  border: 3px solid transparent;
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  padding: 22px 10px 18px;
+  cursor: pointer;
+  text-align: center;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.choice-card:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: var(--sh2);
+  border-color: var(--mint);
+}
+.choice-card:active {
+  transform: scale(.96);
+}
+/* 선택지 이모지 */
+.choice-emoji {
+  font-size: 3.8rem;
+  line-height: 1;
+  display: block;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.12));
+}
+/* 선택지 이름 텍스트 */
+.choice-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--txt);
+  line-height: 1.3;
+}
+
+/* ===== 정답 애니메이션 ===== */
+.choice-card.correct {
+  border-color: var(--ok);
+  background: linear-gradient(135deg, #F0FFF6, #E6FFF2);
+  animation: correctPop .5s ease forwards;
+}
+@keyframes correctPop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.15) rotate(-2deg); }
+  60%  { transform: scale(.95) rotate(1deg); }
+  100% { transform: scale(1.05); }
+}
+
+/* ===== 오답 흔들기 애니메이션 ===== */
+.choice-card.wrong {
+  border-color: var(--wrong);
+  background: linear-gradient(135deg, #FFF5F5, #FFE8E8);
+  animation: shakeBad .45s ease;
+}
+@keyframes shakeBad {
+  0%   { transform: translateX(0); }
+  15%  { transform: translateX(-9px) rotate(-2deg); }
+  35%  { transform: translateX(9px) rotate(2deg); }
+  55%  { transform: translateX(-6px) rotate(-1deg); }
+  75%  { transform: translateX(6px) rotate(1deg); }
+  90%  { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
+}
+
+/* ===== 정답 폭죽/파티클 ===== */
+.confetti-wrap {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 100;
+  overflow: hidden;
+}
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 12px; height: 12px;
+  border-radius: 3px;
+  opacity: 0;
+  animation: confettiFall 1.2s ease forwards;
+}
+@keyframes confettiFall {
+  0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
+  80%  { opacity: .8; }
+  100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+}
+
+/* ===== 정답 오버레이 메시지 ===== */
+.result-overlay {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: #fff;
+  border-radius: var(--r-lg);
+  box-shadow: 0 12px 48px rgba(0,0,0,.22);
+  padding: 28px 36px;
+  text-align: center;
+  z-index: 200;
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none;
+  min-width: 220px;
+}
+.result-overlay.show {
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: auto;
+}
+.result-overlay .result-emoji {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 10px;
+}
+.result-overlay .result-msg {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ===== 결과 화면 ===== */
+#screen-result {
+  align-items: center;
+}
+.result-header {
+  text-align: center;
+  padding: 32px 0 20px;
+}
+.result-header h2 {
+  font-size: 2.4rem;
+  color: var(--accent);
+  text-shadow: 2px 3px 8px rgba(255,107,53,.2);
+}
+.result-header .result-sub {
+  font-size: 1.1rem;
+  color: var(--txt-lt);
+  margin-top: 8px;
+}
+
+/* 별 표시 */
+.star-wrap {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 16px 0 24px;
+}
+.star {
+  font-size: 2.8rem;
+  filter: grayscale(1) opacity(.3);
+  transition: filter .3s ease;
+}
+.star.lit {
+  filter: grayscale(0) drop-shadow(0 2px 8px rgba(255,200,0,.5));
+  animation: starPop .4s ease;
+}
+@keyframes starPop {
+  0%   { transform: scale(0); }
+  60%  { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* 점수 카드 */
+.score-card {
+  background: var(--card-bg);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh2);
+  padding: 32px 40px;
+  text-align: center;
+  margin-bottom: 28px;
+  width: 100%;
+  max-width: 400px;
+}
+.score-num {
+  font-size: 4.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+.score-total {
+  font-size: 1.2rem;
+  color: var(--txt-lt);
+  margin-top: 6px;
+}
+.score-msg {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--mint-dk);
+  margin-top: 16px;
+}
+
+/* 리뷰 목록 */
+.review-list {
+  width: 100%;
+  max-width: 480px;
+  background: var(--card-bg);
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  padding: 20px 18px;
+  margin-bottom: 28px;
+}
+.review-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--txt);
+  margin-bottom: 14px;
+  text-align: center;
+}
+.review-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #F0EAE2;
+  font-size: 0.95rem;
+}
+.review-item:last-child { border-bottom: none; }
+.review-icon {
+  font-size: 1.5rem;
+  width: 30px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.review-arrow { color: var(--txt-lt); flex-shrink: 0; }
+.review-home {
+  font-size: 1.5rem;
+  width: 30px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.review-name { flex: 1; color: var(--txt); }
+.review-badge {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+/* ===== 버튼 공통 ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 999px;
+  padding: 16px 40px;
+  font-size: 1.15rem;
+  font-family: var(--font);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(0,0,0,.2); }
+.btn:active { transform: scale(.96); }
+.btn-accent {
+  background: linear-gradient(135deg, var(--accent), #FF8C5A);
+  color: #fff;
+}
+.btn-mint {
+  background: linear-gradient(135deg, var(--mint), #6EE7E0);
+  color: #fff;
+}
+.btn-outline {
+  background: #fff;
+  color: var(--accent);
+  border: 2.5px solid var(--accent);
+  box-shadow: none;
+}
+.btn-outline:hover { background: #FFF0EB; }
+
+/* ===== 반응형 (소형 화면) ===== */
+@media (max-width: 420px) {
+  .question-emoji { font-size: 4.5rem; }
+  .choice-emoji   { font-size: 3.2rem; }
+  .choice-card    { padding: 16px 6px 14px; }
+  .choice-name    { font-size: 0.88rem; }
+  .choices-grid   { gap: 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 게임 화면 ===== -->
+<div id="screen-game" class="screen active">
+
+  <!-- 제목 헤더 -->
+  <div class="game-header">
+    <h1>🏠 집을 찾아요!</h1>
+    <p class="sub">맞는 집을 골라보세요</p>
+  </div>
+
+  <!-- 진행 바 -->
+  <div class="progress-wrap">
+    <div class="progress-info">
+      <span id="prog-text">1 / 10</span>
+      <span id="prog-score">⭐ 0점</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="prog-fill" style="width:10%"></div>
+    </div>
+  </div>
+
+  <!-- 질문 영역: 동물/물건 크게 표시 -->
+  <div class="question-area">
+    <p class="question-label">누구의 집일까요?</p>
+    <span class="question-emoji" id="q-emoji">🐟</span>
+    <p class="question-name" id="q-name">물고기</p>
+    <p class="question-hint" id="q-hint">어디서 살까요?</p>
+  </div>
+
+  <!-- 선택지 3개 -->
+  <p class="choices-label">집을 골라봐요!</p>
+  <div class="choices-grid" id="choices-grid">
+    <!-- JS가 동적으로 생성 -->
+  </div>
+
+</div><!-- /screen-game -->
+
+
+<!-- ===== 결과 화면 ===== -->
+<div id="screen-result" class="screen">
+
+  <div class="result-header">
+    <h2 id="res-title">🎉 다 했어요!</h2>
+    <p class="result-sub" id="res-sub">정말 잘했어요!</p>
+  </div>
+
+  <!-- 별 3개 -->
+  <div class="star-wrap" id="star-wrap">
+    <span class="star" id="star1">⭐</span>
+    <span class="star" id="star2">⭐</span>
+    <span class="star" id="star3">⭐</span>
+  </div>
+
+  <!-- 점수 카드 -->
+  <div class="score-card">
+    <div class="score-num" id="res-score">0</div>
+    <div class="score-total">/ 10점</div>
+    <div class="score-msg" id="res-msg">훌륭해요!</div>
+  </div>
+
+  <!-- 문제별 리뷰 -->
+  <div class="review-list">
+    <p class="review-title">어디가 집일까요? 다시 볼게요</p>
+    <div id="review-items"><!-- JS 생성 --></div>
+  </div>
+
+  <!-- 다시하기 버튼 -->
+  <button class="btn btn-accent" id="btn-restart">
+    🔄 다시 하기
+  </button>
+
+</div><!-- /screen-result -->
+
+
+<!-- ===== 정답 오버레이 ===== -->
+<div class="result-overlay" id="result-overlay">
+  <span class="result-emoji" id="overlay-emoji">🎉</span>
+  <p class="result-msg" id="overlay-msg">정답!</p>
+</div>
+
+<!-- ===== 폭죽 컨테이너 ===== -->
+<div class="confetti-wrap" id="confetti-wrap"></div>
+
+
+<script>
+/* =====================================================
+   집 찾기 게임 — 만 3세용
+   짝 세트: 동물/물건 → 집/장소 (10쌍)
+   ===================================================== */
+
+/* ----- 10쌍 데이터 ----- */
+const PAIRS = [
+  { subject: '🐟', subName: '물고기',  subHint: '어디서 살까요?',
+    answer:  { emoji: '🌊', name: '바다' },
+    wrongs:  [
+      { emoji: '🌲', name: '숲' },
+      { emoji: '🌸', name: '꽃밭' },
+    ]
+  },
+  { subject: '🐦', subName: '새',       subHint: '어디가 집일까요?',
+    answer:  { emoji: '🪹', name: '둥지' },
+    wrongs:  [
+      { emoji: '🌊', name: '바다' },
+      { emoji: '🏠', name: '차고' },
+    ]
+  },
+  { subject: '🐝', subName: '꿀벌',    subHint: '꿀벌은 어디 살아요?',
+    answer:  { emoji: '🌸', name: '꽃밭' },
+    wrongs:  [
+      { emoji: '🌊', name: '바다' },
+      { emoji: '🌲', name: '숲' },
+    ]
+  },
+  { subject: '🐠', subName: '열대어',  subHint: '이 물고기 집은?',
+    answer:  { emoji: '🐠', name: '어항' },
+    wrongs:  [
+      { emoji: '🌿', name: '초원' },
+      { emoji: '⭐', name: '하늘' },
+    ]
+  },
+  { subject: '🚗', subName: '자동차',  subHint: '자동차는 어디 있어요?',
+    answer:  { emoji: '🏠', name: '차고' },
+    wrongs:  [
+      { emoji: '🌊', name: '바다' },
+      { emoji: '🪹', name: '둥지' },
+    ]
+  },
+  { subject: '🌙', subName: '달',      subHint: '달은 어디 있을까요?',
+    answer:  { emoji: '⭐', name: '하늘' },
+    wrongs:  [
+      { emoji: '🌍', name: '땅속' },
+      { emoji: '🌲', name: '숲' },
+    ]
+  },
+  { subject: '🐻', subName: '곰',      subHint: '곰은 어디 살아요?',
+    answer:  { emoji: '🌲', name: '숲' },
+    wrongs:  [
+      { emoji: '🌊', name: '바다' },
+      { emoji: '🌸', name: '꽃밭' },
+    ]
+  },
+  { subject: '🐬', subName: '돌고래',  subHint: '돌고래 집은 어디예요?',
+    answer:  { emoji: '🌊', name: '바다' },
+    wrongs:  [
+      { emoji: '🌲', name: '숲' },
+      { emoji: '🏠', name: '차고' },
+    ]
+  },
+  { subject: '🌱', subName: '새싹',    subHint: '씨앗은 어디서 자라요?',
+    answer:  { emoji: '🌍', name: '땅속' },
+    wrongs:  [
+      { emoji: '⭐', name: '하늘' },
+      { emoji: '🌊', name: '바다' },
+    ]
+  },
+  { subject: '🦁', subName: '사자',    subHint: '사자는 어디서 살까요?',
+    answer:  { emoji: '🌿', name: '초원' },
+    wrongs:  [
+      { emoji: '🌊', name: '바다' },
+      { emoji: '🪹', name: '둥지' },
+    ]
+  },
+];
+
+/* ----- 폭죽 색상 팔레트 ----- */
+const CONFETTI_COLORS = [
+  '#FF6B35','#FF8C5A','#4ECDC4','#2ECC71',
+  '#F7DC6F','#AF7AC5','#F1948A','#85C1E9',
+];
+
+/* =====================================================
+   Web Audio API — 효과음 생성
+   ===================================================== */
+let audioCtx = null;
+
+/* AudioContext는 첫 사용자 제스처 이후에 생성 */
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioCtx;
+}
+
+/* 단일 비프음 재생 헬퍼 */
+function playBeep(freq, duration, startTime, type = 'sine', gain = 0.35) {
+  const ctx = getAudioCtx();
+  const osc = ctx.createOscillator();
+  const vol = ctx.createGain();
+  osc.connect(vol);
+  vol.connect(ctx.destination);
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, startTime);
+  vol.gain.setValueAtTime(gain, startTime);
+  vol.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  osc.start(startTime);
+  osc.stop(startTime + duration + 0.05);
+}
+
+/* 정답음 — 3음 상승 (도·미·솔) */
+function playCorrect() {
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+  playBeep(523.25, 0.18, now,        'triangle', 0.32); // 도
+  playBeep(659.25, 0.18, now + 0.17, 'triangle', 0.32); // 미
+  playBeep(783.99, 0.28, now + 0.34, 'triangle', 0.4 ); // 솔
+}
+
+/* 오답음 — 2음 하강 (낮은 소리) */
+function playWrong() {
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+  playBeep(300, 0.18, now,       'sawtooth', 0.25);
+  playBeep(220, 0.22, now + 0.2, 'sawtooth', 0.2 );
+}
+
+/* 완료 팡파레 — 짧은 5음 멜로디 */
+function playFanfare() {
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+  // 도·도·솔·솔·라
+  const melody = [
+    { f: 523.25, d: 0.18, t: 0    },
+    { f: 523.25, d: 0.18, t: 0.20 },
+    { f: 783.99, d: 0.18, t: 0.40 },
+    { f: 783.99, d: 0.18, t: 0.60 },
+    { f: 880.00, d: 0.35, t: 0.80 },
+  ];
+  melody.forEach(n => playBeep(n.f, n.d, now + n.t, 'triangle', 0.38));
+}
+
+
+/* =====================================================
+   게임 상태 변수
+   ===================================================== */
+let questions   = [];   // 셔플된 문제 배열
+let current     = 0;    // 현재 문제 인덱스 (0~9)
+let score       = 0;    // 맞춘 개수
+let answered    = false; // 현재 문제 응답 여부
+let reviewLog   = [];   // [{pair, correct}] 리뷰용 기록
+
+
+/* =====================================================
+   배열 셔플 (Fisher-Yates)
+   ===================================================== */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+
+/* =====================================================
+   게임 초기화 및 시작
+   ===================================================== */
+function initGame() {
+  questions  = shuffle(PAIRS);      // 10문제 랜덤 순서
+  current    = 0;
+  score      = 0;
+  answered   = false;
+  reviewLog  = [];
+  showQuestion();
+}
+
+
+/* =====================================================
+   문제 화면 표시
+   ===================================================== */
+function showQuestion() {
+  const pair = questions[current];
+
+  /* --- 진행바 업데이트 --- */
+  const pct = ((current + 1) / questions.length) * 100;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-text').textContent =
+    `${current + 1} / ${questions.length}`;
+  document.getElementById('prog-score').textContent = `⭐ ${score}점`;
+
+  /* --- 질문 이모지 업데이트 --- */
+  const qEmoji = document.getElementById('q-emoji');
+  qEmoji.textContent = pair.subject;
+  qEmoji.classList.remove('bounce');
+  // 강제 리플로우 후 애니메이션 재실행
+  void qEmoji.offsetWidth;
+  qEmoji.classList.add('bounce');
+
+  document.getElementById('q-name').textContent  = pair.subName;
+  document.getElementById('q-hint').textContent  = pair.subHint;
+
+  /* --- 선택지 카드 생성 --- */
+  // 정답 1개 + 오답 2개를 합쳐 셔플
+  const choices = shuffle([
+    { ...pair.answer, isCorrect: true },
+    { ...pair.wrongs[0], isCorrect: false },
+    { ...pair.wrongs[1], isCorrect: false },
+  ]);
+
+  const grid = document.getElementById('choices-grid');
+  grid.innerHTML = '';
+
+  choices.forEach(choice => {
+    const card = document.createElement('div');
+    card.className = 'choice-card';
+    card.innerHTML = `
+      <span class="choice-emoji">${choice.emoji}</span>
+      <span class="choice-name">${choice.name}</span>
+    `;
+    card.addEventListener('click', () => handleChoice(card, choice.isCorrect));
+    grid.appendChild(card);
+  });
+
+  answered = false;
+}
+
+
+/* =====================================================
+   선택지 클릭 처리
+   ===================================================== */
+function handleChoice(card, isCorrect) {
+  if (answered) return; // 이미 응답했으면 무시
+  answered = true;
+
+  if (isCorrect) {
+    /* ---- 정답 처리 ---- */
+    card.classList.add('correct');
+    score++;
+    playCorrect();
+    spawnConfetti(20);
+
+    // 리뷰 기록
+    reviewLog.push({ pair: questions[current], correct: true });
+
+    // 잠시 후 다음 문제로 이동 (1.1초)
+    setTimeout(nextQuestion, 1100);
+
+  } else {
+    /* ---- 오답 처리 ---- */
+    card.classList.add('wrong');
+    playWrong();
+
+    // 리뷰 기록
+    reviewLog.push({ pair: questions[current], correct: false });
+
+    // 흔들기 끝나면 다시 선택 가능 (0.8초 후)
+    setTimeout(() => {
+      card.classList.remove('wrong');
+      answered = false;
+    }, 800);
+  }
+}
+
+
+/* =====================================================
+   다음 문제 또는 결과 화면으로
+   ===================================================== */
+function nextQuestion() {
+  current++;
+  if (current < questions.length) {
+    showQuestion();
+  } else {
+    showResult();
+  }
+}
+
+
+/* =====================================================
+   폭죽 파티클 생성
+   ===================================================== */
+function spawnConfetti(count) {
+  const wrap = document.getElementById('confetti-wrap');
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+    p.style.cssText = `
+      left: ${10 + Math.random() * 80}%;
+      background: ${color};
+      width:  ${8 + Math.random() * 8}px;
+      height: ${8 + Math.random() * 8}px;
+      border-radius: ${Math.random() > .5 ? '50%' : '3px'};
+      animation-delay: ${Math.random() * 0.3}s;
+      animation-duration: ${0.9 + Math.random() * 0.5}s;
+    `;
+    wrap.appendChild(p);
+    // 애니메이션 끝나면 DOM에서 제거
+    p.addEventListener('animationend', () => p.remove());
+  }
+}
+
+
+/* =====================================================
+   결과 화면 표시
+   ===================================================== */
+function showResult() {
+  playFanfare();
+  spawnConfetti(50); // 완료 팡파레 + 큰 폭죽
+
+  /* 화면 전환 */
+  document.getElementById('screen-game').classList.remove('active');
+  const resultScreen = document.getElementById('screen-result');
+  resultScreen.classList.add('active');
+
+  /* 점수 표시 */
+  document.getElementById('res-score').textContent = score;
+
+  /* 점수별 메시지 */
+  let title, sub, msg;
+  if (score === 10) {
+    title = '🏆 완벽해요!';
+    sub   = '10개 모두 맞혔어요! 대단해요!';
+    msg   = '최고야! 정말 훌륭해요! 🌟';
+  } else if (score >= 7) {
+    title = '🎉 잘했어요!';
+    sub   = `${score}개 맞혔어요! 멋져요!`;
+    msg   = '조금만 더 하면 완벽해요!';
+  } else if (score >= 4) {
+    title = '😊 좋아요!';
+    sub   = `${score}개 맞혔어요!`;
+    msg   = '한 번 더 해보면 더 잘할 수 있어요!';
+  } else {
+    title = '🌈 해봤어요!';
+    sub   = `${score}개 맞혔어요! 다시 해봐요!`;
+    msg   = '다시 해보면 더 잘할 수 있어요!';
+  }
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-sub').textContent   = sub;
+  document.getElementById('res-msg').textContent   = msg;
+
+  /* 별 점등 (10개 기준 → 별 3개) */
+  setTimeout(() => litStars(score), 400);
+
+  /* 리뷰 목록 생성 */
+  buildReview();
+}
+
+
+/* =====================================================
+   별 점등 애니메이션
+   ===================================================== */
+function litStars(sc) {
+  // 10점 → 별3, 7~9 → 별2, 4~6 → 별1, 0~3 → 별0
+  const count = sc === 10 ? 3 : sc >= 7 ? 2 : sc >= 4 ? 1 : 0;
+  const ids = ['star1', 'star2', 'star3'];
+  ids.forEach((id, idx) => {
+    if (idx < count) {
+      setTimeout(() => {
+        document.getElementById(id).classList.add('lit');
+      }, idx * 250);
+    }
+  });
+}
+
+
+/* =====================================================
+   리뷰 목록 생성 (정답 확인 리스트)
+   ===================================================== */
+function buildReview() {
+  const container = document.getElementById('review-items');
+  container.innerHTML = '';
+
+  // 모든 문제 쌍 순서대로 (틀린 것 강조)
+  questions.forEach((pair, i) => {
+    const log    = reviewLog[i];
+    const isOk   = log ? log.correct : false;
+    const badge  = isOk ? '✅' : '❌';
+
+    const item = document.createElement('div');
+    item.className = 'review-item';
+    item.innerHTML = `
+      <span class="review-icon">${pair.subject}</span>
+      <span class="review-arrow">→</span>
+      <span class="review-home">${pair.answer.emoji}</span>
+      <span class="review-name">${pair.subName} → ${pair.answer.name}</span>
+      <span class="review-badge">${badge}</span>
+    `;
+    container.appendChild(item);
+  });
+}
+
+
+/* =====================================================
+   버튼 이벤트 바인딩
+   ===================================================== */
+document.getElementById('btn-restart').addEventListener('click', () => {
+  /* 결과 화면 닫고 게임 화면 열기 */
+  document.getElementById('screen-result').classList.remove('active');
+  document.getElementById('screen-game').classList.add('active');
+  initGame();
+});
+
+
+/* =====================================================
+   게임 최초 시작
+   ===================================================== */
+initGame();
+
+</script>
+</body>
+</html>

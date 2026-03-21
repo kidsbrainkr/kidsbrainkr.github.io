@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>규칙 바꾸기 분류 게임 🎮</title>
+  <style>
+    /* ===== CSS 변수 (디자인 토큰) ===== */
+    :root {
+      --accent:  #FF6B35;
+      --mint:    #4ECDC4;
+      --bg:      #FFF8F0;
+      --shadow:  rgba(0,0,0,0.15);
+      --radius:  20px;
+      --trans:   0.35s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ===== 리셋 & 기본 ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      font-family: 'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ===== 전체 레이아웃 ===== */
+    #app {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      padding: 12px 16px 16px;
+      gap: 10px;
+    }
+
+    /* ===== 상단: 현재 규칙 배너 ===== */
+    #rule-banner {
+      width: 100%;
+      max-width: 560px;
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      text-align: center;
+      font-size: clamp(1.3rem, 4vw, 1.9rem);
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      color: #fff;
+      background: var(--accent);
+      box-shadow: 0 4px 16px var(--shadow);
+      transition: background var(--trans), transform var(--trans);
+      position: relative;
+    }
+    #rule-banner.shape-mode { background: var(--mint); }
+    #rule-banner.bump {
+      animation: bannerBump 0.4s ease;
+    }
+    @keyframes bannerBump {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    /* ===== 진행 표시줄 ===== */
+    #progress-bar {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.95rem;
+      color: #666;
+      font-weight: 600;
+    }
+    #progress-track {
+      flex: 1;
+      height: 10px;
+      background: #E0D8D0;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    #progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #FFB347);
+      border-radius: 99px;
+      transition: width 0.5s ease;
+      width: 0%;
+    }
+
+    /* ===== 중앙: 현재 카드 영역 ===== */
+    #card-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+    #current-card {
+      width: clamp(130px, 28vw, 190px);
+      height: clamp(130px, 28vw, 190px);
+      border-radius: var(--radius);
+      border: 10px solid #ccc;   /* JS가 실제 색으로 교체 */
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(3.5rem, 12vw, 6rem);
+      box-shadow: 0 8px 28px var(--shadow);
+      cursor: default;
+      transition: transform var(--trans), opacity var(--trans);
+    }
+    /* 카드 진입 애니메이션 */
+    #current-card.enter {
+      animation: cardEnter 0.45s ease forwards;
+    }
+    @keyframes cardEnter {
+      from { transform: scale(0.6) rotate(-6deg); opacity: 0; }
+      to   { transform: scale(1) rotate(0deg);   opacity: 1; }
+    }
+    /* 정답/오답 흔들기 */
+    #current-card.shake {
+      animation: shakeCard 0.4s ease;
+    }
+    @keyframes shakeCard {
+      0%,100% { transform: translateX(0); }
+      20%     { transform: translateX(-14px); }
+      40%     { transform: translateX(14px); }
+      60%     { transform: translateX(-10px); }
+      80%     { transform: translateX(10px); }
+    }
+
+    /* ===== 하단: 분류 박스들 ===== */
+    #boxes-area {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+    .drop-box {
+      flex: 1;
+      max-width: 160px;
+      min-height: clamp(90px, 20vw, 130px);
+      border-radius: var(--radius);
+      border: 4px dashed #bbb;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: clamp(2rem, 7vw, 3.2rem);
+      box-shadow: 0 4px 16px var(--shadow);
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
+      position: relative;
+      overflow: hidden;
+    }
+    .drop-box:active,
+    .drop-box.hover {
+      transform: scale(1.07);
+      box-shadow: 0 8px 28px var(--shadow);
+      background: #FFFDE7;
+    }
+    .drop-box .box-label {
+      font-size: clamp(0.65rem, 2.2vw, 0.85rem);
+      font-weight: 700;
+      color: #555;
+      text-align: center;
+      line-height: 1.2;
+    }
+    /* 박스 정답 빛 효과 */
+    .drop-box.correct-flash {
+      animation: correctFlash 0.55s ease forwards;
+    }
+    @keyframes correctFlash {
+      0%   { background: #fff; }
+      30%  { background: #CCFFCC; transform: scale(1.12); }
+      100% { background: #fff; transform: scale(1); }
+    }
+    /* 박스 오답 효과 */
+    .drop-box.wrong-flash {
+      animation: wrongFlash 0.55s ease forwards;
+    }
+    @keyframes wrongFlash {
+      0%   { background: #fff; }
+      30%  { background: #FFCCCC; transform: scale(0.94); }
+      100% { background: #fff; transform: scale(1); }
+    }
+
+    /* ===== 점수 표시 ===== */
+    #score-display {
+      font-size: clamp(1rem, 3vw, 1.3rem);
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+
+    /* ===== 규칙 전환 오버레이 ===== */
+    #rule-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #rule-overlay.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+    #rule-overlay .overlay-bg {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px);
+    }
+    #rule-overlay .overlay-box {
+      position: relative;
+      z-index: 1;
+      background: #fff;
+      border-radius: 28px;
+      padding: 36px 44px;
+      text-align: center;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.25);
+      animation: overlayPop 0.5s cubic-bezier(.17,.67,.36,1.3) forwards;
+    }
+    @keyframes overlayPop {
+      from { transform: scale(0.6); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    #rule-overlay .overlay-title {
+      font-size: clamp(1.6rem, 5vw, 2.5rem);
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+    #rule-overlay .overlay-new-rule {
+      font-size: clamp(1.2rem, 3.5vw, 1.8rem);
+      font-weight: 700;
+      color: var(--accent);
+    }
+    #rule-overlay .overlay-new-rule.shape { color: var(--mint); }
+    #rule-overlay .overlay-btn {
+      margin-top: 20px;
+      padding: 14px 36px;
+      border: none;
+      border-radius: 50px;
+      font-size: 1.2rem;
+      font-weight: 900;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(255,107,53,0.4);
+      transition: transform 0.15s ease;
+    }
+    #rule-overlay .overlay-btn:active { transform: scale(0.93); }
+
+    /* ===== 완료 화면 ===== */
+    #complete-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      background: linear-gradient(135deg, #FFF8F0 0%, #FFE5D9 100%);
+    }
+    #complete-screen.visible { display: flex; }
+    #complete-screen .complete-emoji {
+      font-size: clamp(4rem, 16vw, 8rem);
+      animation: spin 1.5s ease-in-out;
+    }
+    @keyframes spin {
+      0%   { transform: rotate(0deg) scale(0.5); }
+      60%  { transform: rotate(380deg) scale(1.15); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+    #complete-screen h1 {
+      font-size: clamp(1.8rem, 6vw, 3rem);
+      font-weight: 900;
+      color: var(--accent);
+      text-align: center;
+    }
+    #complete-screen .final-score {
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      font-weight: 700;
+      color: #444;
+    }
+    #complete-screen .stars-row {
+      display: flex;
+      gap: 8px;
+      font-size: clamp(2rem, 8vw, 3.5rem);
+    }
+    .star-item { animation: starPop 0.4s ease both; }
+    .star-item:nth-child(1) { animation-delay: 0.2s; }
+    .star-item:nth-child(2) { animation-delay: 0.45s; }
+    .star-item:nth-child(3) { animation-delay: 0.7s; }
+    @keyframes starPop {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    #complete-screen .restart-btn {
+      padding: 16px 44px;
+      border: none;
+      border-radius: 50px;
+      font-size: 1.3rem;
+      font-weight: 900;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(255,107,53,0.4);
+      transition: transform 0.15s ease;
+    }
+    #complete-screen .restart-btn:active { transform: scale(0.93); }
+
+    /* ===== 화면 번쩍 효과 (규칙 전환 시) ===== */
+    #flash-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      pointer-events: none;
+      opacity: 0;
+    }
+    #flash-overlay.flash {
+      animation: fullFlash 0.6s ease forwards;
+    }
+    @keyframes fullFlash {
+      0%   { opacity: 0; }
+      20%  { opacity: 0.7; }
+      100% { opacity: 0; }
+    }
+
+    /* ===== 피드백 텍스트 ===== */
+    #feedback-text {
+      min-height: 2rem;
+      font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+      font-weight: 800;
+      text-align: center;
+      transition: opacity 0.3s ease;
+    }
+    #feedback-text.correct { color: #2ECC71; }
+    #feedback-text.wrong   { color: #E74C3C; }
+    #feedback-text.hidden  { opacity: 0; }
+  </style>
+</head>
+<body>
+
+<!-- 화면 번쩍 오버레이 (규칙 전환) -->
+<div id="flash-overlay"></div>
+
+<!-- 규칙 전환 오버레이 팝업 -->
+<div id="rule-overlay" role="dialog" aria-modal="true" aria-label="규칙 변경 알림">
+  <div class="overlay-bg"></div>
+  <div class="overlay-box">
+    <div class="overlay-title">🔔 규칙이 바뀌었어요!</div>
+    <div id="overlay-rule-text" class="overlay-new-rule"></div>
+    <button class="overlay-btn" id="overlay-ok-btn">알았어요! ✅</button>
+  </div>
+</div>
+
+<!-- 완료 화면 -->
+<div id="complete-screen" role="dialog" aria-modal="true" aria-label="게임 완료">
+  <div class="complete-emoji">🎉</div>
+  <h1>모두 완료했어요!<br>정말 잘했어요! 🥳</h1>
+  <div class="stars-row">
+    <span class="star-item">⭐</span>
+    <span class="star-item">⭐</span>
+    <span class="star-item">⭐</span>
+  </div>
+  <div class="final-score" id="final-score-text"></div>
+  <button class="restart-btn" id="restart-btn">다시 하기 🔄</button>
+</div>
+
+<!-- 메인 앱 -->
+<div id="app">
+
+  <!-- 현재 규칙 배너 -->
+  <div id="rule-banner">🎨 색깔로 분류해요!</div>
+
+  <!-- 진행 표시줄 -->
+  <div id="progress-bar">
+    <span id="progress-label">1라운드 · 1/6</span>
+    <div id="progress-track">
+      <div id="progress-fill"></div>
+    </div>
+    <span id="score-display">🏆 0점</span>
+  </div>
+
+  <!-- 현재 카드 -->
+  <div id="card-area">
+    <div id="current-card">❓</div>
+  </div>
+
+  <!-- 피드백 텍스트 -->
+  <div id="feedback-text" class="hidden"> </div>
+
+  <!-- 분류 박스 -->
+  <div id="boxes-area"></div>
+
+</div>
+
+<script>
+/* =============================================================
+   만 5세용 규칙 바꾸기 분류 게임 — 메인 스크립트
+   라운드 순서: 색깔 → 모양 → 색깔
+   라운드당 6문제 / 총 3라운드 18문제
+============================================================= */
+
+// ─── 게임 데이터 정의 ─────────────────────────────────────────
+
+// 카드 색깔 정보 (CSS border 색 + 레이블)
+const COLORS = {
+  red:    { border: '#E74C3C', label: '빨강', emoji: '🔴' },
+  blue:   { border: '#3498DB', label: '파랑', emoji: '🔵' },
+  yellow: { border: '#F1C40F', label: '노랑', emoji: '🟡' },
+};
+
+// 카드 모양 정보 (이모지 + 레이블 + 모양 키)
+const SHAPES = {
+  star:   { emojis: ['⭐','🌟','✨'], label: '별',  emoji: '⭐' },
+  circle: { emojis: ['🔴','🔵','⚪'], label: '원',  emoji: '🔵' },
+};
+
+// 분류 기준 정의
+const RULE_COLOR = 'color';
+const RULE_SHAPE = 'shape';
+
+// 라운드 순서: 색깔, 모양, 색깔
+const ROUND_RULES = [RULE_COLOR, RULE_SHAPE, RULE_COLOR];
+
+// 박스 레이아웃 정의
+const BOXES_CONFIG = {
+  [RULE_COLOR]: [
+    { key: 'red',    label: '빨강\n상자', emoji: '🔴', borderColor: '#E74C3C' },
+    { key: 'blue',   label: '파랑\n상자', emoji: '🔵', borderColor: '#3498DB' },
+    { key: 'yellow', label: '노랑\n상자', emoji: '🟡', borderColor: '#F1C40F' },
+  ],
+  [RULE_SHAPE]: [
+    { key: 'star',   label: '별\n상자',  emoji: '⭐', borderColor: '#F39C12' },
+    { key: 'circle', label: '원\n상자',  emoji: '🔵', borderColor: '#9B59B6' },
+  ],
+};
+
+// 규칙 배너 텍스트
+const RULE_TEXTS = {
+  [RULE_COLOR]: '🎨 색깔로 분류해요!',
+  [RULE_SHAPE]: '⭐ 모양으로 분류해요!',
+};
+
+// ─── 게임 카드 생성 함수 ──────────────────────────────────────
+
+/**
+ * 카드 1장을 생성한다.
+ * @param {string} colorKey  - 'red' | 'blue' | 'yellow'
+ * @param {string} shapeKey  - 'star' | 'circle'
+ * @param {number} emojiIdx  - 해당 모양의 이모지 인덱스 (0~2)
+ */
+function makeCard(colorKey, shapeKey, emojiIdx) {
+  return {
+    colorKey,
+    shapeKey,
+    emoji: SHAPES[shapeKey].emojis[emojiIdx],
+    border: COLORS[colorKey].border,
+  };
+}
+
+/**
+ * 라운드 1장에 사용할 카드 6개를 무작위 생성 (색깔·모양 균등 분포)
+ */
+function generateRoundCards() {
+  // 가능한 모든 조합 목록 (색3 × 모양2 = 6 → 딱 맞음)
+  const combos = [];
+  const colorKeys  = Object.keys(COLORS);   // ['red','blue','yellow']
+  const shapeKeys  = Object.keys(SHAPES);   // ['star','circle']
+  colorKeys.forEach(c => {
+    shapeKeys.forEach(s => {
+      const idxPool = [0, 1, 2];
+      const idx = idxPool[Math.floor(Math.random() * idxPool.length)];
+      combos.push(makeCard(c, s, idx));
+    });
+  });
+  // 순서 무작위 섞기 (Fisher-Yates)
+  for (let i = combos.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [combos[i], combos[j]] = [combos[j], combos[i]];
+  }
+  return combos; // 6장
+}
+
+// ─── Web Audio API 효과음 ─────────────────────────────────────
+
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+/** AudioContext를 첫 인터랙션 후 초기화한다 */
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+/**
+ * 간단한 톤 재생 유틸
+ * @param {number[]} freqs  - 주파수 배열 (화음 또는 시퀀스)
+ * @param {number}   dur    - 각 음 길이(초)
+ * @param {'seq'|'chord'} mode - 'seq': 순차, 'chord': 동시
+ * @param {string}   type   - OscillatorType
+ */
+function playTones(freqs, dur = 0.15, mode = 'seq', type = 'sine') {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  freqs.forEach((f, i) => {
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = type;
+    osc.frequency.value = f;
+    const start = mode === 'seq' ? now + i * dur : now;
+    gain.gain.setValueAtTime(0.28, start);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + dur * 0.95);
+    osc.start(start);
+    osc.stop(start + dur);
+  });
+}
+
+/** 정답 효과음 — 밝고 경쾌한 상승 3음 */
+function sfxCorrect() {
+  ensureAudio();
+  playTones([523, 659, 784], 0.13, 'seq', 'sine');
+}
+
+/** 오답 효과음 — 낮은 2음 */
+function sfxWrong() {
+  ensureAudio();
+  playTones([330, 220], 0.18, 'seq', 'sawtooth');
+}
+
+/** 규칙 전환 특별음 — 빠른 계단식 + 화음 */
+function sfxRuleChange() {
+  ensureAudio();
+  // 상승 계단
+  playTones([261, 329, 392, 523, 659], 0.1, 'seq', 'triangle');
+  // 0.6초 후 화음 강조
+  setTimeout(() => {
+    if (!audioCtx) return;
+    playTones([523, 659, 784], 0.3, 'chord', 'sine');
+  }, 600);
+}
+
+/** 완료 팡파레 — 화려한 멜로디 */
+function sfxFanfare() {
+  ensureAudio();
+  const notes = [523, 659, 784, 1047, 784, 1047, 1175, 1047];
+  playTones(notes, 0.15, 'seq', 'sine');
+}
+
+// ─── 게임 상태 ────────────────────────────────────────────────
+
+let roundIndex   = 0;  // 현재 라운드 인덱스 (0~2)
+let cardIndex    = 0;  // 라운드 내 카드 인덱스 (0~5)
+let score        = 0;  // 누적 점수
+let totalQ       = 0;  // 전체 문제 번호 (0~17)
+let roundCards   = []; // 현재 라운드 카드 배열 (6장)
+let busy         = false; // 처리 중 플래그 (중복 클릭 방지)
+
+// ─── DOM 참조 ─────────────────────────────────────────────────
+const elRuleBanner    = document.getElementById('rule-banner');
+const elProgressLabel = document.getElementById('progress-label');
+const elProgressFill  = document.getElementById('progress-fill');
+const elScoreDisplay  = document.getElementById('score-display');
+const elCurrentCard   = document.getElementById('current-card');
+const elFeedback      = document.getElementById('feedback-text');
+const elBoxesArea     = document.getElementById('boxes-area');
+const elRuleOverlay   = document.getElementById('rule-overlay');
+const elOverlayRule   = document.getElementById('overlay-rule-text');
+const elOverlayOkBtn  = document.getElementById('overlay-ok-btn');
+const elCompleteScreen= document.getElementById('complete-screen');
+const elFinalScore    = document.getElementById('final-score-text');
+const elRestartBtn    = document.getElementById('restart-btn');
+const elFlashOverlay  = document.getElementById('flash-overlay');
+
+// ─── 게임 초기화 ──────────────────────────────────────────────
+
+function initGame() {
+  roundIndex = 0;
+  cardIndex  = 0;
+  score      = 0;
+  totalQ     = 0;
+  busy       = false;
+  elCompleteScreen.classList.remove('visible');
+  startRound(0, false); // 첫 라운드는 오버레이 없이 시작
+}
+
+// ─── 라운드 시작 ──────────────────────────────────────────────
+
+/**
+ * @param {number}  rIdx        - 라운드 인덱스
+ * @param {boolean} showOverlay - 규칙 전환 오버레이 표시 여부
+ */
+function startRound(rIdx, showOverlay) {
+  roundIndex = rIdx;
+  cardIndex  = 0;
+  roundCards = generateRoundCards();
+
+  const rule = ROUND_RULES[rIdx];
+
+  // 배너 업데이트
+  updateRuleBanner(rule);
+
+  // 분류 박스 렌더링
+  renderBoxes(rule);
+
+  if (showOverlay) {
+    // 화면 번쩍 + 오버레이 표시
+    triggerFlash(rule);
+    sfxRuleChange();
+    showRuleOverlay(rule);
+  } else {
+    // 첫 라운드는 바로 카드 표시
+    showNextCard();
+  }
+}
+
+/** 규칙 배너 텍스트 & 스타일 업데이트 */
+function updateRuleBanner(rule) {
+  elRuleBanner.textContent = RULE_TEXTS[rule];
+  elRuleBanner.classList.toggle('shape-mode', rule === RULE_SHAPE);
+  // 배너 흔들기 애니메이션
+  elRuleBanner.classList.remove('bump');
+  void elRuleBanner.offsetWidth; // reflow 강제
+  elRuleBanner.classList.add('bump');
+}
+
+// ─── 화면 번쩍 효과 ───────────────────────────────────────────
+
+function triggerFlash(rule) {
+  // 규칙에 따라 색깔 다르게
+  elFlashOverlay.style.background = rule === RULE_SHAPE
+    ? 'rgba(78,205,196,0.5)'
+    : 'rgba(255,107,53,0.5)';
+  elFlashOverlay.classList.remove('flash');
+  void elFlashOverlay.offsetWidth;
+  elFlashOverlay.classList.add('flash');
+}
+
+// ─── 규칙 전환 오버레이 ───────────────────────────────────────
+
+function showRuleOverlay(rule) {
+  busy = true;
+  elOverlayRule.textContent = RULE_TEXTS[rule];
+  elOverlayRule.classList.toggle('shape', rule === RULE_SHAPE);
+  elRuleOverlay.classList.add('visible');
+}
+
+function hideRuleOverlay() {
+  elRuleOverlay.classList.remove('visible');
+  busy = false;
+  showNextCard(); // 오버레이 닫은 뒤 카드 표시
+}
+
+// 오버레이 확인 버튼
+elOverlayOkBtn.addEventListener('click', () => {
+  ensureAudio();
+  hideRuleOverlay();
+});
+
+// ─── 분류 박스 렌더링 ─────────────────────────────────────────
+
+function renderBoxes(rule) {
+  elBoxesArea.innerHTML = '';
+  const configs = BOXES_CONFIG[rule];
+  configs.forEach(cfg => {
+    const box = document.createElement('div');
+    box.className = 'drop-box';
+    box.dataset.key = cfg.key;
+    box.style.borderColor = cfg.borderColor;
+
+    // 이모지
+    const emojiEl = document.createElement('div');
+    emojiEl.textContent = cfg.emoji;
+    emojiEl.setAttribute('aria-hidden', 'true');
+
+    // 레이블
+    const labelEl = document.createElement('div');
+    labelEl.className = 'box-label';
+    labelEl.textContent = cfg.label;
+
+    box.appendChild(emojiEl);
+    box.appendChild(labelEl);
+
+    // 클릭 이벤트
+    box.addEventListener('click', () => onBoxClick(cfg.key, box));
+    // 터치 피드백
+    box.addEventListener('touchstart', () => box.classList.add('hover'), { passive: true });
+    box.addEventListener('touchend',   () => box.classList.remove('hover'), { passive: true });
+
+    elBoxesArea.appendChild(box);
+  });
+}
+
+// ─── 카드 표시 ────────────────────────────────────────────────
+
+function showNextCard() {
+  if (cardIndex >= roundCards.length) {
+    // 이 라운드 카드 소진 → 다음 라운드 또는 완료
+    onRoundEnd();
+    return;
+  }
+
+  const card = roundCards[cardIndex];
+
+  // 진행 표시줄 업데이트
+  updateProgress();
+
+  // 카드 DOM 업데이트
+  elCurrentCard.textContent = card.emoji;
+  elCurrentCard.style.borderColor = card.border;
+
+  // 진입 애니메이션
+  elCurrentCard.classList.remove('enter', 'shake');
+  void elCurrentCard.offsetWidth;
+  elCurrentCard.classList.add('enter');
+
+  // 피드백 숨기기
+  hideFeedback();
+}
+
+/** 진행 표시줄 & 점수 업데이트 */
+function updateProgress() {
+  const roundNum  = roundIndex + 1;
+  const cardNum   = cardIndex + 1;
+  const totalDone = roundIndex * 6 + cardIndex;
+  const totalAll  = 18;
+  const pct       = (totalDone / totalAll) * 100;
+
+  elProgressLabel.textContent = `${roundNum}라운드 · ${cardNum}/6`;
+  elProgressFill.style.width  = `${pct}%`;
+  elScoreDisplay.textContent  = `🏆 ${score}점`;
+}
+
+// ─── 박스 클릭 처리 ───────────────────────────────────────────
+
+function onBoxClick(selectedKey, boxEl) {
+  if (busy) return;
+  ensureAudio();
+
+  const rule = ROUND_RULES[roundIndex];
+  const card = roundCards[cardIndex];
+
+  // 정답 키 계산
+  const correctKey = rule === RULE_COLOR ? card.colorKey : card.shapeKey;
+  const isCorrect  = selectedKey === correctKey;
+
+  busy = true; // 다음 카드 전환 전까지 입력 차단
+
+  if (isCorrect) {
+    // ── 정답 처리 ──
+    score += 10;
+    sfxCorrect();
+    showFeedback('⭕ 정답이에요!', 'correct');
+    boxEl.classList.add('correct-flash');
+    setTimeout(() => boxEl.classList.remove('correct-flash'), 600);
+
+    cardIndex++;
+    totalQ++;
+
+    setTimeout(() => {
+      busy = false;
+      showNextCard();
+    }, 700);
+
+  } else {
+    // ── 오답 처리 ──
+    sfxWrong();
+    showFeedback('❌ 다시 해봐요!', 'wrong');
+
+    // 카드 흔들기
+    elCurrentCard.classList.remove('shake');
+    void elCurrentCard.offsetWidth;
+    elCurrentCard.classList.add('shake');
+
+    // 오답 박스 빨간 깜짝
+    boxEl.classList.add('wrong-flash');
+    setTimeout(() => boxEl.classList.remove('wrong-flash'), 600);
+
+    setTimeout(() => {
+      busy = false;
+      hideFeedback();
+    }, 800);
+  }
+}
+
+// ─── 피드백 텍스트 ────────────────────────────────────────────
+
+function showFeedback(text, type) {
+  elFeedback.textContent = text;
+  elFeedback.className   = type; // 'correct' or 'wrong'
+}
+
+function hideFeedback() {
+  elFeedback.textContent = ' ';
+  elFeedback.className   = 'hidden';
+}
+
+// ─── 라운드 종료 ──────────────────────────────────────────────
+
+function onRoundEnd() {
+  const nextRound = roundIndex + 1;
+
+  if (nextRound >= ROUND_RULES.length) {
+    // 모든 라운드 완료
+    showComplete();
+  } else {
+    // 다음 라운드 시작 (규칙 전환 오버레이 표시)
+    setTimeout(() => {
+      startRound(nextRound, true);
+    }, 400);
+  }
+}
+
+// ─── 게임 완료 화면 ───────────────────────────────────────────
+
+function showComplete() {
+  sfxFanfare();
+  elFinalScore.textContent = `총 점수: ${score}점 / 180점`;
+  elCompleteScreen.classList.add('visible');
+}
+
+// 다시 하기 버튼
+elRestartBtn.addEventListener('click', () => {
+  ensureAudio();
+  initGame();
+});
+
+// ─── 게임 시작 ────────────────────────────────────────────────
+initGame();
+</script>
+</body>
+</html>

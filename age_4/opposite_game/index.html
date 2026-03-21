@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>반대 게임 🔄</title>
+  <style>
+    /* =============================================
+       CSS 변수 및 전역 기본 스타일
+       ============================================= */
+    :root {
+      --accent:  #FF6B35;   /* 주황 강조 */
+      --mint:    #4ECDC4;   /* 민트 */
+      --bg:      #FFF8F0;   /* 따뜻한 흰 배경 */
+      --correct: #2ECC71;   /* 정답 초록 */
+      --wrong:   #E74C3C;   /* 오답 빨강 */
+      --timer-h: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* =============================================
+       화면 전환 — 시작 / 게임 / 결과
+       ============================================= */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 480px;
+      gap: 20px;
+    }
+    .screen.active { display: flex; }
+
+    /* =============================================
+       시작 화면
+       ============================================= */
+    #startScreen {
+      text-align: center;
+      gap: 28px;
+    }
+
+    .start-logo {
+      font-size: 5rem;
+      line-height: 1;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,.15));
+      animation: float 2.4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-12px); }
+    }
+
+    .start-title {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1.2;
+    }
+
+    .start-desc {
+      font-size: 1.1rem;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .rule-box {
+      background: #fff;
+      border: 3px solid var(--mint);
+      border-radius: 20px;
+      padding: 18px 24px;
+      font-size: 1rem;
+      color: #444;
+      line-height: 1.8;
+      width: 100%;
+    }
+
+    .rule-box strong { color: var(--accent); }
+
+    /* =============================================
+       공용 버튼
+       ============================================= */
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      padding: 18px 52px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(255,107,53,.35);
+      transition: transform .12s, box-shadow .12s;
+      font-family: inherit;
+    }
+    .btn-primary:active {
+      transform: scale(.95);
+      box-shadow: 0 2px 8px rgba(255,107,53,.3);
+    }
+
+    /* =============================================
+       게임 화면 레이아웃
+       ============================================= */
+    #gameScreen { gap: 0; }
+
+    /* 상단 규칙 배너 */
+    .rule-banner {
+      background: var(--accent);
+      color: #fff;
+      font-size: 1.15rem;
+      font-weight: 800;
+      border-radius: 50px;
+      padding: 10px 28px;
+      letter-spacing: .03em;
+      margin-bottom: 14px;
+    }
+
+    /* 진행 정보 바 (문제번호 + 점수) */
+    .info-bar {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 1rem;
+      color: #888;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .info-bar span { color: var(--accent); font-size: 1.1rem; font-weight: 800; }
+
+    /* 타임 프로그레스 바 */
+    .timer-wrap {
+      width: 100%;
+      height: var(--timer-h);
+      background: #e0e0e0;
+      border-radius: 50px;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+    #timerBar {
+      height: 100%;
+      width: 100%;
+      background: var(--wrong);
+      border-radius: 50px;
+      transform-origin: left center;
+      transition: width linear; /* duration은 JS에서 설정 */
+    }
+
+    /* 중앙 이모지 카드 */
+    .emoji-card {
+      background: #fff;
+      border-radius: 28px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.10);
+      width: 180px;
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;        /* 만 4세 — 매우 크게 */
+      line-height: 1;
+      margin-bottom: 28px;
+      position: relative;
+      transition: transform .1s;
+    }
+
+    /* 정답 flash 애니메이션 */
+    @keyframes correctFlash {
+      0%   { background: #fff; transform: scale(1); }
+      25%  { background: #d4f5e2; transform: scale(1.08); }
+      75%  { background: #d4f5e2; transform: scale(1.08); }
+      100% { background: #fff; transform: scale(1); }
+    }
+    .emoji-card.flash-correct {
+      animation: correctFlash .5s ease forwards;
+    }
+
+    /* 오답 shake 애니메이션 */
+    @keyframes wrongShake {
+      0%   { transform: translateX(0)  rotate(0deg); }
+      15%  { transform: translateX(-8px) rotate(-3deg); }
+      30%  { transform: translateX(8px)  rotate(3deg); }
+      45%  { transform: translateX(-6px) rotate(-2deg); }
+      60%  { transform: translateX(6px)  rotate(2deg); }
+      75%  { transform: translateX(-3px) rotate(-1deg); }
+      100% { transform: translateX(0)  rotate(0deg); }
+    }
+    .emoji-card.flash-wrong {
+      animation: wrongShake .5s ease forwards;
+      background: #fde8e8;
+    }
+
+    /* 선택지 버튼 2개 좌우 배치 */
+    .choices {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .choice-btn {
+      flex: 1;
+      max-width: 180px;
+      height: 120px;
+      font-size: 3.4rem;     /* 선택지 이모지도 크게 */
+      background: #fff;
+      border: 4px solid #e0e0e0;
+      border-radius: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,.08);
+      transition: transform .1s, border-color .1s, background .1s;
+      font-family: inherit;
+    }
+    .choice-btn:active { transform: scale(.93); }
+
+    /* 버튼 피드백 — 정답 */
+    .choice-btn.btn-correct {
+      border-color: var(--correct);
+      background: #eafaf1;
+    }
+
+    /* 버튼 피드백 — 오답 */
+    .choice-btn.btn-wrong {
+      border-color: var(--wrong);
+      background: #fde8e8;
+    }
+
+    /* =============================================
+       결과 화면
+       ============================================= */
+    #resultScreen {
+      text-align: center;
+      gap: 24px;
+    }
+
+    .result-emoji {
+      font-size: 5rem;
+      animation: float 2.4s ease-in-out infinite;
+    }
+
+    .result-title {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--accent);
+    }
+
+    .result-score {
+      font-size: 4rem;
+      font-weight: 900;
+      color: var(--mint);
+      line-height: 1;
+    }
+
+    .result-sub {
+      font-size: 1.1rem;
+      color: #888;
+    }
+
+    .result-msg {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #444;
+      background: #fff;
+      border-radius: 20px;
+      padding: 14px 24px;
+      border: 3px solid var(--mint);
+      width: 100%;
+    }
+
+    /* =============================================
+       반응형 — 작은 화면 보정
+       ============================================= */
+    @media (max-width: 380px) {
+      .emoji-card { width: 150px; height: 150px; font-size: 4rem; }
+      .choice-btn { height: 100px; font-size: 2.8rem; }
+      .start-title { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- =============================================
+     시작 화면
+     ============================================= -->
+<div id="startScreen" class="screen active">
+  <div class="start-logo">🔄</div>
+  <div class="start-title">반대 게임!</div>
+  <div class="start-desc">나타난 것의 <strong style="color:var(--accent)">반대</strong>를 눌러요 😄</div>
+
+  <div class="rule-box">
+    🌞가 나오면 → <strong>🌙</strong>을 눌러요!<br>
+    🔴가 나오면 → <strong>🔵</strong>을 눌러요!<br>
+    ⬆️가 나오면 → <strong>⬇️</strong>을 눌러요!<br>
+    <br>
+    총 <strong>15문제</strong> · 빠르게 눌러요! ⏱️
+  </div>
+
+  <button class="btn-primary" id="btnStart">시작! 🚀</button>
+</div>
+
+<!-- =============================================
+     게임 화면
+     ============================================= -->
+<div id="gameScreen" class="screen">
+  <!-- 상단 규칙 고정 배너 -->
+  <div class="rule-banner">👆 반대를 눌러요!</div>
+
+  <!-- 진행 정보 -->
+  <div class="info-bar">
+    <div>문제 <span id="qNum">1</span> / 15</div>
+    <div>점수 <span id="score">0</span></div>
+  </div>
+
+  <!-- 타임 프로그레스 바 -->
+  <div class="timer-wrap">
+    <div id="timerBar"></div>
+  </div>
+
+  <!-- 중앙 이모지 카드 -->
+  <div class="emoji-card" id="emojiCard">
+    <span id="currentEmoji">🌞</span>
+  </div>
+
+  <!-- 선택지 버튼 2개 -->
+  <div class="choices">
+    <button class="choice-btn" id="btnChoice0"></button>
+    <button class="choice-btn" id="btnChoice1"></button>
+  </div>
+</div>
+
+<!-- =============================================
+     결과 화면
+     ============================================= -->
+<div id="resultScreen" class="screen">
+  <div class="result-emoji" id="resultEmoji">🎉</div>
+  <div class="result-title">게임 끝!</div>
+  <div class="result-score" id="resultScore">0</div>
+  <div class="result-sub">/ 15 문제</div>
+  <div class="result-msg" id="resultMsg"></div>
+  <button class="btn-primary" id="btnRestart">다시 하기 🔄</button>
+</div>
+
+<script>
+/* ==============================================
+   Web Audio API — 오디오 컨텍스트 (지연 초기화)
+   ============================================== */
+let audioCtx = null;
+
+/**
+ * 오디오 컨텍스트를 처음 사용할 때 생성 (자동 재생 정책 우회)
+ */
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+/**
+ * 단순 비프음 재생 유틸
+ * @param {number[]} notes   - [주파수(Hz), 길이(초)] 쌍의 배열
+ * @param {string}   type    - 오실레이터 파형 ('sine' | 'square' | 'triangle')
+ * @param {number}   vol     - 볼륨 (0~1)
+ * @param {number}   startAt - 시작 시간 오프셋(초)
+ */
+function playNotes(notes, type = 'sine', vol = 0.4, startAt = 0) {
+  const ctx = getAudioCtx();
+  let t = ctx.currentTime + startAt;
+  notes.forEach(([freq, dur]) => {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(vol, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.start(t);
+    osc.stop(t + dur + 0.01);
+    t += dur;
+  });
+}
+
+/** 정답 밝은 두 음 */
+function sfxCorrect()  { playNotes([[523, .12], [784, .18]], 'sine', .35); }
+
+/** 오답 낮은 내림 음 */
+function sfxWrong()    { playNotes([[300, .12], [220, .22]], 'square', .25); }
+
+/** 타임아웃 부저 */
+function sfxTimeout()  { playNotes([[180, .08], [160, .08], [140, .18]], 'square', .3); }
+
+/** 완료 팡파레 (짧은 멜로디) */
+function sfxFanfare() {
+  playNotes([
+    [523, .1], [587, .1], [659, .1], [698, .1],
+    [784, .2], [784, .05], [784, .3]
+  ], 'sine', .3);
+}
+
+/* ==============================================
+   게임 데이터
+   ============================================== */
+
+/**
+ * 반대쌍 세트 10쌍
+ * 각 쌍: [emojiA, emojiB]
+ */
+const PAIRS = [
+  ['🌞', '🌙'],
+  ['🍎', '🍌'],
+  ['🔴', '🔵'],
+  ['🐱', '🐶'],
+  ['🌧️', '☀️'],
+  ['⬆️', '⬇️'],
+  ['🔥', '❄️'],
+  ['😊', '😢'],
+  ['🌊', '🏔️'],
+  ['🌸', '🍂'],
+];
+
+const TOTAL_Q = 15; // 총 문제 수
+
+/**
+ * 문제별 제한 시간(ms) 계산
+ * 1번: 3000ms → 15번: 1500ms 선형 감소
+ */
+function getTimeLimit(qIndex) {
+  // qIndex: 0~14
+  const maxMs = 3000;
+  const minMs = 1500;
+  return Math.round(maxMs - (maxMs - minMs) * (qIndex / (TOTAL_Q - 1)));
+}
+
+/* ==============================================
+   게임 상태 변수
+   ============================================== */
+let questions    = [];   // 생성된 15개 문제 배열
+let curQ         = 0;    // 현재 문제 인덱스 (0-based)
+let scoreCount   = 0;    // 맞힌 개수
+let timerID      = null; // setTimeout ID (타임아웃 타이머)
+let rafID        = null; // requestAnimationFrame ID (진행 바 애니메이션)
+let inputLocked  = false;// 입력 잠금 (애니메이션 중 중복 입력 방지)
+let timerStart   = 0;    // 타이머 시작 시각 (performance.now)
+let timeLimitMs  = 3000; // 현재 문제 제한 시간
+
+/* ==============================================
+   DOM 참조
+   ============================================== */
+const screens = {
+  start:  document.getElementById('startScreen'),
+  game:   document.getElementById('gameScreen'),
+  result: document.getElementById('resultScreen'),
+};
+const elQNum        = document.getElementById('qNum');
+const elScore       = document.getElementById('score');
+const elTimerBar    = document.getElementById('timerBar');
+const elEmojiCard   = document.getElementById('emojiCard');
+const elCurEmoji    = document.getElementById('currentEmoji');
+const elChoices     = [
+  document.getElementById('btnChoice0'),
+  document.getElementById('btnChoice1'),
+];
+const elResultEmoji = document.getElementById('resultEmoji');
+const elResultScore = document.getElementById('resultScore');
+const elResultMsg   = document.getElementById('resultMsg');
+
+/* ==============================================
+   유틸 함수
+   ============================================== */
+
+/** 배열 제자리 셔플 (Fisher–Yates) */
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/** 화면 전환 */
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+/* ==============================================
+   문제 생성
+   ============================================== */
+
+/**
+ * 15문제 배열 생성
+ * - 10쌍을 랜덤 순서로 섞은 후 15개가 될 때까지 반복
+ * - 각 문제: { shown, correct, wrong }
+ *   shown  : 화면에 표시할 이모지
+ *   correct: 눌러야 할 이모지 (반대)
+ *   wrong  : 오답 이모지
+ */
+function generateQuestions() {
+  const pool = [];
+
+  // 10쌍에서 각 쌍마다 양방향(A→B, B→A) 문제 모두 생성 → 20개 후보
+  PAIRS.forEach(([a, b]) => {
+    pool.push({ shown: a, correct: b, wrong: a });
+    pool.push({ shown: b, correct: a, wrong: b });
+  });
+
+  shuffle(pool);
+
+  // 15개만 추출
+  return pool.slice(0, TOTAL_Q);
+}
+
+/* ==============================================
+   타이머 바 애니메이션
+   ============================================== */
+
+/**
+ * requestAnimationFrame 기반 타이머 바 업데이트
+ * 시간이 지남에 따라 width 100% → 0% 로 줄어듦
+ */
+function animateTimer() {
+  const elapsed = performance.now() - timerStart;
+  const ratio   = Math.max(0, 1 - elapsed / timeLimitMs);
+  elTimerBar.style.width = (ratio * 100) + '%';
+
+  if (ratio > 0) {
+    rafID = requestAnimationFrame(animateTimer);
+  }
+}
+
+/** 타이머 바 초기화 및 시작 */
+function startTimerBar(ms) {
+  // 기존 RAF 취소
+  if (rafID) { cancelAnimationFrame(rafID); rafID = null; }
+
+  timeLimitMs = ms;
+  timerStart  = performance.now();
+  elTimerBar.style.transition = 'none';
+  elTimerBar.style.width = '100%';
+
+  // 다음 프레임부터 애니메이션 시작
+  rafID = requestAnimationFrame(animateTimer);
+}
+
+/** 타이머 바 중지 */
+function stopTimerBar() {
+  if (rafID) { cancelAnimationFrame(rafID); rafID = null; }
+}
+
+/* ==============================================
+   문제 표시
+   ============================================== */
+
+/** 현재 문제(curQ)를 화면에 렌더링하고 타이머 시작 */
+function showQuestion() {
+  // 입력 잠금 해제
+  inputLocked = false;
+
+  const q = questions[curQ];
+
+  // 문제 번호 / 점수 갱신
+  elQNum.textContent  = curQ + 1;
+  elScore.textContent = scoreCount;
+
+  // 중앙 이모지 표시
+  elCurEmoji.textContent = q.shown;
+
+  // 이모지 카드 플래시 클래스 초기화
+  elEmojiCard.classList.remove('flash-correct', 'flash-wrong');
+
+  // 선택지 두 버튼: 정답/오답 랜덤 좌우 배치
+  const opts = shuffle([q.correct, q.wrong]);
+  elChoices.forEach((btn, i) => {
+    btn.textContent = opts[i];
+    btn.classList.remove('btn-correct', 'btn-wrong');
+    btn.disabled = false;
+  });
+
+  // 제한 시간 설정 및 타이머 시작
+  const ms = getTimeLimit(curQ);
+  startTimerBar(ms);
+
+  // 타임아웃 처리
+  if (timerID) clearTimeout(timerID);
+  timerID = setTimeout(() => handleTimeout(), ms);
+}
+
+/* ==============================================
+   입력 처리
+   ============================================== */
+
+/**
+ * 선택지 버튼 클릭 시 호출
+ * @param {number} idx - 클릭된 버튼 인덱스 (0 or 1)
+ */
+function handleChoice(idx) {
+  if (inputLocked) return;
+  inputLocked = true;
+
+  // 타이머 중지
+  clearTimeout(timerID);
+  stopTimerBar();
+
+  const q        = questions[curQ];
+  const selected = elChoices[idx].textContent;
+  const isCorrect = selected === q.correct;
+
+  if (isCorrect) {
+    // 정답 처리
+    scoreCount++;
+    sfxCorrect();
+    elEmojiCard.classList.add('flash-correct');
+    elChoices[idx].classList.add('btn-correct');
+  } else {
+    // 오답 처리 — 정답 버튼에 초록 표시, 클릭 버튼에 빨강 표시
+    sfxWrong();
+    elEmojiCard.classList.add('flash-wrong');
+    elChoices[idx].classList.add('btn-wrong');
+    // 정답 버튼 찾아서 초록 표시
+    elChoices.forEach(btn => {
+      if (btn.textContent === q.correct) btn.classList.add('btn-correct');
+    });
+  }
+
+  // 버튼 비활성화
+  elChoices.forEach(btn => btn.disabled = true);
+
+  // 잠깐 피드백 보여준 뒤 다음 문제로
+  setTimeout(() => nextQuestion(), 600);
+}
+
+/** 시간 초과 처리 */
+function handleTimeout() {
+  if (inputLocked) return;
+  inputLocked = true;
+
+  stopTimerBar();
+  sfxTimeout();
+
+  // 오답으로 처리 — 카드 흔들기 + 정답 버튼 표시
+  elEmojiCard.classList.add('flash-wrong');
+  const q = questions[curQ];
+  elChoices.forEach(btn => {
+    if (btn.textContent === q.correct) btn.classList.add('btn-correct');
+    btn.disabled = true;
+  });
+
+  setTimeout(() => nextQuestion(), 700);
+}
+
+/** 다음 문제로 이동 또는 게임 종료 */
+function nextQuestion() {
+  curQ++;
+  if (curQ < TOTAL_Q) {
+    showQuestion();
+  } else {
+    endGame();
+  }
+}
+
+/* ==============================================
+   게임 종료 및 결과
+   ============================================== */
+
+/** 결과 화면 표시 */
+function endGame() {
+  stopTimerBar();
+  sfxFanfare();
+
+  elResultScore.textContent = scoreCount;
+
+  // 점수에 따른 메시지 / 이모지
+  let emoji, msg;
+  if (scoreCount === 15) {
+    emoji = '🏆'; msg = '완벽해요! 반대 왕! 👑';
+  } else if (scoreCount >= 12) {
+    emoji = '🎉'; msg = '정말 잘했어요! 최고예요! 🌟';
+  } else if (scoreCount >= 9) {
+    emoji = '😊'; msg = '잘했어요! 한 번 더 해볼까요?';
+  } else if (scoreCount >= 6) {
+    emoji = '🙂'; msg = '조금 더 연습하면 잘할 수 있어요!';
+  } else {
+    emoji = '💪'; msg = '다시 한번 도전해봐요! 파이팅!';
+  }
+
+  elResultEmoji.textContent = emoji;
+  elResultMsg.textContent   = msg;
+
+  showScreen('result');
+}
+
+/* ==============================================
+   게임 시작 / 재시작
+   ============================================== */
+
+/** 게임 초기화 후 시작 */
+function startGame() {
+  questions  = generateQuestions();
+  curQ       = 0;
+  scoreCount = 0;
+  inputLocked = false;
+
+  showScreen('game');
+  showQuestion();
+}
+
+/* ==============================================
+   이벤트 연결
+   ============================================== */
+
+// 시작 버튼
+document.getElementById('btnStart').addEventListener('click', () => {
+  getAudioCtx(); // 오디오 컨텍스트 사용자 제스처로 활성화
+  startGame();
+});
+
+// 다시 하기 버튼
+document.getElementById('btnRestart').addEventListener('click', () => {
+  startGame();
+});
+
+// 선택지 버튼 0, 1
+elChoices.forEach((btn, i) => {
+  btn.addEventListener('click', () => handleChoice(i));
+});
+</script>
+</body>
+</html>

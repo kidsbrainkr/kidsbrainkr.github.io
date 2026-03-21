@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🚀 로켓 정리 타이머</title>
+  <style>
+    /* ===== 기본 리셋 및 폰트 ===== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-family: 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      overflow: hidden;
+    }
+
+    /* ===== 공통 화면 래퍼 ===== */
+    .screen {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.4s ease;
+    }
+
+    .screen.hidden {
+      display: none;
+    }
+
+    /* ===================================================
+       설정 화면 (SETUP SCREEN)
+    =================================================== */
+    #setupScreen {
+      background: linear-gradient(135deg, #1a1a4e 0%, #0d2b8a 50%, #1a1a4e 100%);
+      color: #fff;
+      gap: 2vh;
+    }
+
+    /* 타이틀 */
+    .setup-title {
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-shadow: 0 0 20px rgba(100, 180, 255, 0.8);
+      animation: titlePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes titlePulse {
+      0%, 100% { text-shadow: 0 0 20px rgba(100, 180, 255, 0.8); }
+      50%       { text-shadow: 0 0 40px rgba(100, 220, 255, 1), 0 0 60px rgba(80, 160, 255, 0.6); }
+    }
+
+    .setup-subtitle {
+      font-size: clamp(0.9rem, 2vw, 1.2rem);
+      color: rgba(200, 220, 255, 0.8);
+      margin-top: -1vh;
+    }
+
+    /* 설정 카드 박스 */
+    .setup-card {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 1.5rem;
+      padding: clamp(1.2rem, 3vw, 2rem) clamp(1.5rem, 4vw, 3rem);
+      width: min(90vw, 560px);
+      display: flex;
+      flex-direction: column;
+      gap: 1.6vh;
+      backdrop-filter: blur(10px);
+    }
+
+    .setup-label {
+      font-size: clamp(0.8rem, 1.6vw, 1rem);
+      color: rgba(200, 220, 255, 0.7);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* 프리셋 버튼 행 */
+    .preset-row {
+      display: flex;
+      gap: 0.8vw;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      flex: 1;
+      min-width: 60px;
+      padding: 0.7em 0.5em;
+      border: 2px solid rgba(100, 180, 255, 0.4);
+      border-radius: 0.8rem;
+      background: rgba(60, 120, 220, 0.2);
+      color: #fff;
+      font-size: clamp(0.85rem, 1.8vw, 1.05rem);
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .preset-btn:hover,
+    .preset-btn.active {
+      background: rgba(80, 160, 255, 0.5);
+      border-color: rgba(140, 200, 255, 0.9);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(80, 160, 255, 0.4);
+    }
+
+    /* 직접 입력 행 */
+    .custom-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6em;
+    }
+
+    .custom-row input {
+      width: 4em;
+      padding: 0.5em 0.4em;
+      border: 2px solid rgba(100, 180, 255, 0.4);
+      border-radius: 0.6rem;
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      font-size: clamp(0.9rem, 2vw, 1.1rem);
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+    }
+
+    .custom-row input:focus {
+      border-color: rgba(140, 200, 255, 0.9);
+      background: rgba(255,255,255,0.14);
+    }
+
+    .custom-row input::placeholder { color: rgba(255,255,255,0.3); }
+
+    .custom-sep {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: rgba(200, 220, 255, 0.6);
+    }
+
+    .custom-unit {
+      font-size: 0.9rem;
+      color: rgba(200, 220, 255, 0.6);
+    }
+
+    /* 테마 선택 행 */
+    .theme-row {
+      display: flex;
+      gap: 0.8vw;
+    }
+
+    .theme-btn {
+      flex: 1;
+      padding: 0.8em 0.5em;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 0.8rem;
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+      font-size: clamp(0.8rem, 1.6vw, 1rem);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3em;
+    }
+
+    .theme-btn .theme-icon {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+    }
+
+    .theme-btn:hover,
+    .theme-btn.active {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 220, 80, 0.8);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(255, 200, 50, 0.3);
+    }
+
+    /* 시작 버튼 */
+    .start-btn {
+      margin-top: 0.5vh;
+      padding: 1em 2em;
+      background: linear-gradient(135deg, #4CAF50, #2196F3);
+      border: none;
+      border-radius: 1rem;
+      color: #fff;
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 24px rgba(33, 150, 243, 0.5);
+    }
+
+    .start-btn:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 8px 32px rgba(33, 150, 243, 0.7);
+    }
+
+    .start-btn:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    /* ===================================================
+       타이머 화면 (TIMER SCREEN) - 공통 레이아웃
+    =================================================== */
+    #timerScreen {
+      position: relative;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 0;
+      /* 배경은 테마 클래스로 결정 */
+    }
+
+    /* ===== 테마: 로켓 (우주) ===== */
+    #timerScreen.theme-rocket,
+    #timerScreen.theme-spaceship {
+      background: linear-gradient(180deg, #0a0a2e 0%, #0d1550 40%, #1a1a4e 100%);
+      color: #fff;
+    }
+
+    /* 별 애니메이션 (우주 테마) */
+    #timerScreen.theme-rocket .stars,
+    #timerScreen.theme-spaceship .stars {
+      display: block;
+    }
+
+    .stars {
+      display: none;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      animation: twinkle var(--dur, 3s) ease-in-out infinite var(--delay, 0s);
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; transform: scale(1); }
+      50%       { opacity: 1;   transform: scale(1.4); }
+    }
+
+    /* ===== 테마: 기차 (하늘/초원) ===== */
+    #timerScreen.theme-train {
+      background: linear-gradient(180deg, #87CEEB 0%, #b0e8ff 40%, #98FB98 100%);
+      color: #1a3a1a;
+    }
+
+    /* 구름 장식 */
+    #timerScreen.theme-train .clouds {
+      display: block;
+    }
+
+    .clouds {
+      display: none;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .cloud {
+      position: absolute;
+      font-size: clamp(2rem, 5vw, 4rem);
+      animation: floatCloud var(--cdur, 20s) linear infinite var(--cdelay, 0s);
+      opacity: 0.75;
+    }
+
+    @keyframes floatCloud {
+      0%   { transform: translateX(-15vw); }
+      100% { transform: translateX(110vw); }
+    }
+
+    /* ===================================================
+       타이머 상단 섹션
+    =================================================== */
+    .timer-top {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 3vh;
+      gap: 0.5vh;
+    }
+
+    /* 유도 문구 */
+    .guide-msg {
+      font-size: clamp(0.9rem, 2.2vw, 1.3rem);
+      font-weight: 600;
+      opacity: 0.85;
+      text-align: center;
+      padding: 0 2vw;
+      transition: color 0.5s ease;
+    }
+
+    /* 남은 시간 디스플레이 */
+    .time-display {
+      font-size: clamp(4rem, 12vw, 7rem);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0.04em;
+      text-shadow: 0 0 30px rgba(100, 200, 255, 0.6);
+      transition: color 0.5s ease, text-shadow 0.5s ease;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* 기차 테마 시간 색상 */
+    .theme-train .time-display {
+      color: #1a3060;
+      text-shadow: 0 2px 8px rgba(0,0,80,0.3);
+    }
+
+    /* 마지막 30초 깜빡임 */
+    .time-display.urgent {
+      animation: urgentBlink 0.6s ease-in-out infinite;
+    }
+
+    @keyframes urgentBlink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.5; }
+    }
+
+    /* ===================================================
+       트랙 / 이동 경로 섹션
+    =================================================== */
+    .track-section {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      padding: 0 4vw;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex: 1;
+      max-height: 32vh;
+    }
+
+    /* 출발지 / 도착지 아이콘 */
+    .landmark {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4em;
+      font-size: clamp(0.7rem, 1.5vw, 0.95rem);
+      font-weight: 700;
+      opacity: 0.9;
+      z-index: 2;
+      flex-shrink: 0;
+    }
+
+    .landmark-icon {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    }
+
+    /* 트랙 래퍼 (캐릭터 이동 영역) */
+    .track-wrapper {
+      flex: 1;
+      position: relative;
+      height: clamp(80px, 20vh, 160px);
+      margin: 0 2vw;
+    }
+
+    /* 점선 트랙 라인 */
+    .track-line {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 4px;
+      transform: translateY(-50%);
+      border-top: 4px dashed rgba(255,255,255,0.3);
+      /* 기차 테마에서는 색상 변경 */
+    }
+
+    .theme-train .track-line {
+      border-top-color: rgba(60, 40, 20, 0.35);
+    }
+
+    /* 기차 테마: 레일 두 줄 */
+    .theme-train .track-line::after {
+      content: '';
+      position: absolute;
+      top: 6px;
+      left: 0;
+      right: 0;
+      height: 4px;
+      border-top: 4px dashed rgba(60, 40, 20, 0.35);
+    }
+
+    /* 캐릭터 (로켓/기차/우주선 이모지) */
+    .character {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      filter: drop-shadow(0 0 12px rgba(100, 200, 255, 0.8));
+      transition: left 0.5s linear;
+      /* 이동 경로 좌측 시작 */
+      left: 0%;
+      z-index: 3;
+      line-height: 1;
+    }
+
+    /* 마지막 30초: 진동 + 빠른 이동 */
+    .character.rushing {
+      animation: rush 0.15s ease-in-out infinite;
+      filter: drop-shadow(0 0 20px rgba(255, 150, 50, 0.9));
+    }
+
+    @keyframes rush {
+      0%, 100% { transform: translateY(-50%) rotate(-5deg); }
+      50%       { transform: translateY(-52%) rotate(5deg); }
+    }
+
+    /* 종료 폭발 */
+    .character.explode {
+      animation: explodeChar 0.6s ease-out forwards;
+    }
+
+    @keyframes explodeChar {
+      0%   { transform: translateY(-50%) scale(1);   opacity: 1; }
+      50%  { transform: translateY(-60%) scale(2.5); opacity: 1; }
+      100% { transform: translateY(-50%) scale(0);   opacity: 0; }
+    }
+
+    /* ===================================================
+       완료 오버레이
+    =================================================== */
+    .complete-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(4px);
+      gap: 2vh;
+    }
+
+    .complete-overlay.show {
+      display: flex;
+      animation: overlayIn 0.5s ease;
+    }
+
+    @keyframes overlayIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .complete-fireworks {
+      font-size: clamp(3rem, 10vw, 6rem);
+      animation: fireworksBounce 0.4s ease-in-out infinite alternate;
+    }
+
+    @keyframes fireworksBounce {
+      from { transform: scale(1) rotate(-8deg); }
+      to   { transform: scale(1.15) rotate(8deg); }
+    }
+
+    .complete-msg {
+      font-size: clamp(1.5rem, 4vw, 2.5rem);
+      font-weight: 900;
+      color: #fff;
+      text-align: center;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+      padding: 0 4vw;
+    }
+
+    .complete-restart-btn {
+      margin-top: 1vh;
+      padding: 0.8em 2.4em;
+      border: none;
+      border-radius: 1rem;
+      background: linear-gradient(135deg, #FFD700, #FF8C00);
+      color: #1a1a00;
+      font-size: clamp(1rem, 2.2vw, 1.3rem);
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 20px rgba(255, 180, 0, 0.6);
+    }
+
+    .complete-restart-btn:hover {
+      transform: translateY(-3px) scale(1.04);
+      box-shadow: 0 8px 32px rgba(255, 180, 0, 0.8);
+    }
+
+    /* ===================================================
+       게이지 바 섹션
+    =================================================== */
+    .gauge-section {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      padding: 0 4vw 1.5vh;
+    }
+
+    .gauge-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: clamp(0.7rem, 1.4vw, 0.85rem);
+      opacity: 0.7;
+      margin-bottom: 0.4em;
+      font-weight: 600;
+    }
+
+    .gauge-track {
+      width: 100%;
+      height: clamp(12px, 2vh, 20px);
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    .theme-train .gauge-track {
+      background: rgba(0, 0, 80, 0.12);
+    }
+
+    .gauge-fill {
+      height: 100%;
+      border-radius: 999px;
+      width: 0%;
+      transition: width 0.5s linear, background 0.5s ease;
+      /* 초기: 초록 */
+      background: linear-gradient(90deg, #4CAF50, #66BB6A);
+      box-shadow: 0 0 10px rgba(76, 175, 80, 0.6);
+    }
+
+    /* 게이지 50% 도달: 노랑 */
+    .gauge-fill.mid {
+      background: linear-gradient(90deg, #FFB300, #FFD54F);
+      box-shadow: 0 0 10px rgba(255, 179, 0, 0.6);
+    }
+
+    /* 게이지 마지막 30초: 빨강 */
+    .gauge-fill.urgent {
+      background: linear-gradient(90deg, #F44336, #EF9A9A);
+      box-shadow: 0 0 10px rgba(244, 67, 54, 0.7);
+      animation: gaugeUrgent 0.5s ease-in-out infinite;
+    }
+
+    @keyframes gaugeUrgent {
+      0%, 100% { box-shadow: 0 0 10px rgba(244, 67, 54, 0.7); }
+      50%       { box-shadow: 0 0 22px rgba(244, 67, 54, 1.0); }
+    }
+
+    /* ===================================================
+       하단 컨트롤 버튼
+    =================================================== */
+    .controls {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: clamp(0.6rem, 2vw, 1.4rem);
+      padding-bottom: 2vh;
+    }
+
+    .ctrl-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      width: clamp(36px, 5vw, 52px);
+      height: clamp(36px, 5vw, 52px);
+      font-size: clamp(1rem, 2.2vw, 1.4rem);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .theme-train .ctrl-btn {
+      background: rgba(0, 0, 80, 0.1);
+      border-color: rgba(0, 0, 80, 0.2);
+      color: #1a3060;
+    }
+
+    .ctrl-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: scale(1.12);
+    }
+
+    .ctrl-btn.muted {
+      opacity: 0.45;
+    }
+
+    /* 파티클 폭발 (Canvas 오버레이) */
+    #particleCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 9;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===================================================
+     설정 화면
+=================================================== -->
+<div id="setupScreen" class="screen">
+  <div class="setup-title">🚀 정리 타이머</div>
+  <div class="setup-subtitle">로켓이 날아가는 동안 교실을 정리해요!</div>
+
+  <div class="setup-card">
+
+    <!-- 프리셋 시간 선택 -->
+    <div class="setup-label">⏱ 정리 시간 선택</div>
+    <div class="preset-row">
+      <button class="preset-btn" data-min="3" data-sec="0">3분</button>
+      <button class="preset-btn active" data-min="5" data-sec="0">5분</button>
+      <button class="preset-btn" data-min="10" data-sec="0">10분</button>
+      <button class="preset-btn" data-min="15" data-sec="0">15분</button>
+    </div>
+
+    <!-- 직접 입력 -->
+    <div class="setup-label">✏️ 직접 입력</div>
+    <div class="custom-row">
+      <input type="number" id="inputMin" min="0" max="99" placeholder="분" />
+      <span class="custom-sep">분</span>
+      <input type="number" id="inputSec" min="0" max="59" placeholder="초" />
+      <span class="custom-sep">초</span>
+    </div>
+
+    <!-- 테마 선택 -->
+    <div class="setup-label">🎨 이동 수단 선택</div>
+    <div class="theme-row">
+      <button class="theme-btn active" data-theme="rocket">
+        <span class="theme-icon">🚀</span>로켓
+      </button>
+      <button class="theme-btn" data-theme="train">
+        <span class="theme-icon">🚂</span>기차
+      </button>
+      <button class="theme-btn" data-theme="spaceship">
+        <span class="theme-icon">🛸</span>우주선
+      </button>
+    </div>
+
+    <!-- 시작 버튼 -->
+    <button class="start-btn" id="startBtn">🚀 출발!</button>
+  </div>
+</div>
+
+<!-- ===================================================
+     타이머 화면
+=================================================== -->
+<div id="timerScreen" class="screen hidden theme-rocket">
+
+  <!-- 배경 파티클: 별 (우주 테마) -->
+  <div class="stars" id="starsLayer"></div>
+
+  <!-- 배경 파티클: 구름 (기차 테마) -->
+  <div class="clouds" id="cloudsLayer"></div>
+
+  <!-- 파티클 캔버스 (완료 폭발) -->
+  <canvas id="particleCanvas"></canvas>
+
+  <!-- 완료 오버레이 -->
+  <div class="complete-overlay" id="completeOverlay">
+    <div class="complete-fireworks">🎉</div>
+    <div class="complete-msg" id="completeMsg">정리 완료!<br>모여주세요 🎉</div>
+    <button class="complete-restart-btn" id="completeRestartBtn">🔄 다시 하기</button>
+  </div>
+
+  <!-- 상단: 유도 문구 + 남은 시간 -->
+  <div class="timer-top">
+    <div class="guide-msg" id="guideMsg">로켓이 날아가고 있어요! 우리도 정리해요 🧹</div>
+    <div class="time-display" id="timeDisplay">05:00</div>
+  </div>
+
+  <!-- 중간: 출발지 - 트랙 - 도착지 -->
+  <div class="track-section">
+    <!-- 출발지 -->
+    <div class="landmark">
+      <span class="landmark-icon" id="departIcon">🏫</span>
+      <span id="departLabel">출발!</span>
+    </div>
+
+    <!-- 트랙 (캐릭터 이동) -->
+    <div class="track-wrapper" id="trackWrapper">
+      <div class="track-line"></div>
+      <div class="character" id="character">🚀</div>
+    </div>
+
+    <!-- 도착지 -->
+    <div class="landmark">
+      <span class="landmark-icon" id="arriveIcon">🌟</span>
+      <span id="arriveLabel">도착!</span>
+    </div>
+  </div>
+
+  <!-- 게이지 바 -->
+  <div class="gauge-section">
+    <div class="gauge-labels">
+      <span>출발</span>
+      <span id="gaugePct">0%</span>
+      <span>도착</span>
+    </div>
+    <div class="gauge-track">
+      <div class="gauge-fill" id="gaugeFill"></div>
+    </div>
+  </div>
+
+  <!-- 컨트롤 버튼 -->
+  <div class="controls">
+    <!-- 일시정지/재시작 -->
+    <button class="ctrl-btn" id="pauseBtn" title="일시정지/재시작">⏸</button>
+    <!-- 음소거 -->
+    <button class="ctrl-btn" id="muteBtn" title="음소거">🔊</button>
+    <!-- 전체화면 -->
+    <button class="ctrl-btn" id="fullscreenBtn" title="전체화면">⛶</button>
+    <!-- 처음으로 -->
+    <button class="ctrl-btn" id="resetBtn" title="처음으로">🔄</button>
+  </div>
+</div>
+
+<script>
+/* ===================================================
+   상태 변수 (State)
+=================================================== */
+let totalSeconds   = 300;   // 전체 시간 (초)
+let remainSeconds  = 300;   // 남은 시간 (초)
+let timerInterval  = null;  // setInterval 핸들
+let isPaused       = false; // 일시정지 여부
+let isMuted        = false; // 음소거 여부
+let currentTheme   = 'rocket'; // 현재 테마
+let urgentFired    = false; // 30초 경보 발화 여부
+let audioCtx       = null;  // Web Audio API 컨텍스트
+let engineInterval = null;  // 엔진음 인터벌
+
+/* ===================================================
+   테마 정의 맵
+=================================================== */
+const THEMES = {
+  rocket: {
+    character:    '🚀',
+    departIcon:   '🏫',
+    departLabel:  '출발!',
+    arriveIcon:   '🌟',
+    arriveLabel:  '도착!',
+    guideMsg:     '로켓이 날아가고 있어요! 우리도 정리해요 🧹',
+    urgentMsg:    '거의 다 왔어요! 빨리 정리해요 🔥',
+    completeMsg:  '정리 완료!\n모여주세요 🎉',
+    bgClass:      'theme-rocket',
+  },
+  train: {
+    character:    '🚂',
+    departIcon:   '🏫',
+    departLabel:  '출발역',
+    arriveIcon:   '🏡',
+    arriveLabel:  '종착역',
+    guideMsg:     '기차가 달리고 있어요! 신나게 정리해요 🧹',
+    urgentMsg:    '종착역이 가까워요! 빨리빨리 정리해요 🔥',
+    completeMsg:  '정리 완료!\n모여주세요 🎉',
+    bgClass:      'theme-train',
+  },
+  spaceship: {
+    character:    '🛸',
+    departIcon:   '🌍',
+    departLabel:  '지구',
+    arriveIcon:   '🪐',
+    arriveLabel:  '행성',
+    guideMsg:     '우주선이 항해 중! 지구를 깨끗이 정리해요 🧹',
+    urgentMsg:    '행성에 거의 도착! 마지막 정리 돌입! 🔥',
+    completeMsg:  '정리 완료!\n모여주세요 🎉',
+    bgClass:      'theme-spaceship',
+  },
+};
+
+/* ===================================================
+   DOM 참조
+=================================================== */
+const setupScreen      = document.getElementById('setupScreen');
+const timerScreen      = document.getElementById('timerScreen');
+const timeDisplay      = document.getElementById('timeDisplay');
+const guideMsg         = document.getElementById('guideMsg');
+const character        = document.getElementById('character');
+const gaugeFill        = document.getElementById('gaugeFill');
+const gaugePct         = document.getElementById('gaugePct');
+const completeOverlay  = document.getElementById('completeOverlay');
+const completeMsg      = document.getElementById('completeMsg');
+const pauseBtn         = document.getElementById('pauseBtn');
+const muteBtn          = document.getElementById('muteBtn');
+const fullscreenBtn    = document.getElementById('fullscreenBtn');
+const resetBtn         = document.getElementById('resetBtn');
+const completeRestartBtn = document.getElementById('completeRestartBtn');
+const starsLayer       = document.getElementById('starsLayer');
+const cloudsLayer      = document.getElementById('cloudsLayer');
+const particleCanvas   = document.getElementById('particleCanvas');
+const departIcon       = document.getElementById('departIcon');
+const departLabel      = document.getElementById('departLabel');
+const arriveIcon       = document.getElementById('arriveIcon');
+const arriveLabel      = document.getElementById('arriveLabel');
+const trackWrapper     = document.getElementById('trackWrapper');
+
+/* ===================================================
+   설정 화면: 프리셋 버튼 클릭
+=================================================== */
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    // 활성화 표시
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // 직접 입력 필드 초기화
+    document.getElementById('inputMin').value = '';
+    document.getElementById('inputSec').value = '';
+  });
+});
+
+/* 직접 입력 시 프리셋 비활성화 */
+['inputMin', 'inputSec'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  });
+});
+
+/* ===================================================
+   설정 화면: 테마 선택
+=================================================== */
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTheme = btn.dataset.theme;
+  });
+});
+
+/* ===================================================
+   설정 화면: 시작 버튼 클릭
+=================================================== */
+document.getElementById('startBtn').addEventListener('click', () => {
+  // 시간 계산
+  const activePreset = document.querySelector('.preset-btn.active');
+  const inputMin = parseInt(document.getElementById('inputMin').value) || 0;
+  const inputSec = parseInt(document.getElementById('inputSec').value) || 0;
+
+  if (activePreset) {
+    // 프리셋 선택됨
+    totalSeconds = parseInt(activePreset.dataset.min) * 60
+                 + parseInt(activePreset.dataset.sec);
+  } else {
+    // 직접 입력
+    totalSeconds = inputMin * 60 + inputSec;
+  }
+
+  // 최소 5초 보장
+  if (totalSeconds < 5) {
+    alert('최소 5초 이상 설정해주세요!');
+    return;
+  }
+
+  remainSeconds = totalSeconds;
+  urgentFired   = false;
+
+  // 타이머 화면 초기화 및 전환
+  initTimerScreen();
+  setupScreen.classList.add('hidden');
+  timerScreen.classList.remove('hidden');
+
+  // 출발 오디오 재생
+  playStartSound();
+
+  // 타이머 시작
+  startTimer();
+});
+
+/* ===================================================
+   타이머 화면 초기화
+=================================================== */
+function initTimerScreen() {
+  const theme = THEMES[currentTheme];
+
+  // 테마 클래스 적용
+  timerScreen.className = `screen theme-${currentTheme}`;
+
+  // 캐릭터/랜드마크 텍스트 설정
+  character.textContent     = theme.character;
+  departIcon.textContent    = theme.departIcon;
+  departLabel.textContent   = theme.departLabel;
+  arriveIcon.textContent    = theme.arriveIcon;
+  arriveLabel.textContent   = theme.arriveLabel;
+  guideMsg.textContent      = theme.guideMsg;
+  completeMsg.innerHTML     = theme.completeMsg.replace('\n', '<br>');
+
+  // 시작 버튼 텍스트 테마별 변경
+  document.getElementById('startBtn').textContent =
+    currentTheme === 'train' ? '🚂 출발!' : (currentTheme === 'spaceship' ? '🛸 발사!' : '🚀 출발!');
+
+  // 캐릭터 위치 초기화
+  character.style.left = '0%';
+  character.classList.remove('rushing', 'explode');
+
+  // 게이지 초기화
+  setGauge(0);
+  gaugeFill.classList.remove('mid', 'urgent');
+
+  // 시간 표시 초기화
+  timeDisplay.textContent = formatTime(remainSeconds);
+  timeDisplay.classList.remove('urgent');
+
+  // 완료 오버레이 숨김
+  completeOverlay.classList.remove('show');
+
+  // 일시정지 버튼 초기화
+  isPaused = false;
+  pauseBtn.textContent = '⏸';
+
+  // 별 / 구름 배경 생성
+  buildStars();
+  buildClouds();
+}
+
+/* ===================================================
+   별 배경 생성 (우주 테마)
+=================================================== */
+function buildStars() {
+  starsLayer.innerHTML = '';
+  if (currentTheme === 'rocket' || currentTheme === 'spaceship') {
+    for (let i = 0; i < 80; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      const size = Math.random() * 3 + 1;
+      star.style.cssText = `
+        width: ${size}px; height: ${size}px;
+        top: ${Math.random() * 100}%;
+        left: ${Math.random() * 100}%;
+        --dur: ${(Math.random() * 3 + 2).toFixed(1)}s;
+        --delay: ${(Math.random() * 3).toFixed(1)}s;
+      `;
+      starsLayer.appendChild(star);
+    }
+  }
+}
+
+/* ===================================================
+   구름 배경 생성 (기차 테마)
+=================================================== */
+function buildClouds() {
+  cloudsLayer.innerHTML = '';
+  if (currentTheme === 'train') {
+    const emojis = ['☁️', '⛅', '🌤️', '☁️', '☁️'];
+    for (let i = 0; i < 5; i++) {
+      const cloud = document.createElement('div');
+      cloud.className = 'cloud';
+      cloud.textContent = emojis[i % emojis.length];
+      cloud.style.cssText = `
+        top: ${Math.random() * 40 + 5}%;
+        left: -15vw;
+        --cdur: ${(Math.random() * 15 + 18).toFixed(0)}s;
+        --cdelay: ${(Math.random() * -20).toFixed(0)}s;
+      `;
+      cloudsLayer.appendChild(cloud);
+    }
+  }
+}
+
+/* ===================================================
+   타이머 시작
+=================================================== */
+function startTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(tick, 1000);
+}
+
+/* ===================================================
+   매 초 tick
+=================================================== */
+function tick() {
+  if (isPaused) return;
+
+  remainSeconds--;
+
+  if (remainSeconds <= 0) {
+    remainSeconds = 0;
+    clearInterval(timerInterval);
+    updateUI();
+    onComplete();
+    return;
+  }
+
+  updateUI();
+
+  // 마지막 30초 연출 발동
+  if (remainSeconds === 30 && !urgentFired) {
+    urgentFired = true;
+    triggerUrgent();
+  }
+}
+
+/* ===================================================
+   UI 업데이트
+=================================================== */
+function updateUI() {
+  // 시간 텍스트
+  timeDisplay.textContent = formatTime(remainSeconds);
+
+  // 진행률 (0~1)
+  const progress = 1 - (remainSeconds / totalSeconds);
+
+  // 캐릭터 위치: 트랙 래퍼 내 0% → ~90% (끝에 도착)
+  // (100%로 하면 캐릭터가 래퍼 밖으로 나가므로 90%으로 제한)
+  const charLeft = progress * 88;
+  character.style.left = charLeft + '%';
+
+  // 게이지 업데이트
+  setGauge(progress * 100);
+
+  // 게이지 색상 단계
+  const pct = progress * 100;
+  if (remainSeconds <= 30) {
+    gaugeFill.classList.add('urgent');
+    gaugeFill.classList.remove('mid');
+  } else if (pct >= 50) {
+    gaugeFill.classList.add('mid');
+    gaugeFill.classList.remove('urgent');
+  } else {
+    gaugeFill.classList.remove('mid', 'urgent');
+  }
+}
+
+/* ===================================================
+   게이지 설정
+=================================================== */
+function setGauge(pct) {
+  gaugeFill.style.width = Math.min(pct, 100) + '%';
+  gaugePct.textContent  = Math.round(Math.min(pct, 100)) + '%';
+}
+
+/* ===================================================
+   마지막 30초 연출
+=================================================== */
+function triggerUrgent() {
+  const theme = THEMES[currentTheme];
+
+  // 유도 문구 변경
+  guideMsg.textContent = theme.urgentMsg;
+
+  // 시간 표시 깜빡임
+  timeDisplay.classList.add('urgent');
+
+  // 캐릭터 러싱 애니메이션 (빠른 진동)
+  character.classList.add('rushing');
+
+  // 30초 경보음 재생
+  playUrgentSound();
+}
+
+/* ===================================================
+   완료 처리
+=================================================== */
+function onComplete() {
+  const theme = THEMES[currentTheme];
+
+  // 캐릭터 도착 (완전 오른쪽 끝)
+  character.style.left = '92%';
+  character.classList.remove('rushing');
+  character.classList.add('explode');
+
+  // 게이지 100%
+  setGauge(100);
+  gaugeFill.classList.remove('mid');
+  gaugeFill.classList.add('urgent');
+
+  // 완료 오버레이 표시 (약간 딜레이)
+  setTimeout(() => {
+    completeOverlay.classList.add('show');
+    // 파티클 폭발
+    launchParticles();
+  }, 700);
+
+  // 완료 팡파레 재생
+  playCompleteSound();
+}
+
+/* ===================================================
+   파티클 폭발 (Canvas)
+=================================================== */
+function launchParticles() {
+  const canvas = particleCanvas;
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  // 파티클 배열 생성
+  const particles = [];
+  const colors = ['#FFD700','#FF6B6B','#4FC3F7','#81C784','#CE93D8','#FFCC02','#FF7043'];
+  const cx = canvas.width  / 2;
+  const cy = canvas.height / 2;
+
+  for (let i = 0; i < 120; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 8 + 3;
+    particles.push({
+      x: cx, y: cy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - (Math.random() * 4),
+      r: Math.random() * 8 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      alpha: 1,
+      gravity: 0.18,
+      decay: Math.random() * 0.012 + 0.008,
+    });
+  }
+
+  // 애니메이션 루프
+  function animateParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    particles.forEach(p => {
+      if (p.alpha <= 0) return;
+      alive = true;
+      p.x  += p.vx;
+      p.y  += p.vy;
+      p.vy += p.gravity;
+      p.alpha -= p.decay;
+      ctx.globalAlpha = Math.max(p.alpha, 0);
+      ctx.fillStyle   = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    if (alive) requestAnimationFrame(animateParticles);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  animateParticles();
+}
+
+/* ===================================================
+   포맷 유틸: 초 → MM:SS
+=================================================== */
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+}
+
+/* ===================================================
+   컨트롤 버튼 이벤트
+=================================================== */
+
+/* 일시정지 / 재시작 */
+pauseBtn.addEventListener('click', () => {
+  isPaused = !isPaused;
+  pauseBtn.textContent = isPaused ? '▶' : '⏸';
+  // 일시정지 시 엔진음 중지
+  if (isPaused) stopEngineSound();
+});
+
+/* 음소거 */
+muteBtn.addEventListener('click', () => {
+  isMuted = !isMuted;
+  muteBtn.classList.toggle('muted', isMuted);
+  muteBtn.textContent = isMuted ? '🔇' : '🔊';
+  if (isMuted) stopEngineSound();
+});
+
+/* 전체화면 */
+fullscreenBtn.addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+});
+
+/* 처음으로 (설정 화면으로 복귀) */
+resetBtn.addEventListener('click', returnToSetup);
+completeRestartBtn.addEventListener('click', returnToSetup);
+
+function returnToSetup() {
+  clearInterval(timerInterval);
+  stopEngineSound();
+  timerScreen.classList.add('hidden');
+  setupScreen.classList.remove('hidden');
+  // 완료 오버레이 초기화
+  completeOverlay.classList.remove('show');
+  // 캔버스 클리어
+  const ctx = particleCanvas.getContext('2d');
+  ctx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+}
+
+/* ===================================================
+   Web Audio API: 오디오 컨텍스트 초기화 (최초 사용자 입력 시)
+=================================================== */
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  // suspended 상태일 경우 resume
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+/* ===================================================
+   발사/출발 사운드
+   - 로켓/우주선: 올라가는 음조 (상승 주파수 스윕)
+   - 기차: 증기 기차 경적 (두 음)
+=================================================== */
+function playStartSound() {
+  if (isMuted) return;
+  const ctx = getAudioCtx();
+
+  if (currentTheme === 'train') {
+    // 기차 경적: 낮은음 + 높은음 두 번
+    [0, 0.25].forEach((delay, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(i === 0 ? 220 : 280, ctx.currentTime + delay);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.4);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.4);
+    });
+  } else {
+    // 로켓/우주선: 주파수 상승 스윕
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const dist = ctx.createWaveShaper();
+
+    // 노이즈 느낌을 위한 간단한 파형
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(100, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.8);
+
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.9);
+  }
+}
+
+/* ===================================================
+   30초 경보 사운드 (빠른 비프음 3회)
+=================================================== */
+function playUrgentSound() {
+  if (isMuted) return;
+  const ctx = getAudioCtx();
+
+  for (let i = 0; i < 3; i++) {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(880, ctx.currentTime + i * 0.18);
+    gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.18);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.12);
+    osc.start(ctx.currentTime + i * 0.18);
+    osc.stop(ctx.currentTime + i * 0.18 + 0.12);
+  }
+}
+
+/* ===================================================
+   완료 팡파레 (밝은 상승 화음 4음)
+=================================================== */
+function playCompleteSound() {
+  if (isMuted) return;
+  const ctx = getAudioCtx();
+
+  // 밝은 팡파레: 도-미-솔-높은도
+  const notes = [523.25, 659.25, 783.99, 1046.50];
+  notes.forEach((freq, i) => {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.15);
+    gain.gain.setValueAtTime(0.35, ctx.currentTime + i * 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.5);
+    osc.start(ctx.currentTime + i * 0.15);
+    osc.stop(ctx.currentTime + i * 0.15 + 0.5);
+  });
+
+  // 추가 화음: 동시에 2음
+  setTimeout(() => {
+    [523.25, 659.25, 783.99].forEach(freq => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 1.2);
+    });
+  }, 700);
+}
+
+/* ===================================================
+   엔진음 (주기적, 기본 OFF — 현재 미사용)
+   필요 시 startEngineSound() 호출
+=================================================== */
+function startEngineSound() {
+  if (isMuted || engineInterval) return;
+  engineInterval = setInterval(() => {
+    if (isMuted || isPaused) return;
+    const ctx  = getAudioCtx();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(60, ctx.currentTime);
+    gain.gain.setValueAtTime(0.06, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.3);
+  }, 1200);
+}
+
+function stopEngineSound() {
+  if (engineInterval) {
+    clearInterval(engineInterval);
+    engineInterval = null;
+  }
+}
+
+/* ===================================================
+   창 크기 변경 시 캔버스 재조정
+=================================================== */
+window.addEventListener('resize', () => {
+  particleCanvas.width  = window.innerWidth;
+  particleCanvas.height = window.innerHeight;
+});
+
+/* ===================================================
+   전체화면 상태 변경 시 버튼 아이콘 업데이트
+=================================================== */
+document.addEventListener('fullscreenchange', () => {
+  fullscreenBtn.textContent = document.fullscreenElement ? '⊡' : '⛶';
+});
+
+/* ===================================================
+   키보드 단축키 (스페이스: 일시정지)
+=================================================== */
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !timerScreen.classList.contains('hidden')) {
+    e.preventDefault();
+    pauseBtn.click();
+  }
+  if (e.code === 'KeyF') {
+    fullscreenBtn.click();
+  }
+  if (e.code === 'KeyM') {
+    muteBtn.click();
+  }
+});
+</script>
+</body>
+</html>

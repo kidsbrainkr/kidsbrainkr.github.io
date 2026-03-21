@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>무지개 카운트다운 타이머</title>
+  <style>
+    /* ─────────────────────────────────────────
+       기본 리셋 및 전체 레이아웃
+    ───────────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      /* 무지개 7색 (바깥→안쪽 순서) */
+      --c1: #FF3B30; /* 빨 */
+      --c2: #FF9500; /* 주 */
+      --c3: #FFCC00; /* 노 */
+      --c4: #34C759; /* 초 */
+      --c5: #007AFF; /* 파 */
+      --c6: #5856D6; /* 남 */
+      --c7: #AF52DE; /* 보 */
+      --c-gray: #C8C8C8;
+      --bg: #E8F4FD;
+      --sky-bottom: #B8DFF5;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      font-family: 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ─────────────────────────────────────────
+       화면 전환 컨테이너
+    ───────────────────────────────────────── */
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.4s ease;
+    }
+
+    .screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* ─────────────────────────────────────────
+       설정 화면
+    ───────────────────────────────────────── */
+    #setup-screen {
+      background: linear-gradient(160deg, #E8F4FD 0%, #C9E8FB 100%);
+      gap: 2.5vh;
+    }
+
+    #setup-screen h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      color: #2C7BB6;
+      text-shadow: 0 2px 8px rgba(44,123,182,0.15);
+      letter-spacing: -0.02em;
+    }
+
+    #setup-screen .subtitle {
+      font-size: clamp(0.9rem, 2vw, 1.2rem);
+      color: #6AABCE;
+      margin-top: -1vh;
+    }
+
+    /* 프리셋 버튼 그룹 */
+    .preset-group {
+      display: flex;
+      gap: 1.5vw;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 1vh;
+    }
+
+    .preset-btn {
+      width: clamp(100px, 14vw, 170px);
+      height: clamp(70px, 10vw, 120px);
+      border: none;
+      border-radius: 20px;
+      font-size: clamp(1.4rem, 3vw, 2.2rem);
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.12);
+      letter-spacing: -0.02em;
+    }
+
+    .preset-btn:hover  { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+    .preset-btn:active { transform: translateY(1px);  box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+
+    /* 프리셋 버튼 색상: 무지개 4색 */
+    .preset-btn:nth-child(1) { background: linear-gradient(135deg, #FF6B6B, #FF3B30); color: #fff; }
+    .preset-btn:nth-child(2) { background: linear-gradient(135deg, #FFBE5C, #FF9500); color: #fff; }
+    .preset-btn:nth-child(3) { background: linear-gradient(135deg, #6AE26A, #34C759); color: #fff; }
+    .preset-btn:nth-child(4) { background: linear-gradient(135deg, #5AA8FF, #007AFF); color: #fff; }
+
+    /* 직접 입력 섹션 */
+    .custom-section {
+      display: flex;
+      align-items: center;
+      gap: 1.2vw;
+      background: rgba(255,255,255,0.7);
+      border-radius: 18px;
+      padding: 1.2vh 2vw;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    .custom-section label {
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      color: #4A90C4;
+      font-weight: 700;
+    }
+
+    .time-input {
+      width: clamp(60px, 8vw, 100px);
+      height: clamp(44px, 6vw, 70px);
+      font-size: clamp(1.4rem, 2.5vw, 2rem);
+      font-weight: 700;
+      text-align: center;
+      border: 2.5px solid #B8DFF5;
+      border-radius: 12px;
+      color: #2C7BB6;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .time-input:focus { border-color: #007AFF; }
+
+    .custom-section .sep {
+      font-size: clamp(1.4rem, 2.5vw, 2rem);
+      font-weight: 800;
+      color: #4A90C4;
+    }
+
+    /* 시작 버튼 */
+    #start-btn {
+      width: clamp(180px, 28vw, 340px);
+      height: clamp(60px, 9vw, 110px);
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(135deg, #5AC8FA, #007AFF);
+      color: #fff;
+      font-size: clamp(1.5rem, 3.5vw, 2.6rem);
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 28px rgba(0,122,255,0.35);
+      transition: transform 0.15s, box-shadow 0.15s;
+      letter-spacing: 0.04em;
+    }
+
+    #start-btn:hover  { transform: translateY(-4px); box-shadow: 0 10px 36px rgba(0,122,255,0.45); }
+    #start-btn:active { transform: translateY(1px);  box-shadow: 0 3px 12px rgba(0,122,255,0.3); }
+
+    /* ─────────────────────────────────────────
+       타이머 화면
+    ───────────────────────────────────────── */
+    #timer-screen {
+      background: linear-gradient(180deg, #E8F4FD 0%, #C4E3F8 60%, #A8D5F0 100%);
+      gap: 0;
+      justify-content: flex-start;
+      padding-top: 2vh;
+    }
+
+    /* 무지개 SVG 래퍼 */
+    #rainbow-wrap {
+      width: min(90vw, 80vh);
+      height: min(45vw, 41vh);
+      position: relative;
+    }
+
+    #rainbow-svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 무지개 arc — js에서 제어 */
+    .rb-arc {
+      transition: fill 0.6s ease;
+    }
+
+    /* 남은 시간 표시 */
+    #time-display {
+      font-size: clamp(5rem, 14vw, 11rem);
+      font-weight: 900;
+      color: #2C7BB6;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      margin-top: -0.5vh;
+      transition: color 0.3s;
+    }
+
+    #time-display.danger {
+      color: #FF3B30;
+    }
+
+    /* 깜빡임 애니메이션 (30초 이하) */
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    #time-display.blink {
+      animation: blink 0.8s ease-in-out infinite;
+    }
+
+    /* 유도 문구 */
+    #guide-msg {
+      font-size: clamp(1.2rem, 3.5vw, 2.4rem);
+      font-weight: 700;
+      color: #4A90C4;
+      margin-top: 1.5vh;
+      letter-spacing: 0.02em;
+      min-height: 3.5rem;
+      text-align: center;
+      transition: all 0.4s;
+    }
+
+    /* 종료 메시지 (별도 레이어) */
+    #done-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(232,244,253,0.92);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s;
+      gap: 2vh;
+    }
+
+    #done-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #done-overlay .done-text {
+      font-size: clamp(2.5rem, 7vw, 5.5rem);
+      font-weight: 900;
+      color: #FF3B30;
+      text-align: center;
+      line-height: 1.2;
+      animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes pop {
+      0%   { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
+    /* 색종이 조각 캔버스 */
+    #confetti-canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* ─────────────────────────────────────────
+       하단 컨트롤 바
+    ───────────────────────────────────────── */
+    #controls {
+      position: absolute;
+      bottom: 2vh;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: clamp(0.6rem, 2vw, 1.6rem);
+      background: rgba(255,255,255,0.55);
+      backdrop-filter: blur(12px);
+      border-radius: 50px;
+      padding: 0.7vh 2.5vw;
+      box-shadow: 0 3px 18px rgba(0,0,0,0.1);
+    }
+
+    .ctrl-btn {
+      width: clamp(42px, 6vw, 70px);
+      height: clamp(42px, 6vw, 70px);
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      font-size: clamp(1.3rem, 2.5vw, 2rem);
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #2C7BB6;
+    }
+
+    .ctrl-btn:hover  { background: rgba(0,122,255,0.1); transform: scale(1.12); }
+    .ctrl-btn:active { transform: scale(0.95); }
+
+    .ctrl-btn.active { color: #FF3B30; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     설정 화면
+════════════════════════════════════════════ -->
+<div id="setup-screen" class="screen">
+  <h1>🌈 무지개 타이머</h1>
+  <p class="subtitle">정리 시간을 설정해 주세요</p>
+
+  <!-- 프리셋 버튼 -->
+  <div class="preset-group">
+    <button class="preset-btn" data-sec="180">3분</button>
+    <button class="preset-btn" data-sec="300">5분</button>
+    <button class="preset-btn" data-sec="600">10분</button>
+    <button class="preset-btn" data-sec="900">15분</button>
+  </div>
+
+  <!-- 직접 입력 -->
+  <div class="custom-section">
+    <label>직접 입력</label>
+    <input id="input-min" class="time-input" type="number" min="0" max="59" value="5" placeholder="분" />
+    <span class="sep">분</span>
+    <input id="input-sec" class="time-input" type="number" min="0" max="59" value="0" placeholder="초" />
+    <span class="sep">초</span>
+  </div>
+
+  <!-- 시작 버튼 -->
+  <button id="start-btn">▶ 시작하기</button>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     타이머 화면
+════════════════════════════════════════════ -->
+<div id="timer-screen" class="screen hidden">
+
+  <!-- 색종이 캔버스 (종료 연출) -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- 무지개 SVG -->
+  <div id="rainbow-wrap">
+    <svg id="rainbow-svg" viewBox="0 0 800 420" xmlns="http://www.w3.org/2000/svg">
+      <!--
+        무지개 반원 아치: 7개 동심 반원 띠
+        바깥쪽(큰 반원)이 첫 번째 색(빨강)
+        cx=400, cy=410 (하단 중앙을 기준점으로 사용)
+        각 띠의 두께 ≈ 46px
+      -->
+
+      <!-- 띠 1: 빨강 (가장 바깥) r=390 -->
+      <path id="arc1" class="rb-arc"
+        d="M 10,410 A 390,390 0 0,1 790,410 L 744,410 A 344,344 0 0,0 56,410 Z"
+        fill="var(--c1)" />
+
+      <!-- 띠 2: 주황 r=344 -->
+      <path id="arc2" class="rb-arc"
+        d="M 56,410 A 344,344 0 0,1 744,410 L 698,410 A 298,298 0 0,0 102,410 Z"
+        fill="var(--c2)" />
+
+      <!-- 띠 3: 노랑 r=298 -->
+      <path id="arc3" class="rb-arc"
+        d="M 102,410 A 298,298 0 0,1 698,410 L 652,410 A 252,252 0 0,0 148,410 Z"
+        fill="var(--c3)" />
+
+      <!-- 띠 4: 초록 r=252 -->
+      <path id="arc4" class="rb-arc"
+        d="M 148,410 A 252,252 0 0,1 652,410 L 606,410 A 206,206 0 0,0 194,410 Z"
+        fill="var(--c4)" />
+
+      <!-- 띠 5: 파랑 r=206 -->
+      <path id="arc5" class="rb-arc"
+        d="M 194,410 A 206,206 0 0,1 606,410 L 560,410 A 160,160 0 0,0 240,410 Z"
+        fill="var(--c5)" />
+
+      <!-- 띠 6: 남색 r=160 -->
+      <path id="arc6" class="rb-arc"
+        d="M 240,410 A 160,160 0 0,1 560,410 L 514,410 A 114,114 0 0,0 286,410 Z"
+        fill="var(--c6)" />
+
+      <!-- 띠 7: 보라 (가장 안쪽) r=114 -->
+      <path id="arc7" class="rb-arc"
+        d="M 286,410 A 114,114 0 0,1 514,410 L 468,410 A 68,68 0 0,0 332,410 Z"
+        fill="var(--c7)" />
+
+      <!-- 무지개 아래 구름 장식 (선택적 배경) -->
+      <ellipse cx="400" cy="412" rx="420" ry="30" fill="rgba(255,255,255,0.35)" />
+    </svg>
+  </div>
+
+  <!-- 남은 시간 숫자 -->
+  <div id="time-display">05:00</div>
+
+  <!-- 유도 문구 -->
+  <div id="guide-msg">🧹 정리할 시간이에요</div>
+
+  <!-- 종료 오버레이 -->
+  <div id="done-overlay">
+    <div class="done-text">정리 끝!<br>모여주세요 👏</div>
+  </div>
+
+  <!-- 하단 컨트롤 -->
+  <div id="controls">
+    <!-- 일시정지 / 재시작 -->
+    <button class="ctrl-btn" id="btn-pause" title="일시정지/재시작">⏸</button>
+    <!-- 음소거 -->
+    <button class="ctrl-btn" id="btn-mute" title="음소거">🔊</button>
+    <!-- 전체화면 -->
+    <button class="ctrl-btn" id="btn-fullscreen" title="전체화면">⛶</button>
+    <!-- 처음으로 -->
+    <button class="ctrl-btn" id="btn-reset" title="처음으로">🔄</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   무지개 카운트다운 타이머 — 메인 스크립트
+   유치원/어린이집 정리시간 교실용 도구
+════════════════════════════════════════════════════════ */
+
+// ─────────────────────────────────────
+// 상태 변수
+// ─────────────────────────────────────
+let totalSec    = 300;   // 설정된 전체 초
+let remainSec   = 300;   // 현재 남은 초
+let timerID     = null;  // setInterval ID
+let isPaused    = false; // 일시정지 여부
+let isMuted     = false; // 음소거 여부
+let isDone      = false; // 종료 여부
+
+// 알림 플래그 (중복 방지)
+let alerted60   = false;
+let alerted30   = false;
+
+// Web Audio API 컨텍스트 (첫 상호작용 후 생성)
+let audioCtx    = null;
+
+// 무지개 7개 arc 원색 (바깥→안쪽)
+const ARC_COLORS = [
+  '#FF3B30', // 빨
+  '#FF9500', // 주
+  '#FFCC00', // 노
+  '#34C759', // 초
+  '#007AFF', // 파
+  '#5856D6', // 남
+  '#AF52DE', // 보
+];
+
+// ─────────────────────────────────────
+// DOM 참조
+// ─────────────────────────────────────
+const setupScreen  = document.getElementById('setup-screen');
+const timerScreen  = document.getElementById('timer-screen');
+const timeDisplay  = document.getElementById('time-display');
+const guideMsg     = document.getElementById('guide-msg');
+const doneOverlay  = document.getElementById('done-overlay');
+const confettiCanvas = document.getElementById('confetti-canvas');
+
+const btnPause      = document.getElementById('btn-pause');
+const btnMute       = document.getElementById('btn-mute');
+const btnFullscreen = document.getElementById('btn-fullscreen');
+const btnReset      = document.getElementById('btn-reset');
+
+const arcEls = [1,2,3,4,5,6,7].map(i => document.getElementById('arc' + i));
+
+// ─────────────────────────────────────
+// Web Audio API — 사운드 생성 함수
+// ─────────────────────────────────────
+
+/** AudioContext를 처음 사용할 때만 초기화 */
+function ensureAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  // 모바일 Safari 등에서 suspended 상태일 수 있음
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+/**
+ * 단순 비프음 생성
+ * @param {number} freq    주파수 (Hz)
+ * @param {number} dur     길이 (초)
+ * @param {number} vol     볼륨 0~1
+ * @param {number} startAt 시작 시각 (ctx.currentTime 기준)
+ * @param {string} wave    oscillator 타입 ('sine'|'triangle'|'square')
+ */
+function beep(freq, dur, vol, startAt, wave = 'sine') {
+  if (isMuted) return;
+  ensureAudio();
+  const osc  = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.type = wave;
+  osc.frequency.setValueAtTime(freq, startAt);
+
+  gain.gain.setValueAtTime(0, startAt);
+  gain.gain.linearRampToValueAtTime(vol, startAt + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, startAt + dur);
+
+  osc.start(startAt);
+  osc.stop(startAt + dur + 0.05);
+}
+
+/** 시작음 — 경쾌한 상승 멜로디 */
+function playStartSound() {
+  if (isMuted) return;
+  ensureAudio();
+  const t = audioCtx.currentTime;
+  beep(523, 0.18, 0.5, t,       'triangle'); // C5
+  beep(659, 0.18, 0.5, t+0.18,  'triangle'); // E5
+  beep(784, 0.18, 0.5, t+0.36,  'triangle'); // G5
+  beep(1047,0.35, 0.5, t+0.54,  'triangle'); // C6
+}
+
+/** 1분 전 알림 — 띵 3번 */
+function playOneMinAlert() {
+  if (isMuted) return;
+  ensureAudio();
+  const t = audioCtx.currentTime;
+  [0, 0.28, 0.56].forEach(offset => beep(880, 0.22, 0.4, t + offset, 'sine'));
+}
+
+/** 30초 전 알림 — 빠른 2번 */
+function playThirtySecAlert() {
+  if (isMuted) return;
+  ensureAudio();
+  const t = audioCtx.currentTime;
+  beep(1100, 0.18, 0.45, t,      'sine');
+  beep(1100, 0.18, 0.45, t+0.22, 'sine');
+}
+
+/** 종료 팡파레 */
+function playFanfare() {
+  if (isMuted) return;
+  ensureAudio();
+  const t = audioCtx.currentTime;
+  // 간단한 팡파레 멜로디
+  const notes = [
+    [523, 0.15], [523, 0.15], [523, 0.15], [659, 0.5],
+    [587, 0.15], [587, 0.15], [587, 0.15], [784, 0.6],
+  ];
+  let cur = t;
+  notes.forEach(([freq, dur]) => {
+    beep(freq, dur * 0.9, 0.55, cur, 'triangle');
+    cur += dur;
+  });
+}
+
+// ─────────────────────────────────────
+// 무지개 색 제어
+// ─────────────────────────────────────
+
+/**
+ * 진행률(0~1)에 따라 무지개 띠를 업데이트
+ * ratio=1: 전체 색상 표시 (시작)
+ * ratio=0: 모두 회색 (종료)
+ * 바깥쪽 띠(arc1)부터 순서대로 회색으로 변함
+ */
+function updateRainbow(ratio) {
+  // 활성 띠 개수: 0~7 (소수점으로 부드럽게)
+  const activeFull = ratio * 7;
+
+  arcEls.forEach((el, i) => {
+    // i=0이 가장 안쪽(보라), i=6이 가장 바깥(빨강)
+    // 바깥쪽부터 사라지도록 인덱스를 반전
+    const bandIndex = 6 - i; // 0=보라, 6=빨강
+    const threshold = bandIndex; // 이 띠가 살아있으려면 activeFull > threshold
+
+    if (activeFull > threshold + 1) {
+      // 완전히 활성
+      el.style.fill = ARC_COLORS[i];
+      el.style.opacity = '1';
+    } else if (activeFull > threshold) {
+      // 부분 활성 (페이드)
+      const fade = activeFull - threshold;
+      el.style.fill = ARC_COLORS[i];
+      el.style.opacity = String(fade.toFixed(3));
+    } else {
+      // 회색 처리
+      el.style.fill = '#C8C8C8';
+      el.style.opacity = '0.5';
+    }
+  });
+}
+
+// ─────────────────────────────────────
+// 시간 포맷
+// ─────────────────────────────────────
+
+/** 초를 "MM:SS" 문자열로 변환 */
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+// ─────────────────────────────────────
+// 타이머 핵심 로직
+// ─────────────────────────────────────
+
+/** 매 초 호출되는 틱 함수 */
+function tick() {
+  if (isPaused || isDone) return;
+
+  remainSec--;
+
+  // 알림 체크
+  if (!alerted60 && remainSec === 60 && totalSec > 70) {
+    alerted60 = true;
+    playOneMinAlert();
+  }
+  if (!alerted30 && remainSec === 30) {
+    alerted30 = true;
+    playThirtySecAlert();
+  }
+
+  // 화면 업데이트
+  renderTimer();
+
+  // 종료 처리
+  if (remainSec <= 0) {
+    remainSec = 0;
+    clearInterval(timerID);
+    timerID = null;
+    handleDone();
+  }
+}
+
+/** 화면 렌더링 */
+function renderTimer() {
+  timeDisplay.textContent = formatTime(remainSec);
+
+  // 30초 이하 위험 표시
+  if (remainSec <= 30 && remainSec > 0) {
+    timeDisplay.classList.add('danger', 'blink');
+  } else {
+    timeDisplay.classList.remove('danger', 'blink');
+  }
+
+  // 무지개 업데이트
+  const ratio = totalSec > 0 ? remainSec / totalSec : 0;
+  updateRainbow(ratio);
+}
+
+/** 종료 처리 */
+function handleDone() {
+  isDone = true;
+  timeDisplay.textContent = '00:00';
+  timeDisplay.classList.remove('danger', 'blink');
+  guideMsg.textContent = '';
+  updateRainbow(0);
+
+  // 종료 오버레이 표시
+  doneOverlay.classList.add('show');
+
+  // 팡파레 재생
+  playFanfare();
+
+  // 색종이 효과 시작
+  startConfetti();
+}
+
+// ─────────────────────────────────────
+// 색종이 (Canvas 파티클)
+// ─────────────────────────────────────
+
+let confettiParticles = [];
+let confettiRAF = null;
+
+/** 색종이 조각 초기화 */
+function startConfetti() {
+  const canvas = confettiCanvas;
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+
+  const COLORS = ['#FF3B30','#FF9500','#FFCC00','#34C759','#007AFF','#5856D6','#AF52DE','#FF69B4'];
+  const COUNT  = 120;
+
+  confettiParticles = Array.from({ length: COUNT }, () => ({
+    x:    Math.random() * canvas.width,
+    y:    Math.random() * -canvas.height * 0.5,
+    w:    Math.random() * 12 + 6,
+    h:    Math.random() * 6 + 4,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    rot:   Math.random() * Math.PI * 2,
+    rotV:  (Math.random() - 0.5) * 0.15,
+    vy:    Math.random() * 3 + 2,
+    vx:    (Math.random() - 0.5) * 2,
+    alpha: 1,
+  }));
+
+  function drawConfetti() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+
+    confettiParticles.forEach(p => {
+      p.x   += p.vx;
+      p.y   += p.vy;
+      p.rot += p.rotV;
+      // 화면 아래로 나가면 페이드
+      if (p.y > canvas.height * 0.85) p.alpha -= 0.02;
+
+      if (p.alpha > 0) {
+        alive = true;
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+    });
+
+    if (alive) {
+      confettiRAF = requestAnimationFrame(drawConfetti);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  if (confettiRAF) cancelAnimationFrame(confettiRAF);
+  confettiRAF = requestAnimationFrame(drawConfetti);
+}
+
+/** 색종이 정리 */
+function stopConfetti() {
+  if (confettiRAF) cancelAnimationFrame(confettiRAF);
+  confettiRAF = null;
+  const ctx = confettiCanvas.getContext('2d');
+  ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+}
+
+// ─────────────────────────────────────
+// 화면 전환
+// ─────────────────────────────────────
+
+/** 설정 화면 → 타이머 화면으로 전환 */
+function showTimer(sec) {
+  totalSec  = sec;
+  remainSec = sec;
+  isPaused  = false;
+  isDone    = false;
+  alerted60 = false;
+  alerted30 = false;
+
+  // UI 초기화
+  timeDisplay.textContent = formatTime(remainSec);
+  timeDisplay.classList.remove('danger', 'blink');
+  guideMsg.textContent = '🧹 정리할 시간이에요';
+  doneOverlay.classList.remove('show');
+  btnPause.textContent = '⏸';
+  stopConfetti();
+  updateRainbow(1); // 무지개 풀 컬러
+
+  // 화면 전환
+  setupScreen.classList.add('hidden');
+  timerScreen.classList.remove('hidden');
+
+  // 시작음
+  playStartSound();
+
+  // 타이머 시작
+  if (timerID) clearInterval(timerID);
+  timerID = setInterval(tick, 1000);
+}
+
+/** 타이머 화면 → 설정 화면으로 복귀 */
+function showSetup() {
+  if (timerID) clearInterval(timerID);
+  timerID = null;
+  isPaused = false;
+  isDone   = false;
+  stopConfetti();
+
+  timerScreen.classList.add('hidden');
+  setupScreen.classList.remove('hidden');
+}
+
+// ─────────────────────────────────────
+// 이벤트 바인딩 — 설정 화면
+// ─────────────────────────────────────
+
+/** 프리셋 버튼 */
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const sec = parseInt(btn.dataset.sec, 10);
+    showTimer(sec);
+  });
+});
+
+/** 시작 버튼 (직접 입력) */
+document.getElementById('start-btn').addEventListener('click', () => {
+  const m = parseInt(document.getElementById('input-min').value, 10) || 0;
+  const s = parseInt(document.getElementById('input-sec').value, 10) || 0;
+  const total = m * 60 + s;
+  if (total <= 0) {
+    alert('시간을 1초 이상 입력해 주세요!');
+    return;
+  }
+  showTimer(total);
+});
+
+// ─────────────────────────────────────
+// 이벤트 바인딩 — 컨트롤 버튼
+// ─────────────────────────────────────
+
+/** 일시정지 / 재시작 */
+btnPause.addEventListener('click', () => {
+  if (isDone) return;
+  isPaused = !isPaused;
+  btnPause.textContent = isPaused ? '▶' : '⏸';
+
+  if (!isPaused) {
+    // 재시작: 인터벌이 없으면 새로 시작
+    if (!timerID) {
+      timerID = setInterval(tick, 1000);
+    }
+  }
+});
+
+/** 음소거 토글 */
+btnMute.addEventListener('click', () => {
+  isMuted = !isMuted;
+  btnMute.textContent = isMuted ? '🔇' : '🔊';
+  btnMute.classList.toggle('active', isMuted);
+});
+
+/** 전체화면 토글 */
+btnFullscreen.addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(err => {
+      console.warn('전체화면 진입 실패:', err);
+    });
+  } else {
+    document.exitFullscreen();
+  }
+});
+
+/** 처음으로 (설정 화면으로 복귀) */
+btnReset.addEventListener('click', () => {
+  showSetup();
+});
+
+// ─────────────────────────────────────
+// 전체화면 버튼 아이콘 동기화
+// ─────────────────────────────────────
+document.addEventListener('fullscreenchange', () => {
+  btnFullscreen.textContent = document.fullscreenElement ? '⊡' : '⛶';
+});
+
+// ─────────────────────────────────────
+// 창 리사이즈 시 색종이 캔버스 크기 조정
+// ─────────────────────────────────────
+window.addEventListener('resize', () => {
+  if (confettiCanvas.width > 0) {
+    confettiCanvas.width  = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+  }
+});
+
+// ─────────────────────────────────────
+// 키보드 단축키
+// ─────────────────────────────────────
+document.addEventListener('keydown', e => {
+  // Space: 일시정지/재시작
+  if (e.code === 'Space' && !timerScreen.classList.contains('hidden')) {
+    e.preventDefault();
+    btnPause.click();
+  }
+  // F: 전체화면
+  if (e.code === 'KeyF') {
+    btnFullscreen.click();
+  }
+  // Escape (전체화면에서 이미 처리됨): 설정 화면으로 돌아가는 것은 Reset 버튼 사용
+});
+</script>
+</body>
+</html>
