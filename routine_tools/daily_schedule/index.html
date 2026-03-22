@@ -3,43 +3,193 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>하루 일과 순서판</title>
+  <title>🌈⭐ 하루 일과 순서판</title>
   <style>
-    :root { --bg:#eff8fb; --panel:#fffefa; --text:#22313f; --muted:#63707a; --accent:#ff8c61; --shadow:0 16px 42px rgba(34,49,63,.12); --radius:24px; --font:"Segoe UI","Malgun Gothic",sans-serif; }
-    *{box-sizing:border-box;} body{margin:0;min-height:100vh;font-family:var(--font);color:var(--text);background:radial-gradient(circle at top left, rgba(86,193,214,.22), transparent 30%), radial-gradient(circle at bottom right, rgba(255,140,97,.2), transparent 30%), var(--bg);}
-    .page{width:min(1200px,calc(100% - 22px));margin:0 auto;padding:18px 0 30px;}
-    .toolbar,.panel{background:rgba(255,255,255,.86);backdrop-filter:blur(8px);box-shadow:var(--shadow);border-radius:var(--radius);}
-    .toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:14px 18px;margin-bottom:16px;flex-wrap:wrap;}
-    .toolbar h1{margin:0;font-size:1.35rem;}
-    .actions,.controls{display:flex;gap:8px;flex-wrap:wrap;}
-    .panel{padding:20px;} button,input,textarea{font:inherit;}
-    .btn,.preset{border:0;background:#fff;color:var(--text);border-radius:999px;padding:11px 16px;cursor:pointer;box-shadow:0 8px 18px rgba(34,49,63,.08);}
-    .preset.active,.btn.primary{background:linear-gradient(135deg,var(--accent),#ffb06b);color:#fff;font-weight:700;}
-    .cards{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:16px;margin-top:16px;}
-    .card{background:var(--panel);border-radius:24px;padding:20px;box-shadow:inset 0 0 0 2px rgba(99,112,122,.08);min-height:290px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;}
-    .card.current{background:linear-gradient(160deg,#fff4ea,#fffdfa);box-shadow:inset 0 0 0 3px rgba(255,140,97,.22);}
-    .label{display:inline-block;padding:7px 12px;border-radius:999px;font-size:.82rem;font-weight:700;margin-bottom:16px;background:#eef5f8;color:var(--muted);}
-    .current .label{background:#fff0e7;color:var(--accent);}
-    .icon{font-size:clamp(3rem,10vw,6rem);margin-bottom:16px;}
-    .title{font-size:clamp(1.5rem,3vw,2.8rem);font-weight:800;line-height:1.2;}
-    .sub{margin-top:10px;color:var(--muted);font-size:1rem;line-height:1.5;}
-    .editor{margin-top:20px;padding:18px;border-radius:20px;background:rgba(255,255,255,.78);}
-    .editor h2{margin:0 0 12px;font-size:1.05rem;}
-    .editor textarea{width:100%;min-height:120px;resize:vertical;border:2px solid #e5e8ec;border-radius:18px;padding:14px;line-height:1.6;}
-    .help{margin-top:8px;color:var(--muted);font-size:.9rem;}
-    @media (max-width:860px){.cards{grid-template-columns:1fr;}.card{min-height:220px;}}
+    :root{
+      --bg:#f5f8ff;
+      --panel:rgba(255,255,255,.88);
+      --panel-strong:rgba(255,255,255,.96);
+      --text:#243246;
+      --muted:#627386;
+      --sky:#79d4f2;
+      --pink:#ff9f92;
+      --sun:#ffd76d;
+      --lav:#a48fff;
+      --shadow:0 22px 54px rgba(36,50,70,.12);
+      --radius:28px;
+      --font:"Segoe UI","Malgun Gothic",sans-serif;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:var(--font);
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(121,212,242,.24), transparent 32%),
+        radial-gradient(circle at top right, rgba(255,215,109,.2), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(164,143,255,.18), transparent 30%),
+        linear-gradient(180deg,#f8fbff 0%, #eef5ff 100%);
+    }
+    .page{width:min(1200px,calc(100% - 22px));margin:0 auto;padding:18px 0 34px;}
+    .toolbar,.panel,.card,.editor,.hero-intro{
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,.62);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(12px);
+    }
+    .toolbar{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:center;
+      padding:16px 20px;
+      margin-bottom:16px;
+      flex-wrap:wrap;
+    }
+    .brand{display:flex;gap:14px;align-items:center;}
+    .brand-badge{
+      width:62px;height:62px;border-radius:20px;display:grid;place-items:center;
+      background:linear-gradient(135deg,#fff8d9,#ffe3ec 48%,#dff5ff);
+      box-shadow:inset 0 0 0 3px rgba(255,255,255,.7), 0 12px 24px rgba(121,212,242,.18);
+      font-size:1.8rem;
+    }
+    .brand h1{margin:0;font-size:1.35rem;}
+    .brand p{margin:4px 0 0;color:var(--muted);font-size:.94rem;}
+    .toolbar-actions,.controls{display:flex;gap:8px;flex-wrap:wrap;}
+    button,input,textarea{font:inherit;}
+    .btn,.preset{
+      border:0;
+      border-radius:999px;
+      padding:11px 16px;
+      cursor:pointer;
+      color:var(--text);
+      background:#fff;
+      box-shadow:0 10px 22px rgba(36,50,70,.08);
+      transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+    .btn:hover,.preset:hover{transform:translateY(-1px);box-shadow:0 14px 24px rgba(36,50,70,.1);}
+    .btn.primary,.preset.active{
+      background:linear-gradient(135deg,var(--pink),#ffbe84);
+      color:#fff;
+      font-weight:800;
+    }
+    .btn.secondary{
+      background:linear-gradient(135deg,var(--sky),#9ce6de);
+      color:#fff;
+      font-weight:800;
+    }
+    .panel{padding:22px;}
+    .hero-intro{
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      align-items:center;
+      padding:18px 20px;
+      margin-bottom:18px;
+      background:linear-gradient(135deg,rgba(255,255,255,.94),rgba(250,252,255,.82));
+    }
+    .hero-copy h2{margin:0 0 8px;font-size:1.3rem;}
+    .hero-copy p{margin:0;color:var(--muted);line-height:1.65;}
+    .hero-pill{
+      flex-shrink:0;
+      padding:12px 16px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#fff5c6,#ffe7ef,#e5f7ff);
+      font-weight:800;
+      color:#7a5b24;
+    }
+    .cards{display:grid;grid-template-columns:1.45fr 1fr 1fr;gap:16px;margin-top:16px;}
+    .card{
+      min-height:300px;
+      padding:22px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      text-align:center;
+      background:linear-gradient(180deg,var(--panel-strong),rgba(255,255,255,.78));
+    }
+    .card.current{
+      background:linear-gradient(155deg,#fff7ef,#fffdf9 42%,#eef9ff);
+      box-shadow:var(--shadow), inset 0 0 0 3px rgba(255,159,146,.18);
+    }
+    .label{
+      display:inline-block;
+      padding:8px 14px;
+      border-radius:999px;
+      font-size:.82rem;
+      font-weight:800;
+      margin-bottom:16px;
+      background:#eef6ff;
+      color:#55708c;
+    }
+    .current .label{
+      background:linear-gradient(135deg,#ffe9df,#fff4d8);
+      color:#cb6d4f;
+    }
+    .icon{
+      width:110px;height:110px;border-radius:32px;
+      display:grid;place-items:center;
+      font-size:3.1rem;
+      margin-bottom:16px;
+      background:linear-gradient(135deg,#ffffff,#eef8ff);
+      box-shadow:inset 0 0 0 3px rgba(255,255,255,.7), 0 14px 28px rgba(121,212,242,.16);
+    }
+    .title{font-size:clamp(1.55rem,3vw,2.7rem);font-weight:900;line-height:1.22;}
+    .sub{margin-top:10px;color:var(--muted);font-size:1rem;line-height:1.6;max-width:24ch;}
+    .editor{
+      margin-top:20px;
+      padding:20px;
+      background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(247,250,255,.84));
+    }
+    .editor h2{margin:0 0 8px;font-size:1.08rem;}
+    .editor p{margin:0 0 12px;color:var(--muted);line-height:1.6;}
+    .editor textarea{
+      width:100%;
+      min-height:124px;
+      resize:vertical;
+      border:2px solid #e6edf5;
+      border-radius:20px;
+      padding:14px;
+      line-height:1.7;
+      background:#fff;
+    }
+    .help{margin-top:10px;color:var(--muted);font-size:.92rem;}
+    @media (max-width:860px){
+      .hero-intro{flex-direction:column;align-items:flex-start;}
+      .cards{grid-template-columns:1fr;}
+      .card{min-height:220px;}
+      .icon{width:92px;height:92px;font-size:2.6rem;}
+    }
   </style>
 </head>
 <body>
   <main class="page">
     <section class="toolbar">
-      <h1>하루 일과 순서판</h1>
-      <div class="actions">
-        <button class="btn" id="homeBtn" type="button">홈</button>
-        <button class="btn" id="fullscreenBtn" type="button">전체화면</button>
+      <div class="brand">
+        <div class="brand-badge">🌈⭐</div>
+        <div>
+          <h1>하루 일과 순서판</h1>
+          <p>지금, 다음, 그다음을 한눈에 보여주는 교실 화면</p>
+        </div>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn" id="homeBtn" type="button">← 루틴 허브</button>
+        <button class="btn secondary" id="fullscreenBtn" type="button">전체 화면</button>
       </div>
     </section>
+
     <section class="panel">
+      <section class="hero-intro">
+        <div class="hero-copy">
+          <h2>아이들이 지금 해야 할 일을 쉽게 이해할 수 있어요</h2>
+          <p>프리셋 일과를 바로 쓰거나, 반 상황에 맞게 순서를 직접 바꿔서 사용할 수 있습니다.</p>
+        </div>
+        <div class="hero-pill">교실 앞 화면용 추천</div>
+      </section>
+
       <div class="controls">
         <button class="preset active" data-preset="default" type="button">기본 일과</button>
         <button class="preset" data-preset="outdoor" type="button">바깥놀이 있는 날</button>
@@ -47,41 +197,179 @@
         <button class="btn primary" id="prevBtn" type="button">이전</button>
         <button class="btn primary" id="nextBtn" type="button">다음</button>
       </div>
+
       <div class="cards">
-        <article class="card current"><div class="label">지금</div><div class="icon" id="currentIcon"></div><div class="title" id="currentTitle"></div><div class="sub">지금 하고 있는 활동이에요</div></article>
-        <article class="card"><div class="label">다음</div><div class="icon" id="nextIcon"></div><div class="title" id="nextTitle"></div><div class="sub">곧 이어서 할 활동이에요</div></article>
-        <article class="card"><div class="label">그다음</div><div class="icon" id="laterIcon"></div><div class="title" id="laterTitle"></div><div class="sub">조금 뒤에 할 활동이에요</div></article>
+        <article class="card current">
+          <div class="label">지금</div>
+          <div class="icon" id="currentIcon"></div>
+          <div class="title" id="currentTitle"></div>
+          <div class="sub">지금 하고 있는 활동이에요.</div>
+        </article>
+        <article class="card">
+          <div class="label">다음</div>
+          <div class="icon" id="nextIcon"></div>
+          <div class="title" id="nextTitle"></div>
+          <div class="sub">곧 이어서 할 활동이에요.</div>
+        </article>
+        <article class="card">
+          <div class="label">그다음</div>
+          <div class="icon" id="laterIcon"></div>
+          <div class="title" id="laterTitle"></div>
+          <div class="sub">조금 뒤에 할 활동이에요.</div>
+        </article>
       </div>
+
       <section class="editor">
         <h2>일과 직접 입력</h2>
-        <textarea id="scheduleInput">👋 등원
+        <p>한 줄에 하나씩 입력하세요. 맨 앞에 이모지를 넣으면 함께 표시됩니다.</p>
+        <textarea id="scheduleInput">🏫 등원
 🧩 자유놀이
 🍎 간식
-📚 이야기 나누기
-🏃 바깥놀이
+📖 이야기 나누기
+🌳 바깥놀이
 🍚 점심
-😴 휴식
+😴 낮잠
 🎨 오후 활동
-👋 하원 준비</textarea>
-        <div class="controls" style="margin-top:12px;"><button class="btn" id="applyBtn" type="button">직접 적용</button><button class="btn" id="resetBtn" type="button">기본값으로</button></div>
-        <div class="help">한 줄에 하나씩 입력하세요. 맨 앞에 이모지를 넣으면 화면에 같이 표시됩니다.</div>
+🎒 하원 준비</textarea>
+        <div class="controls" style="margin-top:12px;">
+          <button class="btn" id="applyBtn" type="button">직접 적용</button>
+          <button class="btn" id="resetBtn" type="button">선택한 프리셋으로 되돌리기</button>
+        </div>
+        <div class="help">예: `🎨 미술 활동`, `🫧 손 씻기`, `📚 동화 시간`</div>
       </section>
     </section>
   </main>
+
   <script>
-    const currentIcon=document.getElementById("currentIcon"), currentTitle=document.getElementById("currentTitle"), nextIcon=document.getElementById("nextIcon"), nextTitle=document.getElementById("nextTitle"), laterIcon=document.getElementById("laterIcon"), laterTitle=document.getElementById("laterTitle"), scheduleInput=document.getElementById("scheduleInput");
-    const presets={default:[["👋","등원"],["🧩","자유놀이"],["🍎","간식"],["📚","이야기 나누기"],["🏃","바깥놀이"],["🍚","점심"],["😴","휴식"],["🎨","오후 활동"],["👋","하원 준비"]],outdoor:[["👋","등원"],["🧩","자유놀이"],["🍎","간식"],["🏃","바깥놀이"],["📚","이야기 나누기"],["🍚","점심"],["🪥","손씻기"],["😴","휴식"],["👋","하원 준비"]],art:[["👋","등원"],["🧩","자유놀이"],["🍎","간식"],["🎨","미술 활동"],["🧺","정리 시간"],["🍚","점심"],["😴","휴식"],["📖","마무리 활동"],["👋","하원 준비"]]};
-    let activePreset="default", steps=presets.default.map(([icon,title])=>({icon,title})), currentIndex=0;
-    function parseLines(value){return value.split("\n").map((line)=>line.trim()).filter(Boolean).map((line)=>{const parts=line.split(" "); const first=parts[0]||""; const hasEmoji=first.length<=3; return {icon:hasEmoji?first:"📌", title:hasEmoji?(parts.slice(1).join(" ")||"활동"):line};});}
-    function render(){ const current=steps[currentIndex]||{icon:"✅",title:"완료"}; const next=steps[currentIndex+1]||{icon:"🌟",title:"모두 끝"}; const later=steps[currentIndex+2]||{icon:"🌈",title:"준비 완료"}; currentIcon.textContent=current.icon; currentTitle.textContent=current.title; nextIcon.textContent=next.icon; nextTitle.textContent=next.title; laterIcon.textContent=later.icon; laterTitle.textContent=later.title; }
-    function setPreset(name){ activePreset=name; steps=presets[name].map(([icon,title])=>({icon,title})); currentIndex=0; scheduleInput.value=steps.map((step)=>`${step.icon} ${step.title}`).join("\n"); document.querySelectorAll(".preset").forEach((button)=>button.classList.toggle("active", button.dataset.preset===name)); render(); }
-    document.querySelectorAll(".preset").forEach((button)=>button.addEventListener("click",()=>setPreset(button.dataset.preset)));
-    document.getElementById("prevBtn").addEventListener("click",()=>{ currentIndex=Math.max(0,currentIndex-1); render(); });
-    document.getElementById("nextBtn").addEventListener("click",()=>{ currentIndex=Math.min(steps.length-1,currentIndex+1); render(); });
-    document.getElementById("applyBtn").addEventListener("click",()=>{ const parsed=parseLines(scheduleInput.value); if(parsed.length>0){ steps=parsed; currentIndex=0; document.querySelectorAll(".preset").forEach((button)=>button.classList.remove("active")); render(); } });
-    document.getElementById("resetBtn").addEventListener("click",()=>setPreset(activePreset));
-    document.getElementById("fullscreenBtn").addEventListener("click",async()=>{ if(!document.fullscreenElement){ await document.documentElement.requestFullscreen(); } else { await document.exitFullscreen(); } });
-    document.getElementById("homeBtn").addEventListener("click",()=>{ window.location.href="../"; });
+    const currentIcon = document.getElementById("currentIcon");
+    const currentTitle = document.getElementById("currentTitle");
+    const nextIcon = document.getElementById("nextIcon");
+    const nextTitle = document.getElementById("nextTitle");
+    const laterIcon = document.getElementById("laterIcon");
+    const laterTitle = document.getElementById("laterTitle");
+    const scheduleInput = document.getElementById("scheduleInput");
+
+    const presets = {
+      default: [
+        ["🏫", "등원"],
+        ["🧩", "자유놀이"],
+        ["🍎", "간식"],
+        ["📖", "이야기 나누기"],
+        ["🌳", "바깥놀이"],
+        ["🍚", "점심"],
+        ["😴", "낮잠"],
+        ["🎨", "오후 활동"],
+        ["🎒", "하원 준비"]
+      ],
+      outdoor: [
+        ["🏫", "등원"],
+        ["🧩", "자유놀이"],
+        ["🍎", "간식"],
+        ["🌳", "바깥놀이"],
+        ["📖", "이야기 나누기"],
+        ["🍚", "점심"],
+        ["🫧", "손 씻기"],
+        ["😴", "낮잠"],
+        ["🎒", "하원 준비"]
+      ],
+      art: [
+        ["🏫", "등원"],
+        ["🧩", "자유놀이"],
+        ["🍎", "간식"],
+        ["🎨", "미술 활동"],
+        ["🧹", "정리 시간"],
+        ["🍚", "점심"],
+        ["😴", "낮잠"],
+        ["📚", "마무리 활동"],
+        ["🎒", "하원 준비"]
+      ]
+    };
+
+    let activePreset = "default";
+    let steps = presets.default.map(([icon, title]) => ({ icon, title }));
+    let currentIndex = 0;
+
+    function hasEmojiPrefix(value) {
+      return /^\p{Extended_Pictographic}/u.test(value);
+    }
+
+    function parseLines(value) {
+      return value
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const parts = line.split(/\s+/);
+          const first = parts[0] || "";
+          const hasEmoji = hasEmojiPrefix(first);
+          return {
+            icon: hasEmoji ? first : "⭐",
+            title: hasEmoji ? (parts.slice(1).join(" ") || "활동") : line
+          };
+        });
+    }
+
+    function render() {
+      const current = steps[currentIndex] || { icon: "🌈", title: "모두 완료" };
+      const next = steps[currentIndex + 1] || { icon: "⭐", title: "모두 했어요" };
+      const later = steps[currentIndex + 2] || { icon: "✨", title: "준비 완료" };
+      currentIcon.textContent = current.icon;
+      currentTitle.textContent = current.title;
+      nextIcon.textContent = next.icon;
+      nextTitle.textContent = next.title;
+      laterIcon.textContent = later.icon;
+      laterTitle.textContent = later.title;
+    }
+
+    function setPreset(name) {
+      activePreset = name;
+      steps = presets[name].map(([icon, title]) => ({ icon, title }));
+      currentIndex = 0;
+      scheduleInput.value = steps.map((step) => `${step.icon} ${step.title}`).join("\n");
+      document.querySelectorAll(".preset").forEach((button) => {
+        button.classList.toggle("active", button.dataset.preset === name);
+      });
+      render();
+    }
+
+    document.querySelectorAll(".preset").forEach((button) => {
+      button.addEventListener("click", () => setPreset(button.dataset.preset));
+    });
+
+    document.getElementById("prevBtn").addEventListener("click", () => {
+      currentIndex = Math.max(0, currentIndex - 1);
+      render();
+    });
+
+    document.getElementById("nextBtn").addEventListener("click", () => {
+      currentIndex = Math.min(steps.length - 1, currentIndex + 1);
+      render();
+    });
+
+    document.getElementById("applyBtn").addEventListener("click", () => {
+      const parsed = parseLines(scheduleInput.value);
+      if (parsed.length > 0) {
+        steps = parsed;
+        currentIndex = 0;
+        document.querySelectorAll(".preset").forEach((button) => button.classList.remove("active"));
+        render();
+      }
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", () => setPreset(activePreset));
+
+    document.getElementById("fullscreenBtn").addEventListener("click", async () => {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    });
+
+    document.getElementById("homeBtn").addEventListener("click", () => {
+      window.location.href = "../";
+    });
+
     render();
   </script>
 </body>

@@ -3,52 +3,263 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>오늘의 도우미 보드</title>
+  <title>🌈⭐ 오늘의 도우미 보드</title>
   <style>
-    :root { --bg:#f4f4ff; --panel:rgba(255,255,255,.9); --text:#273447; --muted:#657182; --accent:#7c7cff; --accent2:#ff9f5e; --shadow:0 16px 44px rgba(39,52,71,.12); --radius:24px; --font:"Segoe UI","Malgun Gothic",sans-serif; }
-    *{box-sizing:border-box;} body{margin:0;min-height:100vh;font-family:var(--font);color:var(--text);background:radial-gradient(circle at top left, rgba(124,124,255,.18), transparent 32%), radial-gradient(circle at bottom right, rgba(255,159,94,.18), transparent 32%), var(--bg);}
-    .page{width:min(1200px,calc(100% - 22px));margin:0 auto;padding:18px 0 28px;}
-    .toolbar,.panel{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);}
-    .toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:14px 18px;margin-bottom:16px;flex-wrap:wrap;}
-    .toolbar h1{margin:0;font-size:1.35rem;} .panel{padding:20px;}
-    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;justify-content:center;}
+    :root{
+      --bg:#f6f3ff;
+      --panel:rgba(255,255,255,.9);
+      --panel-strong:rgba(255,255,255,.96);
+      --text:#2a3447;
+      --muted:#677486;
+      --lav:#8e87ff;
+      --pink:#ffab73;
+      --sky:#7fd6ef;
+      --shadow:0 22px 52px rgba(42,52,71,.12);
+      --radius:28px;
+      --font:"Segoe UI","Malgun Gothic",sans-serif;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:var(--font);
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(142,135,255,.18), transparent 32%),
+        radial-gradient(circle at top right, rgba(255,171,115,.16), transparent 26%),
+        radial-gradient(circle at bottom right, rgba(127,214,239,.18), transparent 30%),
+        linear-gradient(180deg,#faf8ff 0%, #f3f4ff 100%);
+    }
+    .page{width:min(1200px,calc(100% - 22px));margin:0 auto;padding:18px 0 30px;}
+    .toolbar,.panel,.editor,.hero-intro,.card{
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,.62);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(12px);
+    }
+    .toolbar{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:center;
+      padding:16px 20px;
+      margin-bottom:16px;
+      flex-wrap:wrap;
+    }
+    .brand{display:flex;gap:14px;align-items:center;}
+    .brand-badge{
+      width:62px;height:62px;border-radius:20px;display:grid;place-items:center;
+      background:linear-gradient(135deg,#ece8ff,#ffe8dc,#e7faff);
+      box-shadow:inset 0 0 0 3px rgba(255,255,255,.7), 0 12px 24px rgba(142,135,255,.16);
+      font-size:1.8rem;
+    }
+    .brand h1{margin:0;font-size:1.35rem;}
+    .brand p{margin:4px 0 0;color:var(--muted);font-size:.94rem;}
+    .toolbar-actions,.controls{display:flex;gap:8px;flex-wrap:wrap;}
     button,textarea{font:inherit;}
-    .btn{border:0;border-radius:999px;padding:11px 16px;background:#fff;cursor:pointer;box-shadow:0 8px 16px rgba(39,52,71,.08);}
-    .btn.primary{background:linear-gradient(135deg,var(--accent),#9d92ff);color:#fff;font-weight:700;} .btn.secondary{background:linear-gradient(135deg,var(--accent2),#ffc172);color:#fff;font-weight:700;}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(220px,1fr));gap:16px;}
-    .card{background:rgba(255,255,255,.86);border-radius:22px;padding:20px;text-align:center;min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-    .emoji{font-size:3rem;margin-bottom:14px;} .role{display:inline-block;padding:7px 12px;border-radius:999px;background:#f2f1ff;color:var(--accent);font-size:.82rem;font-weight:700;margin-bottom:12px;}
-    .name{font-size:clamp(1.5rem,3vw,2.5rem);font-weight:900;line-height:1.2;} .sub{margin-top:8px;color:var(--muted);line-height:1.5;}
-    .editor{margin-top:18px;padding:18px;border-radius:20px;background:rgba(255,255,255,.82);} .editor h2{margin:0 0 10px;font-size:1.05rem;}
-    .editor textarea{width:100%;min-height:90px;border:2px solid #e5e8ec;border-radius:18px;padding:14px;resize:vertical;line-height:1.6;}
+    .btn{
+      border:0;
+      border-radius:999px;
+      padding:11px 16px;
+      background:#fff;
+      cursor:pointer;
+      box-shadow:0 10px 18px rgba(42,52,71,.08);
+    }
+    .btn.primary{background:linear-gradient(135deg,var(--lav),#b39dfd);color:#fff;font-weight:800;}
+    .btn.secondary{background:linear-gradient(135deg,var(--pink),#ffc586);color:#fff;font-weight:800;}
+    .panel{padding:22px;}
+    .hero-intro{
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      align-items:center;
+      padding:18px 20px;
+      margin-bottom:18px;
+      background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(248,246,255,.84));
+    }
+    .hero-intro h2{margin:0 0 8px;font-size:1.28rem;}
+    .hero-intro p{margin:0;color:var(--muted);line-height:1.65;}
+    .hero-pill{
+      flex-shrink:0;
+      padding:12px 16px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#ede8ff,#fff1e2);
+      color:#5f57c4;
+      font-weight:800;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:16px;
+    }
+    .card{
+      min-height:260px;
+      padding:22px;
+      text-align:center;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      background:linear-gradient(180deg,var(--panel-strong),rgba(255,255,255,.82));
+    }
+    .emoji{
+      width:92px;height:92px;border-radius:30px;
+      display:grid;place-items:center;
+      font-size:2.8rem;
+      margin-bottom:14px;
+      background:linear-gradient(135deg,#f3f0ff,#fff5e9);
+      box-shadow:inset 0 0 0 3px rgba(255,255,255,.72), 0 14px 26px rgba(142,135,255,.14);
+    }
+    .role{
+      display:inline-block;
+      padding:8px 13px;
+      border-radius:999px;
+      background:#f2f0ff;
+      color:var(--lav);
+      font-size:.82rem;
+      font-weight:800;
+      margin-bottom:12px;
+    }
+    .name{font-size:clamp(1.55rem,3vw,2.5rem);font-weight:900;line-height:1.2;}
+    .sub{margin-top:8px;color:var(--muted);line-height:1.55;}
+    .editor{
+      margin-top:18px;
+      padding:20px;
+      background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(247,245,255,.84));
+    }
+    .editor h2{margin:0 0 8px;font-size:1.08rem;}
+    .editor p{margin:0 0 12px;color:var(--muted);line-height:1.6;}
+    .editor textarea{
+      width:100%;
+      min-height:96px;
+      border:2px solid #e7e9f2;
+      border-radius:20px;
+      padding:14px;
+      resize:vertical;
+      line-height:1.7;
+      background:#fff;
+    }
   </style>
 </head>
 <body>
   <main class="page">
-    <section class="toolbar"><h1>오늘의 도우미 보드</h1><div><button class="btn" id="homeBtn" type="button">홈</button><button class="btn" id="fullscreenBtn" type="button">전체화면</button></div></section>
+    <section class="toolbar">
+      <div class="brand">
+        <div class="brand-badge">🌈⭐</div>
+        <div>
+          <h1>오늘의 도우미 보드</h1>
+          <p>출석, 간식, 정리 역할을 재미있게 보여주는 반 운영 화면</p>
+        </div>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn" id="homeBtn" type="button">← 루틴 허브</button>
+        <button class="btn secondary" id="fullscreenBtn" type="button">전체 화면</button>
+      </div>
+    </section>
+
     <section class="panel">
-      <div class="controls"><button class="btn primary" id="shuffleBtn" type="button">랜덤 뽑기</button><button class="btn secondary" id="resetBtn" type="button">초기화</button></div>
+      <section class="hero-intro">
+        <div>
+          <h2>오늘의 도우미를 한눈에 보여줘요</h2>
+          <p>이름 목록을 바꾸거나, 무작위로 다시 뽑아서 바로 교실 화면에 띄울 수 있습니다.</p>
+        </div>
+        <div class="hero-pill">반 운영용 추천</div>
+      </section>
+
+      <div class="controls" style="justify-content:center;margin-bottom:18px;">
+        <button class="btn primary" id="shuffleBtn" type="button">새로 뽑기</button>
+        <button class="btn secondary" id="resetBtn" type="button">초기화</button>
+      </div>
+
       <div class="grid" id="board"></div>
-      <section class="editor"><h2>이름 목록 입력</h2><textarea id="nameInput">민수
+
+      <section class="editor">
+        <h2>이름 목록 입력</h2>
+        <p>한 줄에 한 명씩 입력하면 그 이름들 안에서 도우미를 뽑습니다.</p>
+        <textarea id="nameInput">민수
 지우
 하린
 서준
-예나
-도윤</textarea><div class="controls" style="justify-content:flex-start;margin-top:12px;margin-bottom:0;"><button class="btn" id="applyBtn" type="button">이름 적용</button></div></section>
+하나
+시윤</textarea>
+        <div class="controls" style="justify-content:flex-start;margin-top:12px;margin-bottom:0;">
+          <button class="btn" id="applyBtn" type="button">이름 적용</button>
+        </div>
+      </section>
     </section>
   </main>
+
   <script>
-    const roles=[{role:"출석 도우미",icon:"📋"},{role:"간식 도우미",icon:"🍎"},{role:"정리 도우미",icon:"🧺"},{role:"줄서기 도우미",icon:"🚶"}];
-    let names=["민수","지우","하린","서준","예나","도윤"], assigned=[];
-    const board=document.getElementById("board"), nameInput=document.getElementById("nameInput");
-    function shuffle(array){ const clone=[...array]; for(let i=clone.length-1;i>0;i-=1){ const j=Math.floor(Math.random()*(i+1)); [clone[i],clone[j]]=[clone[j],clone[i]]; } return clone; }
-    function assignHelpers(){ const pool=shuffle(names).slice(0,roles.length); assigned=roles.map((item,index)=>({...item,name:pool[index]||"이름 없음"})); render(); }
-    function render(){ board.innerHTML=""; assigned.forEach((item)=>{ const card=document.createElement("article"); card.className="card"; card.innerHTML=`<div class="emoji">${item.icon}</div><div class="role">${item.role}</div><div class="name">${item.name}</div><div class="sub">오늘 맡은 역할이에요</div>`; board.append(card); }); }
-    document.getElementById("shuffleBtn").addEventListener("click",assignHelpers);
-    document.getElementById("resetBtn").addEventListener("click",()=>{ assigned=roles.map((item)=>({...item,name:"미정"})); render(); });
-    document.getElementById("applyBtn").addEventListener("click",()=>{ const parsed=nameInput.value.split("\n").map((line)=>line.trim()).filter(Boolean); if(parsed.length>0){ names=parsed; assignHelpers(); } });
-    document.getElementById("fullscreenBtn").addEventListener("click",async()=>{ if(!document.fullscreenElement){ await document.documentElement.requestFullscreen(); } else { await document.exitFullscreen(); } });
-    document.getElementById("homeBtn").addEventListener("click",()=>{ window.location.href="../"; });
+    const roles = [
+      { role: "출석 도우미", icon: "📋" },
+      { role: "간식 도우미", icon: "🍎" },
+      { role: "정리 도우미", icon: "🧹" },
+      { role: "줄서기 도우미", icon: "🚶" }
+    ];
+
+    let names = ["민수", "지우", "하린", "서준", "하나", "시윤"];
+    let assigned = [];
+
+    const board = document.getElementById("board");
+    const nameInput = document.getElementById("nameInput");
+
+    function shuffle(array) {
+      const clone = [...array];
+      for (let i = clone.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [clone[i], clone[j]] = [clone[j], clone[i]];
+      }
+      return clone;
+    }
+
+    function assignHelpers() {
+      const pool = shuffle(names).slice(0, roles.length);
+      assigned = roles.map((item, index) => ({
+        ...item,
+        name: pool[index] || "이름 없음"
+      }));
+      render();
+    }
+
+    function render() {
+      board.innerHTML = "";
+      assigned.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="emoji">${item.icon}</div>
+          <div class="role">${item.role}</div>
+          <div class="name">${item.name}</div>
+          <div class="sub">오늘 맡은 역할이에요.</div>
+        `;
+        board.append(card);
+      });
+    }
+
+    document.getElementById("shuffleBtn").addEventListener("click", assignHelpers);
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      assigned = roles.map((item) => ({ ...item, name: "미정" }));
+      render();
+    });
+    document.getElementById("applyBtn").addEventListener("click", () => {
+      const parsed = nameInput.value.split("\n").map((line) => line.trim()).filter(Boolean);
+      if (parsed.length > 0) {
+        names = parsed;
+        assignHelpers();
+      }
+    });
+    document.getElementById("fullscreenBtn").addEventListener("click", async () => {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    });
+    document.getElementById("homeBtn").addEventListener("click", () => {
+      window.location.href = "../";
+    });
+
     assignHelpers();
   </script>
 </body>

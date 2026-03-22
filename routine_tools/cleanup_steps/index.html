@@ -3,57 +3,275 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>정리 순서 보드</title>
+  <title>🌈⭐ 정리 순서 보드</title>
   <style>
-    :root { --bg:#fff5ee; --panel:rgba(255,255,255,.9); --text:#2f3642; --muted:#68727d; --accent:#ff8d57; --accent2:#77c79a; --shadow:0 16px 44px rgba(47,54,66,.12); --radius:24px; --font:"Segoe UI","Malgun Gothic",sans-serif; }
-    *{box-sizing:border-box;} body{margin:0;min-height:100vh;font-family:var(--font);color:var(--text);background:radial-gradient(circle at top left, rgba(255,141,87,.16), transparent 30%), radial-gradient(circle at bottom right, rgba(119,199,154,.18), transparent 30%), var(--bg);}
-    .page{width:min(1100px,calc(100% - 22px));margin:0 auto;padding:18px 0 30px;}
-    .toolbar,.panel{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);}
-    .toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:14px 18px;margin-bottom:16px;flex-wrap:wrap;}
-    .toolbar h1{margin:0;font-size:1.35rem;} .panel{padding:20px;} button,textarea{font:inherit;}
-    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;justify-content:center;}
-    .btn{border:0;border-radius:999px;padding:11px 16px;background:#fff;cursor:pointer;box-shadow:0 8px 16px rgba(47,54,66,.08);}
-    .btn.primary{background:linear-gradient(135deg,var(--accent),#ffb06f);color:#fff;font-weight:700;}
+    :root{
+      --bg:#fff7f2;
+      --panel:rgba(255,255,255,.9);
+      --panel-strong:rgba(255,255,255,.96);
+      --text:#2f3642;
+      --muted:#6b7682;
+      --peach:#ff9668;
+      --mint:#82d2a4;
+      --sun:#ffd68f;
+      --shadow:0 22px 52px rgba(47,54,66,.12);
+      --radius:28px;
+      --font:"Segoe UI","Malgun Gothic",sans-serif;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:var(--font);
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255,150,104,.18), transparent 32%),
+        radial-gradient(circle at top right, rgba(255,214,143,.16), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(130,210,164,.18), transparent 30%),
+        linear-gradient(180deg,#fffaf6 0%, #fff3ec 100%);
+    }
+    .page{width:min(1120px,calc(100% - 22px));margin:0 auto;padding:18px 0 32px;}
+    .toolbar,.panel,.big-step,.step-list-box,.editor,.hero-intro{
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,.62);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(12px);
+    }
+    .toolbar{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:center;
+      padding:16px 20px;
+      margin-bottom:16px;
+      flex-wrap:wrap;
+    }
+    .brand{display:flex;gap:14px;align-items:center;}
+    .brand-badge{
+      width:62px;height:62px;border-radius:20px;display:grid;place-items:center;
+      background:linear-gradient(135deg,#fff4d8,#ffe6df,#ecfff2);
+      box-shadow:inset 0 0 0 3px rgba(255,255,255,.7), 0 12px 24px rgba(255,150,104,.16);
+      font-size:1.8rem;
+    }
+    .brand h1{margin:0;font-size:1.35rem;}
+    .brand p{margin:4px 0 0;color:var(--muted);font-size:.94rem;}
+    .toolbar-actions,.controls{display:flex;gap:8px;flex-wrap:wrap;}
+    button,textarea{font:inherit;}
+    .btn{
+      border:0;
+      border-radius:999px;
+      padding:11px 16px;
+      background:#fff;
+      cursor:pointer;
+      box-shadow:0 10px 18px rgba(47,54,66,.08);
+    }
+    .btn.primary{background:linear-gradient(135deg,var(--peach),#ffbe81);color:#fff;font-weight:800;}
+    .btn.secondary{background:linear-gradient(135deg,var(--mint),#a6e2b6);color:#fff;font-weight:800;}
+    .panel{padding:22px;}
+    .hero-intro{
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      align-items:center;
+      padding:18px 20px;
+      margin-bottom:18px;
+      background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,249,244,.84));
+    }
+    .hero-intro h2{margin:0 0 8px;font-size:1.28rem;}
+    .hero-intro p{margin:0;color:var(--muted);line-height:1.65;}
+    .hero-pill{
+      flex-shrink:0;
+      padding:12px 16px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#fff1dd,#effcf3);
+      color:#9b6337;
+      font-weight:800;
+    }
     .hero{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;}
-    .big-step,.step-list-box,.editor{background:rgba(255,255,255,.84);border-radius:22px;padding:20px;}
-    .big-step{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;min-height:340px;}
-    .step-number{width:82px;height:82px;border-radius:50%;display:grid;place-items:center;font-size:2rem;font-weight:900;background:linear-gradient(135deg,#ffe4d6,#fff7ef);color:var(--accent);margin-bottom:18px;}
-    .big-title{font-size:clamp(1.6rem,3vw,2.7rem);font-weight:800;line-height:1.25;} .big-sub{margin-top:12px;color:var(--muted);line-height:1.6;max-width:28ch;}
+    .big-step,.step-list-box,.editor{
+      padding:22px;
+      background:linear-gradient(180deg,var(--panel-strong),rgba(255,255,255,.82));
+    }
+    .big-step{
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      text-align:center;
+      min-height:340px;
+    }
+    .step-number{
+      width:92px;height:92px;border-radius:50%;
+      display:grid;place-items:center;
+      font-size:2.1rem;font-weight:900;
+      background:linear-gradient(135deg,#fff0df,#fffaf0);
+      color:var(--peach);
+      margin-bottom:18px;
+      box-shadow:inset 0 0 0 4px rgba(255,255,255,.75), 0 14px 26px rgba(255,150,104,.14);
+    }
+    .big-title{font-size:clamp(1.65rem,3vw,2.8rem);font-weight:900;line-height:1.24;}
+    .big-sub{margin-top:12px;color:var(--muted);line-height:1.65;max-width:28ch;}
     .step-list{display:flex;flex-direction:column;gap:10px;}
-    .step-item{padding:12px 14px;border-radius:16px;background:#fff7f2;color:var(--muted);}
-    .step-item.active{background:linear-gradient(135deg,#fff2e8,#eefaf3);color:var(--text);font-weight:700;box-shadow:inset 0 0 0 2px rgba(255,141,87,.16);}
-    .step-item.done{background:#eef9f1;color:#2b8f57;font-weight:700;}
-    .editor{margin-top:18px;} .editor h2{margin:0 0 10px;font-size:1.05rem;}
-    .editor textarea{width:100%;min-height:110px;border:2px solid #ece5dc;border-radius:18px;padding:14px;resize:vertical;line-height:1.6;}
-    @media (max-width:860px){.hero{grid-template-columns:1fr;}.big-step{min-height:240px;}}
+    .step-item{
+      padding:13px 15px;
+      border-radius:18px;
+      background:#fff7f2;
+      color:var(--muted);
+      box-shadow:inset 0 0 0 2px rgba(255,150,104,.06);
+    }
+    .step-item.active{
+      background:linear-gradient(135deg,#fff1e6,#eefbf2);
+      color:var(--text);
+      font-weight:800;
+      box-shadow:inset 0 0 0 2px rgba(255,150,104,.16);
+    }
+    .step-item.done{
+      background:#eef9f1;
+      color:#2b8f57;
+      font-weight:800;
+    }
+    .editor{margin-top:18px;}
+    .editor h2{margin:0 0 8px;font-size:1.08rem;}
+    .editor p{margin:0 0 12px;color:var(--muted);line-height:1.6;}
+    .editor textarea{
+      width:100%;
+      min-height:112px;
+      border:2px solid #eee3d8;
+      border-radius:20px;
+      padding:14px;
+      resize:vertical;
+      line-height:1.7;
+      background:#fff;
+    }
+    @media (max-width:860px){
+      .hero-intro{flex-direction:column;align-items:flex-start;}
+      .hero{grid-template-columns:1fr;}
+      .big-step{min-height:240px;}
+    }
   </style>
 </head>
 <body>
   <main class="page">
-    <section class="toolbar"><h1>정리 순서 보드</h1><div><button class="btn" id="homeBtn" type="button">홈</button><button class="btn" id="fullscreenBtn" type="button">전체화면</button></div></section>
-    <section class="panel">
-      <div class="controls"><button class="btn primary" id="prevBtn" type="button">이전</button><button class="btn primary" id="nextBtn" type="button">다음</button><button class="btn" id="resetBtn" type="button">처음부터</button></div>
-      <div class="hero">
-        <article class="big-step"><div class="step-number" id="stepNumber">1</div><div class="big-title" id="stepTitle">장난감을 상자에 넣어요</div><div class="big-sub">천천히 하나씩 정리하면 금방 끝나요.</div></article>
-        <article class="step-list-box"><div class="step-list" id="stepList"></div></article>
+    <section class="toolbar">
+      <div class="brand">
+        <div class="brand-badge">🌈⭐</div>
+        <div>
+          <h1>정리 순서 보드</h1>
+          <p>무엇부터 정리할지 차례대로 보여주는 생활 루틴 화면</p>
+        </div>
       </div>
-      <section class="editor"><h2>정리 순서 직접 입력</h2><textarea id="stepInput">장난감을 상자에 넣어요
-책을 제자리에 놓아요
+      <div class="toolbar-actions">
+        <button class="btn" id="homeBtn" type="button">← 루틴 허브</button>
+        <button class="btn secondary" id="fullscreenBtn" type="button">전체 화면</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <section class="hero-intro">
+        <div>
+          <h2>정리할 순서를 차근차근 따라가요</h2>
+          <p>한 번에 하나씩 보여주면 아이들이 스스로 정리하는 흐름을 이해하기 쉽습니다.</p>
+        </div>
+        <div class="hero-pill">정리 시간용 추천</div>
+      </section>
+
+      <div class="controls" style="justify-content:center;margin-bottom:18px;">
+        <button class="btn primary" id="prevBtn" type="button">이전</button>
+        <button class="btn primary" id="nextBtn" type="button">다음</button>
+        <button class="btn" id="resetBtn" type="button">처음부터</button>
+      </div>
+
+      <div class="hero">
+        <article class="big-step">
+          <div class="step-number" id="stepNumber">1</div>
+          <div class="big-title" id="stepTitle">장난감을 상자 안에 넣어요</div>
+          <div class="big-sub">천천히 하나씩 정리하면 금방 끝나요.</div>
+        </article>
+        <article class="step-list-box">
+          <div class="step-list" id="stepList"></div>
+        </article>
+      </div>
+
+      <section class="editor">
+        <h2>정리 순서 직접 입력</h2>
+        <p>한 줄에 하나씩 적으면 반 상황에 맞는 정리 순서를 바로 만들 수 있습니다.</p>
+        <textarea id="stepInput">장난감을 상자 안에 넣어요
+책을 책장에 꽂아요
 의자를 바르게 넣어요
-손을 씻어요
-자리에 앉아요</textarea><div class="controls" style="justify-content:flex-start;margin-top:12px;margin-bottom:0;"><button class="btn" id="applyBtn" type="button">직접 적용</button></div></section>
+책상 위를 닦아요
+자리에 앉아요</textarea>
+        <div class="controls" style="justify-content:flex-start;margin-top:12px;margin-bottom:0;">
+          <button class="btn" id="applyBtn" type="button">직접 적용</button>
+        </div>
+      </section>
     </section>
   </main>
+
   <script>
-    const stepList=document.getElementById("stepList"), stepNumber=document.getElementById("stepNumber"), stepTitle=document.getElementById("stepTitle"), stepInput=document.getElementById("stepInput");
-    let steps=["장난감을 상자에 넣어요","책을 제자리에 놓아요","의자를 바르게 넣어요","손을 씻어요","자리에 앉아요"], currentIndex=0;
-    function render(){ stepNumber.textContent=String(currentIndex+1); stepTitle.textContent=steps[currentIndex]||"모두 끝났어요"; stepList.innerHTML=""; steps.forEach((step,index)=>{ const done=index<currentIndex; const item=document.createElement("div"); item.className=`step-item${index===currentIndex?" active":""}${done?" done":""}`; item.textContent=`${index+1}. ${step}`; stepList.append(item); }); }
-    document.getElementById("prevBtn").addEventListener("click",()=>{ currentIndex=Math.max(0,currentIndex-1); render(); });
-    document.getElementById("nextBtn").addEventListener("click",()=>{ currentIndex=Math.min(steps.length-1,currentIndex+1); render(); });
-    document.getElementById("resetBtn").addEventListener("click",()=>{ currentIndex=0; render(); });
-    document.getElementById("applyBtn").addEventListener("click",()=>{ const parsed=stepInput.value.split("\n").map((line)=>line.trim()).filter(Boolean); if(parsed.length>0){ steps=parsed; currentIndex=0; render(); } });
-    document.getElementById("fullscreenBtn").addEventListener("click",async()=>{ if(!document.fullscreenElement){ await document.documentElement.requestFullscreen(); } else { await document.exitFullscreen(); } });
-    document.getElementById("homeBtn").addEventListener("click",()=>{ window.location.href="../"; });
+    const stepList = document.getElementById("stepList");
+    const stepNumber = document.getElementById("stepNumber");
+    const stepTitle = document.getElementById("stepTitle");
+    const stepInput = document.getElementById("stepInput");
+
+    let steps = [
+      "장난감을 상자 안에 넣어요",
+      "책을 책장에 꽂아요",
+      "의자를 바르게 넣어요",
+      "책상 위를 닦아요",
+      "자리에 앉아요"
+    ];
+    let currentIndex = 0;
+
+    function render() {
+      stepNumber.textContent = String(currentIndex + 1);
+      stepTitle.textContent = steps[currentIndex] || "모두 끝났어요";
+      stepList.innerHTML = "";
+      steps.forEach((step, index) => {
+        const done = index < currentIndex;
+        const item = document.createElement("div");
+        item.className = `step-item${index === currentIndex ? " active" : ""}${done ? " done" : ""}`;
+        item.textContent = `${index + 1}. ${step}`;
+        stepList.append(item);
+      });
+    }
+
+    document.getElementById("prevBtn").addEventListener("click", () => {
+      currentIndex = Math.max(0, currentIndex - 1);
+      render();
+    });
+
+    document.getElementById("nextBtn").addEventListener("click", () => {
+      currentIndex = Math.min(steps.length - 1, currentIndex + 1);
+      render();
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      currentIndex = 0;
+      render();
+    });
+
+    document.getElementById("applyBtn").addEventListener("click", () => {
+      const parsed = stepInput.value.split("\n").map((line) => line.trim()).filter(Boolean);
+      if (parsed.length > 0) {
+        steps = parsed;
+        currentIndex = 0;
+        render();
+      }
+    });
+
+    document.getElementById("fullscreenBtn").addEventListener("click", async () => {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    });
+
+    document.getElementById("homeBtn").addEventListener("click", () => {
+      window.location.href = "../";
+    });
+
     render();
   </script>
 </body>

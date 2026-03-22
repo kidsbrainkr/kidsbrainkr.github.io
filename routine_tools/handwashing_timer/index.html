@@ -3,61 +3,277 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>손씻기 순서 타이머</title>
+  <title>🌈⭐ 손씻기 순서 타이머</title>
   <style>
-    :root { --bg:#eaf8fb; --panel:rgba(255,255,255,.9); --text:#22414d; --muted:#5f7480; --accent:#3aaec4; --accent2:#ffa663; --shadow:0 16px 40px rgba(34,65,77,.12); --radius:24px; --font:"Segoe UI","Malgun Gothic",sans-serif; }
-    *{box-sizing:border-box;} body{margin:0;min-height:100vh;font-family:var(--font);color:var(--text);background:radial-gradient(circle at top left, rgba(58,174,196,.18), transparent 30%), radial-gradient(circle at bottom right, rgba(255,166,99,.18), transparent 30%), var(--bg);}
-    .page{width:min(1100px,calc(100% - 22px));margin:0 auto;padding:18px 0 28px;}
-    .toolbar,.panel{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);}
-    .toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:14px 18px;margin-bottom:16px;flex-wrap:wrap;}
-    .toolbar h1{margin:0;font-size:1.35rem;} .panel{padding:20px;}
-    .top{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
-    button{font:inherit;border:0;border-radius:999px;padding:11px 16px;cursor:pointer;background:#fff;box-shadow:0 8px 16px rgba(34,65,77,.08);}
-    .primary{background:linear-gradient(135deg,var(--accent),#66c9d8);color:#fff;font-weight:700;} .secondary{background:linear-gradient(135deg,var(--accent2),#ffc07a);color:#fff;font-weight:700;}
-    .preset.active{background:#fff1e8;color:#d96f2b;font-weight:700;}
+    :root{
+      --bg:#eefaff;
+      --panel:rgba(255,255,255,.9);
+      --panel-strong:rgba(255,255,255,.96);
+      --text:#24404a;
+      --muted:#5f7580;
+      --aqua:#58c7de;
+      --mint:#8fe6d0;
+      --sun:#ffbb73;
+      --shadow:0 22px 52px rgba(36,64,74,.12);
+      --radius:28px;
+      --font:"Segoe UI","Malgun Gothic",sans-serif;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:var(--font);
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(88,199,222,.22), transparent 32%),
+        radial-gradient(circle at top right, rgba(255,187,115,.18), transparent 28%),
+        linear-gradient(180deg,#f8fdff 0%, #edf9ff 100%);
+    }
+    .page{width:min(1120px,calc(100% - 22px));margin:0 auto;padding:18px 0 30px;}
+    .toolbar,.panel,.big-card,.steps-card,.hero-intro{
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,.62);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(12px);
+    }
+    .toolbar{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:center;
+      padding:16px 20px;
+      margin-bottom:16px;
+      flex-wrap:wrap;
+    }
+    .brand{display:flex;gap:14px;align-items:center;}
+    .brand-badge{
+      width:62px;height:62px;border-radius:20px;display:grid;place-items:center;
+      background:linear-gradient(135deg,#dff9ff,#fff5d8,#eafaff);
+      box-shadow:inset 0 0 0 3px rgba(255,255,255,.7), 0 12px 24px rgba(88,199,222,.18);
+      font-size:1.8rem;
+    }
+    .brand h1{margin:0;font-size:1.35rem;}
+    .brand p{margin:4px 0 0;color:var(--muted);font-size:.94rem;}
+    .toolbar-actions,.top{display:flex;gap:8px;flex-wrap:wrap;}
+    button{font:inherit;border:0;border-radius:999px;padding:11px 16px;cursor:pointer;background:#fff;box-shadow:0 10px 18px rgba(36,64,74,.08);}
+    .primary{background:linear-gradient(135deg,var(--aqua),#78d9ea);color:#fff;font-weight:800;}
+    .secondary{background:linear-gradient(135deg,var(--sun),#ffd58a);color:#fff;font-weight:800;}
+    .preset.active{background:linear-gradient(135deg,#e2fbff,#fff4e6);color:#1f778e;font-weight:800;}
+    .panel{padding:22px;}
+    .hero-intro{
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      align-items:center;
+      padding:18px 20px;
+      margin-bottom:18px;
+      background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(245,252,255,.84));
+    }
+    .hero-intro h2{margin:0 0 8px;font-size:1.28rem;}
+    .hero-intro p{margin:0;color:var(--muted);line-height:1.65;}
+    .hero-pill{
+      flex-shrink:0;
+      padding:12px 16px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#e6fbff,#fff5de);
+      color:#3a7d88;
+      font-weight:800;
+    }
     .hero{display:grid;grid-template-columns:1.1fr 1fr;gap:18px;align-items:stretch;}
-    .big-card,.steps-card{background:rgba(255,255,255,.85);border-radius:22px;padding:22px;}
+    .big-card,.steps-card{
+      padding:22px;
+      background:linear-gradient(180deg,var(--panel-strong),rgba(255,255,255,.8));
+    }
     .big-card{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
-    .bubble{width:min(34vw,300px);height:min(34vw,300px);min-width:180px;min-height:180px;border-radius:50%;background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.88), transparent 28%), linear-gradient(160deg,#8be1ee,#45bfd2);display:grid;place-items:center;box-shadow:inset 0 0 0 12px rgba(255,255,255,.24),0 20px 36px rgba(58,174,196,.18);margin-bottom:20px;}
-    .icon{font-size:clamp(3rem,7vw,5rem);} .title{font-size:clamp(1.4rem,3vw,2.4rem);font-weight:800;margin-bottom:8px;} .timer{font-size:clamp(2.6rem,6vw,4.8rem);font-weight:900;line-height:1;margin-bottom:8px;} .sub{color:var(--muted);line-height:1.6;}
-    .steps-card h2{margin:0 0 12px;font-size:1.1rem;} .step-list{display:flex;flex-direction:column;gap:10px;}
-    .step{padding:12px 14px;border-radius:16px;background:#f4fbfc;color:var(--muted);display:flex;gap:10px;align-items:center;font-size:1rem;}
-    .step.active{background:linear-gradient(135deg,#dff6fb,#fff4e7);color:var(--text);font-weight:700;box-shadow:inset 0 0 0 2px rgba(58,174,196,.14);}
-    @media (max-width:860px){.hero{grid-template-columns:1fr;}}
+    .bubble{
+      width:min(34vw,300px);
+      height:min(34vw,300px);
+      min-width:190px;
+      min-height:190px;
+      border-radius:50%;
+      background:
+        radial-gradient(circle at 34% 30%, rgba(255,255,255,.92), transparent 26%),
+        linear-gradient(160deg,#99ebf6,#5ecddd 42%,#8be6cf);
+      display:grid;
+      place-items:center;
+      box-shadow:inset 0 0 0 12px rgba(255,255,255,.26), 0 24px 42px rgba(88,199,222,.18);
+      margin-bottom:20px;
+    }
+    .icon{font-size:clamp(3rem,7vw,5rem);}
+    .title{font-size:clamp(1.4rem,3vw,2.4rem);font-weight:900;margin-bottom:8px;line-height:1.24;}
+    .timer{font-size:clamp(2.8rem,6vw,5rem);font-weight:900;line-height:1;margin-bottom:8px;}
+    .sub{color:var(--muted);line-height:1.65;max-width:26ch;}
+    .steps-card h2{margin:0 0 12px;font-size:1.08rem;}
+    .step-list{display:flex;flex-direction:column;gap:10px;}
+    .step{
+      padding:13px 15px;
+      border-radius:18px;
+      background:#f3fcfd;
+      color:var(--muted);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      font-size:1rem;
+      box-shadow:inset 0 0 0 2px rgba(88,199,222,.06);
+    }
+    .step.active{
+      background:linear-gradient(135deg,#dcf7fb,#fff4e7);
+      color:var(--text);
+      font-weight:800;
+      box-shadow:inset 0 0 0 2px rgba(88,199,222,.14);
+    }
+    @media (max-width:860px){
+      .hero-intro{flex-direction:column;align-items:flex-start;}
+      .hero{grid-template-columns:1fr;}
+    }
   </style>
 </head>
 <body>
   <main class="page">
-    <section class="toolbar"><h1>손씻기 순서 타이머</h1><div><button id="homeBtn" type="button">홈</button><button id="fullscreenBtn" type="button">전체화면</button></div></section>
+    <section class="toolbar">
+      <div class="brand">
+        <div class="brand-badge">🌈⭐</div>
+        <div>
+          <h1>손씻기 순서 타이머</h1>
+          <p>손씻기 단계를 천천히 따라갈 수 있는 교실용 화면</p>
+        </div>
+      </div>
+      <div class="toolbar-actions">
+        <button id="homeBtn" type="button">← 루틴 허브</button>
+        <button class="secondary" id="fullscreenBtn" type="button">전체 화면</button>
+      </div>
+    </section>
+
     <section class="panel">
-      <div class="top">
+      <section class="hero-intro">
+        <div>
+          <h2>단계에 맞춰 손을 깨끗하게 씻어요</h2>
+          <p>20초, 30초 버튼으로 시간을 고르고 아이들과 함께 순서를 따라갈 수 있습니다.</p>
+        </div>
+        <div class="hero-pill">위생 습관 형성용</div>
+      </section>
+
+      <div class="top" style="justify-content:center;margin-bottom:18px;">
         <button class="preset active" data-seconds="20" type="button">20초</button>
         <button class="preset" data-seconds="30" type="button">30초</button>
         <button class="primary" id="startBtn" type="button">시작</button>
         <button class="secondary" id="pauseBtn" type="button">일시정지</button>
         <button id="resetBtn" type="button">처음부터</button>
       </div>
+
       <div class="hero">
-        <article class="big-card"><div class="bubble"><div class="icon" id="stepIcon">💧</div></div><div class="title" id="stepTitle">손에 물 묻히기</div><div class="timer" id="timerText">20</div><div class="sub">천천히 따라 하면 깨끗하게 손을 씻을 수 있어요.</div></article>
-        <article class="steps-card"><h2>손씻기 순서</h2><div class="step-list" id="stepList"></div></article>
+        <article class="big-card">
+          <div class="bubble"><div class="icon" id="stepIcon">🫧</div></div>
+          <div class="title" id="stepTitle">물에 손 적시기</div>
+          <div class="timer" id="timerText">20</div>
+          <div class="sub">천천히 따라 하면 깨끗하게 손을 씻을 수 있어요.</div>
+        </article>
+        <article class="steps-card">
+          <h2>손씻기 순서</h2>
+          <div class="step-list" id="stepList"></div>
+        </article>
       </div>
     </section>
   </main>
+
   <script>
-    const steps=[{icon:"💧",title:"손에 물 묻히기"},{icon:"🧼",title:"비누 바르기"},{icon:"🙌",title:"손바닥 문지르기"},{icon:"🖐️",title:"손등 닦기"},{icon:"✌️",title:"손가락 사이 닦기"},{icon:"🚿",title:"깨끗하게 헹구기"},{icon:"🧻",title:"손 닦기"}];
-    const presetButtons=[...document.querySelectorAll(".preset")], stepList=document.getElementById("stepList"), stepIcon=document.getElementById("stepIcon"), stepTitle=document.getElementById("stepTitle"), timerText=document.getElementById("timerText");
-    let durationSeconds=20, remainingSeconds=20, currentStepIndex=0, intervalId=null;
-    function renderSteps(){ stepList.innerHTML=""; steps.forEach((step,index)=>{ const item=document.createElement("div"); item.className=`step${index===currentStepIndex?" active":""}`; item.textContent=`${step.icon} ${step.title}`; stepList.append(item); }); stepIcon.textContent=steps[currentStepIndex].icon; stepTitle.textContent=steps[currentStepIndex].title; timerText.textContent=String(remainingSeconds); }
-    function stopTimer(){ if(intervalId){ window.clearInterval(intervalId); intervalId=null; } }
-    function updateStepByTime(){ const progress=1-remainingSeconds/durationSeconds; currentStepIndex=Math.min(steps.length-1, Math.floor(progress*steps.length)); }
-    function startTimer(){ stopTimer(); intervalId=window.setInterval(()=>{ remainingSeconds-=1; if(remainingSeconds<=0){ remainingSeconds=0; currentStepIndex=steps.length-1; renderSteps(); stopTimer(); stepTitle.textContent="손씻기 완료"; stepIcon.textContent="✨"; return; } updateStepByTime(); renderSteps(); },1000); }
-    function resetTimer(){ stopTimer(); remainingSeconds=durationSeconds; currentStepIndex=0; renderSteps(); }
-    presetButtons.forEach((button)=>button.addEventListener("click",()=>{ durationSeconds=Number(button.dataset.seconds); remainingSeconds=durationSeconds; currentStepIndex=0; presetButtons.forEach((item)=>item.classList.toggle("active", item===button)); renderSteps(); stopTimer(); }));
-    document.getElementById("startBtn").addEventListener("click",startTimer);
-    document.getElementById("pauseBtn").addEventListener("click",stopTimer);
-    document.getElementById("resetBtn").addEventListener("click",resetTimer);
-    document.getElementById("fullscreenBtn").addEventListener("click",async()=>{ if(!document.fullscreenElement){ await document.documentElement.requestFullscreen(); } else { await document.exitFullscreen(); } });
-    document.getElementById("homeBtn").addEventListener("click",()=>{ window.location.href="../"; });
+    const steps = [
+      { icon: "🫧", title: "물에 손 적시기" },
+      { icon: "🧼", title: "비누 바르기" },
+      { icon: "🤲", title: "손바닥 문지르기" },
+      { icon: "🖐️", title: "손등 닦기" },
+      { icon: "🫱", title: "손가락 사이 닦기" },
+      { icon: "💦", title: "깨끗하게 헹구기" },
+      { icon: "🧻", title: "물기 닦기" }
+    ];
+
+    const presetButtons = [...document.querySelectorAll(".preset")];
+    const stepList = document.getElementById("stepList");
+    const stepIcon = document.getElementById("stepIcon");
+    const stepTitle = document.getElementById("stepTitle");
+    const timerText = document.getElementById("timerText");
+
+    let durationSeconds = 20;
+    let remainingSeconds = 20;
+    let currentStepIndex = 0;
+    let intervalId = null;
+
+    function renderSteps() {
+      stepList.innerHTML = "";
+      steps.forEach((step, index) => {
+        const item = document.createElement("div");
+        item.className = `step${index === currentStepIndex ? " active" : ""}`;
+        item.textContent = `${step.icon} ${step.title}`;
+        stepList.append(item);
+      });
+      stepIcon.textContent = steps[currentStepIndex].icon;
+      stepTitle.textContent = steps[currentStepIndex].title;
+      timerText.textContent = String(remainingSeconds);
+    }
+
+    function stopTimer() {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+    }
+
+    function updateStepByTime() {
+      const progress = 1 - remainingSeconds / durationSeconds;
+      currentStepIndex = Math.min(steps.length - 1, Math.floor(progress * steps.length));
+    }
+
+    function startTimer() {
+      stopTimer();
+      intervalId = window.setInterval(() => {
+        remainingSeconds -= 1;
+        if (remainingSeconds <= 0) {
+          remainingSeconds = 0;
+          currentStepIndex = steps.length - 1;
+          renderSteps();
+          stopTimer();
+          stepTitle.textContent = "손씻기 완료";
+          stepIcon.textContent = "🌈";
+          return;
+        }
+        updateStepByTime();
+        renderSteps();
+      }, 1000);
+    }
+
+    function resetTimer() {
+      stopTimer();
+      remainingSeconds = durationSeconds;
+      currentStepIndex = 0;
+      renderSteps();
+    }
+
+    presetButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        durationSeconds = Number(button.dataset.seconds);
+        remainingSeconds = durationSeconds;
+        currentStepIndex = 0;
+        presetButtons.forEach((item) => item.classList.toggle("active", item === button));
+        renderSteps();
+        stopTimer();
+      });
+    });
+
+    document.getElementById("startBtn").addEventListener("click", startTimer);
+    document.getElementById("pauseBtn").addEventListener("click", stopTimer);
+    document.getElementById("resetBtn").addEventListener("click", resetTimer);
+    document.getElementById("fullscreenBtn").addEventListener("click", async () => {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    });
+    document.getElementById("homeBtn").addEventListener("click", () => {
+      window.location.href = "../";
+    });
+
     renderSteps();
   </script>
 </body>
