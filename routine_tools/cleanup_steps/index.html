@@ -68,7 +68,26 @@
     }
     .btn.primary{background:linear-gradient(135deg,var(--peach),#ffbe81);color:#fff;font-weight:800;}
     .btn.secondary{background:linear-gradient(135deg,var(--mint),#a6e2b6);color:#fff;font-weight:800;}
+    .btn.music-on{background:linear-gradient(135deg,#8fa1ff,#b89bff);color:#fff;font-weight:800;}
     .panel{padding:22px;}
+    .music-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:center;
+      margin-bottom:14px;
+    }
+    .music-style{
+      border:0;
+      border-radius:999px;
+      padding:11px 15px;
+      cursor:pointer;
+      color:var(--text);
+      background:#fff;
+      box-shadow:0 10px 18px rgba(47,54,66,.08);
+    }
+    .music-style.active{background:linear-gradient(135deg,#8fa1ff,#b89bff);color:#fff;font-weight:800;}
     .hero-intro{
       display:flex;
       justify-content:space-between;
@@ -162,6 +181,7 @@
         </div>
       </div>
       <div class="toolbar-actions">
+        <button class="btn music-on" id="musicBtn" type="button">BGM 끄기</button>
         <button class="btn" id="homeBtn" type="button">← 루틴 허브</button>
         <button class="btn secondary" id="fullscreenBtn" type="button">전체 화면</button>
       </div>
@@ -175,6 +195,12 @@
         </div>
         <div class="hero-pill">정리 시간용 추천</div>
       </section>
+
+      <div class="music-row">
+        <button class="music-style active" data-style="dreamy" type="button">포근한 별빛</button>
+        <button class="music-style" data-style="rainbow" type="button">밝은 무지개</button>
+        <button class="music-style" data-style="calm" type="button">차분한 교실</button>
+      </div>
 
       <div class="controls" style="justify-content:center;margin-bottom:18px;">
         <button class="btn primary" id="prevBtn" type="button">이전</button>
@@ -208,11 +234,16 @@
     </section>
   </main>
 
+  <audio id="bgmAudio" loop preload="auto"></audio>
+
   <script>
     const stepList = document.getElementById("stepList");
     const stepNumber = document.getElementById("stepNumber");
     const stepTitle = document.getElementById("stepTitle");
     const stepInput = document.getElementById("stepInput");
+    const musicBtn = document.getElementById("musicBtn");
+    const musicStyleButtons = [...document.querySelectorAll(".music-style")];
+    const bgmAudio = document.getElementById("bgmAudio");
 
     let steps = [
       "장난감을 상자 안에 넣어요",
@@ -222,6 +253,37 @@
       "자리에 앉아요"
     ];
     let currentIndex = 0;
+    let bgmEnabled = true;
+    let selectedMusicStyle = "dreamy";
+
+    const bgmSources = {
+      dreamy: "../cleanup_timer/bgm-dreamy.mp3",
+      rainbow: "../cleanup_timer/bgm-rainbow.mp3",
+      calm: "../cleanup_timer/bgm-calm.mp3"
+    };
+
+    function loadSelectedBgm() {
+      bgmAudio.pause();
+      bgmAudio.currentTime = 0;
+      bgmAudio.src = bgmSources[selectedMusicStyle];
+      bgmAudio.load();
+    }
+
+    function syncMusicButton() {
+      musicBtn.textContent = bgmEnabled ? "BGM 끄기" : "BGM 켜기";
+      musicBtn.classList.toggle("music-on", bgmEnabled);
+    }
+
+    function startBgm() {
+      if (!bgmEnabled) return;
+      bgmAudio.currentTime = 0;
+      bgmAudio.play().catch(() => {});
+    }
+
+    function stopBgm() {
+      bgmAudio.pause();
+      bgmAudio.currentTime = 0;
+    }
 
     function render() {
       stepNumber.textContent = String(currentIndex + 1);
@@ -239,16 +301,19 @@
     document.getElementById("prevBtn").addEventListener("click", () => {
       currentIndex = Math.max(0, currentIndex - 1);
       render();
+      startBgm();
     });
 
     document.getElementById("nextBtn").addEventListener("click", () => {
       currentIndex = Math.min(steps.length - 1, currentIndex + 1);
       render();
+      startBgm();
     });
 
     document.getElementById("resetBtn").addEventListener("click", () => {
       currentIndex = 0;
       render();
+      startBgm();
     });
 
     document.getElementById("applyBtn").addEventListener("click", () => {
@@ -257,6 +322,28 @@
         steps = parsed;
         currentIndex = 0;
         render();
+        startBgm();
+      }
+    });
+
+    musicStyleButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedMusicStyle = button.dataset.style;
+        musicStyleButtons.forEach((item) => item.classList.toggle("active", item === button));
+        loadSelectedBgm();
+        if (bgmEnabled) {
+          startBgm();
+        }
+      });
+    });
+
+    musicBtn.addEventListener("click", () => {
+      bgmEnabled = !bgmEnabled;
+      syncMusicButton();
+      if (bgmEnabled) {
+        startBgm();
+      } else {
+        stopBgm();
       }
     });
 
@@ -272,6 +359,8 @@
       window.location.href = "../";
     });
 
+    loadSelectedBgm();
+    syncMusicButton();
     render();
   </script>
 </body>

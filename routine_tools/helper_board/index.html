@@ -56,9 +56,9 @@
     }
     .brand h1{margin:0;font-size:1.35rem;}
     .brand p{margin:4px 0 0;color:var(--muted);font-size:.94rem;}
-    .toolbar-actions,.controls{display:flex;gap:8px;flex-wrap:wrap;}
+    .toolbar-actions,.controls,.music-row{display:flex;gap:8px;flex-wrap:wrap;}
     button,textarea{font:inherit;}
-    .btn{
+    .btn,.music-style{
       border:0;
       border-radius:999px;
       padding:11px 16px;
@@ -68,7 +68,9 @@
     }
     .btn.primary{background:linear-gradient(135deg,var(--lav),#b39dfd);color:#fff;font-weight:800;}
     .btn.secondary{background:linear-gradient(135deg,var(--pink),#ffc586);color:#fff;font-weight:800;}
+    .btn.music-on,.music-style.active{background:linear-gradient(135deg,#8fa1ff,#b89bff);color:#fff;font-weight:800;}
     .panel{padding:22px;}
+    .music-row{justify-content:center;align-items:center;margin-bottom:14px;}
     .hero-intro{
       display:flex;
       justify-content:space-between;
@@ -153,6 +155,7 @@
         </div>
       </div>
       <div class="toolbar-actions">
+        <button class="btn music-on" id="musicBtn" type="button">BGM 끄기</button>
         <button class="btn" id="homeBtn" type="button">← 루틴 허브</button>
         <button class="btn secondary" id="fullscreenBtn" type="button">전체 화면</button>
       </div>
@@ -162,10 +165,16 @@
       <section class="hero-intro">
         <div>
           <h2>오늘의 도우미를 한눈에 보여줘요</h2>
-          <p>이름 목록을 바꾸거나, 무작위로 다시 뽑아서 바로 교실 화면에 띄울 수 있습니다.</p>
+          <p>이름 목록을 바꾸거나 무작위로 다시 뽑아서 바로 교실 화면에 띄울 수 있습니다.</p>
         </div>
         <div class="hero-pill">반 운영용 추천</div>
       </section>
+
+      <div class="music-row">
+        <button class="music-style active" data-style="dreamy" type="button">포근한 별빛</button>
+        <button class="music-style" data-style="rainbow" type="button">밝은 무지개</button>
+        <button class="music-style" data-style="calm" type="button">차분한 교실</button>
+      </div>
 
       <div class="controls" style="justify-content:center;margin-bottom:18px;">
         <button class="btn primary" id="shuffleBtn" type="button">새로 뽑기</button>
@@ -190,6 +199,8 @@
     </section>
   </main>
 
+  <audio id="bgmAudio" loop preload="auto"></audio>
+
   <script>
     const roles = [
       { role: "출석 도우미", icon: "📋" },
@@ -200,9 +211,43 @@
 
     let names = ["민수", "지우", "하린", "서준", "하나", "시윤"];
     let assigned = [];
+    let bgmEnabled = true;
+    let selectedMusicStyle = "dreamy";
 
     const board = document.getElementById("board");
     const nameInput = document.getElementById("nameInput");
+    const musicBtn = document.getElementById("musicBtn");
+    const musicStyleButtons = [...document.querySelectorAll(".music-style")];
+    const bgmAudio = document.getElementById("bgmAudio");
+
+    const bgmSources = {
+      dreamy: "../cleanup_timer/bgm-dreamy.mp3",
+      rainbow: "../cleanup_timer/bgm-rainbow.mp3",
+      calm: "../cleanup_timer/bgm-calm.mp3"
+    };
+
+    function loadSelectedBgm() {
+      bgmAudio.pause();
+      bgmAudio.currentTime = 0;
+      bgmAudio.src = bgmSources[selectedMusicStyle];
+      bgmAudio.load();
+    }
+
+    function syncMusicButton() {
+      musicBtn.textContent = bgmEnabled ? "BGM 끄기" : "BGM 켜기";
+      musicBtn.classList.toggle("music-on", bgmEnabled);
+    }
+
+    function startBgm() {
+      if (!bgmEnabled) return;
+      bgmAudio.currentTime = 0;
+      bgmAudio.play().catch(() => {});
+    }
+
+    function stopBgm() {
+      bgmAudio.pause();
+      bgmAudio.currentTime = 0;
+    }
 
     function shuffle(array) {
       const clone = [...array];
@@ -220,6 +265,7 @@
         name: pool[index] || "이름 없음"
       }));
       render();
+      startBgm();
     }
 
     function render() {
@@ -237,10 +283,32 @@
       });
     }
 
+    musicStyleButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedMusicStyle = button.dataset.style;
+        musicStyleButtons.forEach((item) => item.classList.toggle("active", item === button));
+        loadSelectedBgm();
+        if (bgmEnabled) {
+          startBgm();
+        }
+      });
+    });
+
+    musicBtn.addEventListener("click", () => {
+      bgmEnabled = !bgmEnabled;
+      syncMusicButton();
+      if (bgmEnabled) {
+        startBgm();
+      } else {
+        stopBgm();
+      }
+    });
+
     document.getElementById("shuffleBtn").addEventListener("click", assignHelpers);
     document.getElementById("resetBtn").addEventListener("click", () => {
       assigned = roles.map((item) => ({ ...item, name: "미정" }));
       render();
+      startBgm();
     });
     document.getElementById("applyBtn").addEventListener("click", () => {
       const parsed = nameInput.value.split("\n").map((line) => line.trim()).filter(Boolean);
@@ -260,6 +328,8 @@
       window.location.href = "../";
     });
 
+    loadSelectedBgm();
+    syncMusicButton();
     assignHelpers();
   </script>
 </body>
