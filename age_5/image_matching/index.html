@@ -51,6 +51,7 @@ body{
 }
 .choice-btn:hover{border-color:var(--accent);color:var(--accent)}
 .choice-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.choice-btn.soft-active{background:#fff3ee;border-color:#ffc9b1;color:var(--accent);font-weight:700}
 #player-names-container{display:flex;flex-direction:column;gap:8px}
 .name-input{
   padding:10px 14px;border:2px solid #e8e8e8;border-radius:8px;
@@ -346,6 +347,9 @@ body{
         <button class="choice-btn" data-visual="premium">고급 이미지</button>
       </div>
       <p class="hint-text" id="visual-mode-quick-hint">과일 카드는 고급 이미지 모드로 먼저 볼 수 있어요.</p>
+      <div class="btn-group" style="margin-top:10px;">
+        <button class="choice-btn soft-active" id="quick-bgm-btn" type="button">🎵 배경음 켜짐</button>
+      </div>
     </div>
   </div>
   <div class="mode-grid">
@@ -374,6 +378,12 @@ body{
     <p class="subtitle">기억력 카드 게임</p>
   </header>
   <div class="setup-panel">
+    <div class="setup-section">
+      <div class="btn-group">
+        <button class="choice-btn soft-active" id="start-bgm-btn" type="button">🎵 배경음 켜짐</button>
+      </div>
+      <p class="hint-text">버튼을 누르면 배경음 상태를 바로 바꿀 수 있어요.</p>
+    </div>
 
     <div class="setup-section">
       <label class="section-label">👥 플레이어 수</label>
@@ -1214,8 +1224,8 @@ function renderStartScreen() {
   document.querySelectorAll('#preview-time-group .choice-btn')
     .forEach(b=>b.classList.toggle('active',+b.dataset.sec===s.previewSeconds));
   document.getElementById('card-count-select').value = s.cardCount;
-  document.getElementById('bgm-toggle').checked = s.bgmEnabled;
   document.getElementById('sfx-toggle').checked = s.sfxEnabled;
+  syncBgmButtons();
   updateVisualModeUi();
   document.querySelectorAll('#category-group .choice-btn')
     .forEach(b=>b.classList.toggle('active',b.dataset.cat===s.category));
@@ -1667,12 +1677,21 @@ function initEvents() {
   });
 
   // 오디오
-  document.getElementById('bgm-toggle').addEventListener('change',e=>state.settings.bgmEnabled=e.target.checked);
+  document.getElementById('bgm-toggle').addEventListener('change',e=>setBgmEnabled(e.target.checked, true));
   document.getElementById('sfx-toggle').addEventListener('change',e=>state.settings.sfxEnabled=e.target.checked);
+  document.getElementById('quick-bgm-btn').addEventListener('click',()=>{
+    setBgmEnabled(!state.settings.bgmEnabled, true);
+    saveToLocalStorage();
+  });
+  document.getElementById('start-bgm-btn').addEventListener('click',()=>{
+    setBgmEnabled(!state.settings.bgmEnabled, true);
+    saveToLocalStorage();
+  });
   document.querySelectorAll('#visual-mode-group .choice-btn').forEach(btn=>
     btn.addEventListener('click',()=>{
       state.settings.visualMode = btn.dataset.visual;
       updateVisualModeUi();
+      saveToLocalStorage();
     }));
   document.querySelectorAll('#visual-mode-quick-group .choice-btn').forEach(btn=>
     btn.addEventListener('click',()=>{
@@ -1809,6 +1828,28 @@ function shouldUsePremiumVisual() {
   return state.gameMode === 'emoji' &&
     state.settings.visualMode === 'premium' &&
     categorySupportsPremium(state.settings.category);
+}
+
+function syncBgmButtons() {
+  const enabled = state.settings.bgmEnabled;
+  const label = enabled ? '🎵 배경음 켜짐' : '🎵 배경음 꺼짐';
+  ['quick-bgm-btn','start-bgm-btn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.textContent = label;
+    btn.classList.toggle('soft-active', enabled);
+  });
+  const toggle = document.getElementById('bgm-toggle');
+  if (toggle) toggle.checked = enabled;
+}
+
+function setBgmEnabled(enabled, shouldStartPreviewMusic = false) {
+  state.settings.bgmEnabled = enabled;
+  AudioSys.init();
+  AudioSys.setBGM(enabled);
+  if (enabled && shouldStartPreviewMusic) AudioSys.startBGM();
+  if (!enabled) AudioSys.stopBGM();
+  syncBgmButtons();
 }
 
 function updateVisualModeUi() {
@@ -2194,16 +2235,31 @@ function initFriendEvents() {
   // 모드 선택 화면 버튼 — 각 모드로 state.gameMode 설정 후 해당 화면으로 이동
   document.getElementById('btn-mode-emoji').addEventListener('click', () => {
     state.gameMode = 'emoji';
+    if (state.settings.bgmEnabled) {
+      AudioSys.init();
+      AudioSys.setBGM(true);
+      AudioSys.startBGM();
+    }
     renderStartScreen();
   });
   document.getElementById('btn-mode-friend').addEventListener('click', () => {
     state.gameMode = 'friend';
+    if (state.settings.bgmEnabled) {
+      AudioSys.init();
+      AudioSys.setBGM(true);
+      AudioSys.startBGM();
+    }
     showScreen('friend-setup');
     if (friendState.students.length === 0) renderStudentList();
   });
 
   document.getElementById('btn-mode-face').addEventListener('click', () => {
     state.gameMode = 'face';
+    if (state.settings.bgmEnabled) {
+      AudioSys.init();
+      AudioSys.setBGM(true);
+      AudioSys.startBGM();
+    }
     showScreen('friend-setup');
     if (friendState.students.length === 0) renderStudentList();
   });
