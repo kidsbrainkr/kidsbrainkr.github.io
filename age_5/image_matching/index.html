@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>💡 두뇌 쑥쑥 짝맞추기</title>
+<title>🌈⭐ 두뇌 쑥쑥 짝맞추기</title>
 <style>
 /* ===== VARIABLES ===== */
 :root {
@@ -159,6 +159,17 @@ body{
 .card-back-icon{font-size:1.6rem;opacity:.7}
 .card-face-up{transform:rotateY(180deg);background:#fffaf5;border:2px solid #f0e4d8;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .card-emoji{font-size:2.2rem;line-height:1}
+.card-image-wrap{
+  width:72%;height:72%;display:flex;align-items:center;justify-content:center;
+  border-radius:14px;background:linear-gradient(180deg,#fffdf8,#fff4e6);
+  box-shadow:inset 0 0 0 1px rgba(255,107,53,.08);padding:8px
+}
+.card-image{
+  width:100%;height:100%;object-fit:contain;display:block;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.08))
+}
+.card.premium-card .card-face-up{background:linear-gradient(180deg,#fffefd,#fff7ec)}
+.card.premium-card.matched .card-face-up{background:linear-gradient(135deg,#dff8ec,#c7f2df)}
 .card-name{font-size:.68rem;color:var(--txt-lt);margin-top:5px;font-weight:600}
 .card:not(.matched):hover .card-face-down{filter:brightness(1.05);box-shadow:0 6px 16px rgba(255,107,53,.4)}
 .card.flipped:not(.matched):hover .card-inner{transform:rotateY(180deg) scale(1.04)}
@@ -324,14 +335,24 @@ body{
 <!-- ===== MODE SELECTION ===== -->
 <div id="screen-mode" class="screen active">
   <header class="game-header">
-    <h1>💡 두뇌 쑥쑥 짝맞추기</h1>
+    <h1>🌈⭐ 두뇌 쑥쑥 짝맞추기</h1>
     <p class="subtitle">게임 모드를 선택하세요</p>
   </header>
+  <div class="setup-panel" style="max-width:760px;margin:0 auto 18px;">
+    <div class="setup-section" style="margin-bottom:0;">
+      <label class="section-label">🖼️ 카드 표시 모드</label>
+      <div class="btn-group" id="visual-mode-quick-group">
+        <button class="choice-btn active" data-visual="basic">기본 이모지</button>
+        <button class="choice-btn" data-visual="premium">고급 이미지</button>
+      </div>
+      <p class="hint-text" id="visual-mode-quick-hint">과일 카드는 고급 이미지 모드로 먼저 볼 수 있어요.</p>
+    </div>
+  </div>
   <div class="mode-grid">
     <button class="mode-card" id="btn-mode-emoji">
-      <div class="mode-icon">🎮</div>
+      <div class="mode-icon">🌈⭐</div>
       <h3>기본 기억력 게임</h3>
-      <p>과일·동물·우주 등 다양한 카테고리로 짝 맞추기</p>
+      <p>과일은 기본 이모지와 고급 이미지 모드를 바꿔가며 즐길 수 있어요</p>
     </button>
     <button class="mode-card" id="btn-mode-friend">
       <div class="mode-icon">👫</div>
@@ -349,7 +370,7 @@ body{
 <!-- ===== START SCREEN ===== -->
 <div id="screen-start" class="screen">
   <header class="game-header">
-    <h1>💡 두뇌 쑥쑥 짝맞추기</h1>
+    <h1>🌈⭐ 두뇌 쑥쑥 짝맞추기</h1>
     <p class="subtitle">기억력 카드 게임</p>
   </header>
   <div class="setup-panel">
@@ -376,6 +397,15 @@ body{
         <button class="choice-btn active" data-sec="10">10초</button>
         <button class="choice-btn" data-sec="15">15초</button>
       </div>
+    </div>
+
+    <div class="setup-section">
+      <label class="section-label">🖼️ 카드 표시 모드</label>
+      <div class="btn-group" id="visual-mode-group">
+        <button class="choice-btn active" data-visual="basic">기본 이모지</button>
+        <button class="choice-btn" data-visual="premium">고급 이미지</button>
+      </div>
+      <p class="hint-text" id="visual-mode-hint">고급 이미지는 과일 카드에서 먼저 제공됩니다.</p>
     </div>
 
     <div class="setup-section">
@@ -634,24 +664,24 @@ body{
 // =====================================================================
 const CARD_CATEGORIES = {
   fruit: { label:'🍎 과일', cards:[
-    {id:'apple',      name:'사과',    emoji:'🍎'},
-    {id:'banana',     name:'바나나',  emoji:'🍌'},
-    {id:'grape',      name:'포도',    emoji:'🍇'},
-    {id:'orange',     name:'오렌지',  emoji:'🍊'},
-    {id:'strawberry', name:'딸기',    emoji:'🍓'},
-    {id:'peach',      name:'복숭아',  emoji:'🍑'},
-    {id:'cherry',     name:'체리',    emoji:'🍒'},
-    {id:'lemon',      name:'레몬',    emoji:'🍋'},
-    {id:'watermelon', name:'수박',    emoji:'🍉'},
-    {id:'pineapple',  name:'파인애플',emoji:'🍍'},
-    {id:'mango',      name:'망고',    emoji:'🥭'},
-    {id:'pear',       name:'배',      emoji:'🍐'},
-    {id:'kiwi',       name:'키위',    emoji:'🥝'},
-    {id:'blueberry',  name:'블루베리',emoji:'🫐'},
-    {id:'melon',      name:'멜론',    emoji:'🍈'},
-    {id:'coconut',    name:'코코넛',  emoji:'🥥'},
-    {id:'green_apple',name:'청사과',  emoji:'🍏'},
-    {id:'tomato',     name:'토마토',  emoji:'🍅'},
+    {id:'apple',      name:'사과',    emoji:'🍎', premiumImage:'assets/premium/fruit/apple.svg'},
+    {id:'banana',     name:'바나나',  emoji:'🍌', premiumImage:'assets/premium/fruit/banana.svg'},
+    {id:'grape',      name:'포도',    emoji:'🍇', premiumImage:'assets/premium/fruit/grape.svg'},
+    {id:'orange',     name:'오렌지',  emoji:'🍊', premiumImage:'assets/premium/fruit/orange.svg'},
+    {id:'strawberry', name:'딸기',    emoji:'🍓', premiumImage:'assets/premium/fruit/strawberry.svg'},
+    {id:'peach',      name:'복숭아',  emoji:'🍑', premiumImage:'assets/premium/fruit/peach.svg'},
+    {id:'cherry',     name:'체리',    emoji:'🍒', premiumImage:'assets/premium/fruit/cherry.svg'},
+    {id:'lemon',      name:'레몬',    emoji:'🍋', premiumImage:'assets/premium/fruit/lemon.svg'},
+    {id:'watermelon', name:'수박',    emoji:'🍉', premiumImage:'assets/premium/fruit/watermelon.svg'},
+    {id:'pineapple',  name:'파인애플',emoji:'🍍', premiumImage:'assets/premium/fruit/pineapple.svg'},
+    {id:'mango',      name:'망고',    emoji:'🥭', premiumImage:'assets/premium/fruit/mango.svg'},
+    {id:'pear',       name:'배',      emoji:'🍐', premiumImage:'assets/premium/fruit/pear.svg'},
+    {id:'kiwi',       name:'키위',    emoji:'🥝', premiumImage:'assets/premium/fruit/kiwi.svg'},
+    {id:'blueberry',  name:'블루베리',emoji:'🫐', premiumImage:'assets/premium/fruit/blueberry.svg'},
+    {id:'melon',      name:'멜론',    emoji:'🍈', premiumImage:'assets/premium/fruit/melon.svg'},
+    {id:'coconut',    name:'코코넛',  emoji:'🥥', premiumImage:'assets/premium/fruit/coconut.svg'},
+    {id:'green_apple',name:'청사과',  emoji:'🍏', premiumImage:'assets/premium/fruit/green_apple.svg'},
+    {id:'tomato',     name:'토마토',  emoji:'🍅', premiumImage:'assets/premium/fruit/tomato.svg'},
   ]},
   animal: { label:'🐶 동물', cards:[
     {id:'dog',     name:'강아지',  emoji:'🐶'},
@@ -1025,7 +1055,7 @@ const state = {
   settings: {
     playerCount:1, playerNames:['플레이어 1'],
     previewSeconds:10, cardCount:12, bgmEnabled:true, sfxEnabled:true,
-    category:'fruit', timeLimit:0,
+    category:'fruit', timeLimit:0, visualMode:'basic',
   },
   deck:[], currentPlayerIndex:0,
   openedCards:[], matchedCardIds:new Set(),
@@ -1186,6 +1216,7 @@ function renderStartScreen() {
   document.getElementById('card-count-select').value = s.cardCount;
   document.getElementById('bgm-toggle').checked = s.bgmEnabled;
   document.getElementById('sfx-toggle').checked = s.sfxEnabled;
+  updateVisualModeUi();
   document.querySelectorAll('#category-group .choice-btn')
     .forEach(b=>b.classList.toggle('active',b.dataset.cat===s.category));
   document.querySelectorAll('#timelimit-group .choice-btn')
@@ -1297,8 +1328,13 @@ function renderCards() {
       el.classList.add('photo-card');
       faceUpHTML = `<img class="friend-photo" src="${card.imageData}" alt="${card.displayValue}"><span class="friend-photo-name">${card.displayValue}</span>`;
     } else {
-      // emoji 모드: 이모지 + 이름
-      faceUpHTML = `<span class="card-emoji">${card.emoji}</span><span class="card-name">${card.name}</span>`;
+      // emoji 모드: 기본은 이모지, premium 모드는 고급 이미지
+      if (shouldUsePremiumVisual() && card.premiumImage) {
+        el.classList.add('premium-card');
+        faceUpHTML = `<div class="card-image-wrap"><img class="card-image" src="${card.premiumImage}" alt="${card.name}"></div><span class="card-name">${card.name}</span>`;
+      } else {
+        faceUpHTML = `<span class="card-emoji">${card.emoji}</span><span class="card-name">${card.name}</span>`;
+      }
     }
 
     el.innerHTML = `<div class="card-inner">
@@ -1633,6 +1669,17 @@ function initEvents() {
   // 오디오
   document.getElementById('bgm-toggle').addEventListener('change',e=>state.settings.bgmEnabled=e.target.checked);
   document.getElementById('sfx-toggle').addEventListener('change',e=>state.settings.sfxEnabled=e.target.checked);
+  document.querySelectorAll('#visual-mode-group .choice-btn').forEach(btn=>
+    btn.addEventListener('click',()=>{
+      state.settings.visualMode = btn.dataset.visual;
+      updateVisualModeUi();
+    }));
+  document.querySelectorAll('#visual-mode-quick-group .choice-btn').forEach(btn=>
+    btn.addEventListener('click',()=>{
+      state.settings.visualMode = btn.dataset.visual;
+      updateVisualModeUi();
+      saveToLocalStorage();
+    }));
 
   // 파일 연결 — 연결 성공 후 기존 파일에 데이터가 있으면 병합 여부 확인
   document.getElementById('btn-connect-file').addEventListener('click', async ()=>{
@@ -1670,6 +1717,7 @@ function initEvents() {
       state.settings.category=btn.dataset.cat;
       document.querySelectorAll('#category-group .choice-btn')
         .forEach(b=>b.classList.toggle('active',b===btn));
+      updateVisualModeUi();
     }));
 
   // 제한 시간
@@ -1752,6 +1800,39 @@ const friendState = {
   students: [],
   currentSetId: null,
 };
+
+function categorySupportsPremium(category) {
+  return category === 'fruit';
+}
+
+function shouldUsePremiumVisual() {
+  return state.gameMode === 'emoji' &&
+    state.settings.visualMode === 'premium' &&
+    categorySupportsPremium(state.settings.category);
+}
+
+function updateVisualModeUi() {
+  const hint = document.getElementById('visual-mode-hint');
+  const quickHint = document.getElementById('visual-mode-quick-hint');
+  document.querySelectorAll('#visual-mode-group .choice-btn')
+    .forEach(btn => btn.classList.toggle('active', btn.dataset.visual === state.settings.visualMode));
+  document.querySelectorAll('#visual-mode-quick-group .choice-btn')
+    .forEach(btn => btn.classList.toggle('active', btn.dataset.visual === state.settings.visualMode));
+
+  if (!hint && !quickHint) return;
+
+  if (state.settings.visualMode === 'premium' && !categorySupportsPremium(state.settings.category)) {
+    if (hint) hint.textContent = '지금은 과일 카드에서만 고급 이미지가 제공됩니다. 현재 카테고리는 기본 이모지로 표시됩니다.';
+    if (quickHint) quickHint.textContent = '고급 이미지는 과일 카드부터 지원합니다. 다른 카테고리는 기본 이모지로 표시됩니다.';
+    return;
+  }
+
+  const message = state.settings.visualMode === 'premium'
+    ? '과일 카드는 무료 SVG 일러스트로 더 선명하게 보여줍니다.'
+    : '기본 모드는 빠르고 가볍게 이모지 카드로 표시됩니다.';
+  if (hint) hint.textContent = message;
+  if (quickHint) quickHint.textContent = message;
+}
 
 const FSK = {
   sets:    'imageMatching.friendSets',

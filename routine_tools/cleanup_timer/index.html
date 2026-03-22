@@ -229,7 +229,7 @@
     <section class="toolbar">
       <h1>🌈⭐ 정리 시간 타이머</h1>
       <div class="tool-actions">
-        <button class="btn" id="musicBtn" type="button">BGM 켜기</button>
+        <button class="btn music-on" id="musicBtn" type="button">BGM 끄기</button>
         <button class="btn" id="homeBtn" type="button">홈</button>
         <button class="btn" id="fullscreenBtn" type="button">전체화면</button>
       </div>
@@ -295,7 +295,7 @@
 
     let audioContext = null;
     let bgmIntervalId = null;
-    let bgmEnabled = false;
+    let bgmEnabled = true;
     let useExternalBgm = false;
     let selectedMusicStyle = "dreamy";
 
@@ -311,6 +311,11 @@
       bgmAudio.currentTime = 0;
       bgmAudio.src = bgmSources[selectedMusicStyle];
       bgmAudio.load();
+    }
+
+    function syncMusicButton() {
+      musicBtn.textContent = bgmEnabled ? "BGM 끄기" : "BGM 켜기";
+      musicBtn.classList.toggle("music-on", bgmEnabled);
     }
 
     function ensureAudioContext() {
@@ -377,8 +382,7 @@
 
     function toggleBgm() {
       bgmEnabled = !bgmEnabled;
-      musicBtn.textContent = bgmEnabled ? "BGM 끄기" : "BGM 켜기";
-      musicBtn.classList.toggle("music-on", bgmEnabled);
+      syncMusicButton();
 
       if (bgmEnabled) {
         ensureAudioContext();
@@ -520,12 +524,16 @@
     musicBtn.addEventListener("click", toggleBgm);
     bgmAudio.addEventListener("canplaythrough", () => {
       useExternalBgm = true;
+      if (bgmEnabled && running) {
+        startBgm();
+      }
     });
     bgmAudio.addEventListener("error", () => {
       useExternalBgm = false;
     });
 
     loadSelectedBgm();
+    syncMusicButton();
     updateScreen();
   </script>
 </body>
