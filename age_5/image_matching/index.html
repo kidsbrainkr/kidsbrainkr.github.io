@@ -346,7 +346,7 @@ body{
         <button class="choice-btn active" data-visual="basic">기본 이모지</button>
         <button class="choice-btn" data-visual="premium">고급 이미지</button>
       </div>
-      <p class="hint-text" id="visual-mode-quick-hint">과일 카드는 고급 이미지 모드로 먼저 볼 수 있어요.</p>
+      <p class="hint-text" id="visual-mode-quick-hint">과일·동물·탈것·우주 카드는 고급 이미지 모드로 볼 수 있어요.</p>
       <div class="btn-group" style="margin-top:10px;">
         <button class="choice-btn soft-active" id="quick-bgm-btn" type="button">🎵 배경음 켜짐</button>
       </div>
@@ -356,7 +356,7 @@ body{
     <button class="mode-card" id="btn-mode-emoji">
       <div class="mode-icon">🌈⭐</div>
       <h3>기본 기억력 게임</h3>
-      <p>과일은 기본 이모지와 고급 이미지 모드를 바꿔가며 즐길 수 있어요</p>
+      <p>과일·동물·탈것·우주 카드는 기본 이모지와 고급 이미지 모드를 바꿔가며 즐길 수 있어요</p>
     </button>
     <button class="mode-card" id="btn-mode-friend">
       <div class="mode-icon">👫</div>
@@ -415,7 +415,7 @@ body{
         <button class="choice-btn active" data-visual="basic">기본 이모지</button>
         <button class="choice-btn" data-visual="premium">고급 이미지</button>
       </div>
-      <p class="hint-text" id="visual-mode-hint">고급 이미지는 과일 카드에서 먼저 제공됩니다.</p>
+      <p class="hint-text" id="visual-mode-hint">고급 이미지는 과일·동물·탈것·우주 카드에서 제공됩니다.</p>
     </div>
 
     <div class="setup-section">
@@ -1279,11 +1279,13 @@ function validate() {
 // 카드 덱 생성 — 선택된 카테고리에서 pairs 수만큼 랜덤 추출 후 각 카드를 A/B 두 장씩 복제해 셔플
 function buildDeck() {
   const pairs = state.settings.cardCount / 2;
-  const pool  = CARD_CATEGORIES[state.settings.category]?.cards || CARD_CATEGORIES.fruit.cards;
+  const category = state.settings.category;
+  const pool  = CARD_CATEGORIES[category]?.cards || CARD_CATEGORIES.fruit.cards;
   const deck  = [];
   shuffle([...pool]).slice(0,pairs).forEach(c=>{
-    deck.push({...c,uid:`${c.id}-A`});
-    deck.push({...c,uid:`${c.id}-B`});
+    const premiumImage = resolvePremiumImage(category, c);
+    deck.push({...c,premiumImage,uid:`${c.id}-A`});
+    deck.push({...c,premiumImage,uid:`${c.id}-B`});
   });
   return shuffle(deck);
 }
@@ -1821,7 +1823,12 @@ const friendState = {
 };
 
 function categorySupportsPremium(category) {
-  return category === 'fruit';
+  return ['fruit','animal','vehicle','space'].includes(category);
+}
+
+function resolvePremiumImage(category, card) {
+  if (!categorySupportsPremium(category)) return card.premiumImage || null;
+  return card.premiumImage || `assets/premium/${category}/${card.id}.svg`;
 }
 
 function shouldUsePremiumVisual() {
@@ -1863,13 +1870,13 @@ function updateVisualModeUi() {
   if (!hint && !quickHint) return;
 
   if (state.settings.visualMode === 'premium' && !categorySupportsPremium(state.settings.category)) {
-    if (hint) hint.textContent = '지금은 과일 카드에서만 고급 이미지가 제공됩니다. 현재 카테고리는 기본 이모지로 표시됩니다.';
-    if (quickHint) quickHint.textContent = '고급 이미지는 과일 카드부터 지원합니다. 다른 카테고리는 기본 이모지로 표시됩니다.';
+    if (hint) hint.textContent = '지금은 과일·동물·탈것·우주 카드에서만 고급 이미지가 제공됩니다. 현재 카테고리는 기본 이모지로 표시됩니다.';
+    if (quickHint) quickHint.textContent = '고급 이미지는 과일·동물·탈것·우주 카드에서 지원합니다. 다른 카테고리는 기본 이모지로 표시됩니다.';
     return;
   }
 
   const message = state.settings.visualMode === 'premium'
-    ? '과일 카드는 무료 SVG 일러스트로 더 선명하게 보여줍니다.'
+    ? '고급 이미지는 무료 SVG 일러스트 세트로 더 선명하게 보여줍니다.'
     : '기본 모드는 빠르고 가볍게 이모지 카드로 표시됩니다.';
   if (hint) hint.textContent = message;
   if (quickHint) quickHint.textContent = message;
