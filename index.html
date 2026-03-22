@@ -341,9 +341,9 @@
     <button class="hero-btn music-on" id="musicBtn" type="button">BGM 끄기</button>
   </div>
   <div class="hero-music-row">
-    <button class="hero-music-style active" data-style="dreamy" type="button">포근한 별빛</button>
+    <button class="hero-music-style active" data-style="calm" type="button">차분한 교실</button>
     <button class="hero-music-style" data-style="rainbow" type="button">밝은 무지개</button>
-    <button class="hero-music-style" data-style="calm" type="button">차분한 교실</button>
+    <button class="hero-music-style" data-style="dreamy" type="button">포근한 별빛</button>
   </div>
 </header>
 
@@ -597,7 +597,7 @@
   const bgmAudio = document.getElementById('bgmAudio');
   let bgmEnabled = true;
   let bgmStarted = false;
-  let selectedMusicStyle = 'dreamy';
+  let selectedMusicStyle = 'calm';
 
   const bgmSources = {
     dreamy: './routine_tools/cleanup_timer/bgm-dreamy.mp3',
