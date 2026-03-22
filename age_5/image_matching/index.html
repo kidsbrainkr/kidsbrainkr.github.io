@@ -346,7 +346,7 @@ body{
         <button class="choice-btn active" data-visual="basic">기본 이모지</button>
         <button class="choice-btn" data-visual="premium">고급 이미지</button>
       </div>
-      <p class="hint-text" id="visual-mode-quick-hint">과일·동물·탈것·우주 카드는 고급 이미지 모드로 볼 수 있어요.</p>
+      <p class="hint-text" id="visual-mode-quick-hint">과일·동물·탈것·음식·우주·바다 카드는 고급 이미지 모드로 볼 수 있어요.</p>
       <div class="btn-group" style="margin-top:10px;">
         <button class="choice-btn soft-active" id="quick-bgm-btn" type="button">🎵 배경음 켜짐</button>
       </div>
@@ -356,7 +356,7 @@ body{
     <button class="mode-card" id="btn-mode-emoji">
       <div class="mode-icon">🌈⭐</div>
       <h3>기본 기억력 게임</h3>
-      <p>과일·동물·탈것·우주 카드는 기본 이모지와 고급 이미지 모드를 바꿔가며 즐길 수 있어요</p>
+      <p>과일·동물·탈것·음식·우주·바다 카드는 기본 이모지와 고급 이미지 모드를 바꿔가며 즐길 수 있어요</p>
     </button>
     <button class="mode-card" id="btn-mode-friend">
       <div class="mode-icon">👫</div>
@@ -415,7 +415,7 @@ body{
         <button class="choice-btn active" data-visual="basic">기본 이모지</button>
         <button class="choice-btn" data-visual="premium">고급 이미지</button>
       </div>
-      <p class="hint-text" id="visual-mode-hint">고급 이미지는 과일·동물·탈것·우주 카드에서 제공됩니다.</p>
+      <p class="hint-text" id="visual-mode-hint">고급 이미지는 과일·동물·탈것·음식·우주·바다 카드에서 제공됩니다.</p>
     </div>
 
     <div class="setup-section">
@@ -1823,7 +1823,7 @@ const friendState = {
 };
 
 function categorySupportsPremium(category) {
-  return ['fruit','animal','vehicle','space'].includes(category);
+  return ['fruit','animal','vehicle','food','space','sea'].includes(category);
 }
 
 function resolvePremiumImage(category, card) {
@@ -1870,8 +1870,8 @@ function updateVisualModeUi() {
   if (!hint && !quickHint) return;
 
   if (state.settings.visualMode === 'premium' && !categorySupportsPremium(state.settings.category)) {
-    if (hint) hint.textContent = '지금은 과일·동물·탈것·우주 카드에서만 고급 이미지가 제공됩니다. 현재 카테고리는 기본 이모지로 표시됩니다.';
-    if (quickHint) quickHint.textContent = '고급 이미지는 과일·동물·탈것·우주 카드에서 지원합니다. 다른 카테고리는 기본 이모지로 표시됩니다.';
+    if (hint) hint.textContent = '지금은 과일·동물·탈것·음식·우주·바다 카드에서만 고급 이미지가 제공됩니다. 현재 카테고리는 기본 이모지로 표시됩니다.';
+    if (quickHint) quickHint.textContent = '고급 이미지는 과일·동물·탈것·음식·우주·바다 카드에서 지원합니다. 다른 카테고리는 기본 이모지로 표시됩니다.';
     return;
   }
 
