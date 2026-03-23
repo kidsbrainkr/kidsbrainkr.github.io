@@ -450,7 +450,7 @@
    */
 
   let gameData = [];        // 전체 게임 목록 저장 변수
-  let currentTab = 'age2';  // 현재 선택된 연령 탭 (기본값: 만 2세)
+  let currentTab = 'all';   // 현재 선택된 연령 탭 (기본값: 전체 — 탭 버튼 없으므로 전체 표시)
   let currentArea = 'all';  // 현재 선택된 영역 필터 (기본값: 전체)
   let searchQuery = '';     // 현재 입력된 검색어
 
@@ -464,9 +464,9 @@
   const musicStyleButtons = document.querySelectorAll('.hero-music-style');
   const bgmAudio = document.getElementById('bgmAudio');
   
-  let bgmEnabled = true;    // BGM 활성화 여부
+  let bgmEnabled = localStorage.getItem('bgmEnabled') !== 'false'; // BGM 활성화 여부 (localStorage 유지)
   let bgmStarted = false;    // BGM 재생 시작 여부 (중복 재생 방지)
-  let selectedMusicStyle = 'calm'; // 현재 선택된 음악 스타일
+  let selectedMusicStyle = localStorage.getItem('bgmStyle') || 'calm'; // 현재 선택된 음악 스타일 (localStorage 유지)
 
   // 배경음악 소스 경로 설정
   const bgmSources = {
@@ -499,9 +499,10 @@
     
     // 복합 필터 로직 적용
     const filtered = gameData.filter(game => {
-      // 1. 검색어가 있으면 연령 탭 필터를 무시하고 전체 검색 (Global Search)
-      //    검색어가 없으면 선택된 연령 탭에 맞는 게임만 필터링
-      const tabMatch = (searchQuery.length > 0) || 
+      // 1. 탭이 'all'이거나 검색어가 있으면 연령 필터 무시 (전체 표시)
+      //    탭 버튼이 HTML에 존재할 경우 해당 연령만 필터링
+      const tabMatch = (currentTab === 'all') ||
+                       (searchQuery.length > 0) ||
                        (currentTab === 'age2' && game.age.includes(2)) ||
                        (currentTab === 'age3' && game.age.includes(3)) ||
                        (currentTab === 'age4' && game.age.includes(4)) ||
@@ -589,10 +590,7 @@
 
   // --- BGM 제어 및 설정 유지 로직 ---
 
-  // 페이지 로드 시 로컬 스토리지에서 이전 설정 불러오기 (없으면 기본값 사용)
-  let bgmEnabled = localStorage.getItem('bgmEnabled') === null ? true : localStorage.getItem('bgmEnabled') === 'true';
-  let selectedMusicStyle = localStorage.getItem('bgmStyle') || 'calm';
-  let bgmStarted = false;
+  // 페이지 로드 시 로컬 스토리지에서 이전 설정 불러오기 (위에서 선언 및 초기화 완료)
 
   /**
    * 음악 On/Off 버튼 상태 및 텍스트 업데이트
