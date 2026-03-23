@@ -499,8 +499,10 @@
     
     // 복합 필터 로직 적용
     const filtered = gameData.filter(game => {
-      // 1. 연령 탭 매칭 (mixed 탭은 다연령 또는 공용 게임 포함)
-      const tabMatch = (currentTab === 'age2' && game.age.includes(2)) ||
+      // 1. 검색어가 있으면 연령 탭 필터를 무시하고 전체 검색 (Global Search)
+      //    검색어가 없으면 선택된 연령 탭에 맞는 게임만 필터링
+      const tabMatch = (searchQuery.length > 0) || 
+                       (currentTab === 'age2' && game.age.includes(2)) ||
                        (currentTab === 'age3' && game.age.includes(3)) ||
                        (currentTab === 'age4' && game.age.includes(4)) ||
                        (currentTab === 'age5' && game.age.includes(5)) ||
@@ -510,10 +512,11 @@
       // 2. 영역 필터 매칭
       const areaMatch = (currentArea === 'all') || (game.area === currentArea);
       
-      // 3. 검색어 매칭 (제목, 설명, 태그 포함 검색)
+      // 3. 검색어 매칭 (제목, 설명, 태그, 영역 모두 검색 대상에 포함)
       const searchMatch = game.title.includes(searchQuery) || 
                           game.desc.includes(searchQuery) || 
-                          game.tag.includes(searchQuery);
+                          game.tag.includes(searchQuery) ||
+                          game.area.includes(searchQuery);
       
       return tabMatch && areaMatch && searchMatch;
     });
@@ -524,7 +527,7 @@
         <div style="grid-column: 1/-1; text-align: center; padding: 60px 40px; color: #888;">
           <div style="font-size: 3rem; margin-bottom: 20px;">🍎</div>
           찾으시는 조건의 게임이 아직 없어요.<br>
-          선생님이 제안해 주시면 새로운 게임을 준비하겠습니다!
+          <span style="font-size: 0.9rem;">검색어를 바꿔보거나 다른 연령대를 확인해 보세요!</span>
         </div>`;
       return;
     }

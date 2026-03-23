@@ -113,7 +113,7 @@
       "title": "두뇌 쑥쑥 짝맞추기",
       "age": [5],
       "area": "기억력",
-      "desc": "친구 얼굴 이름 매칭 등 다양한 모드를 지원합니다.",
+      "desc": "기본 이모지·고급 이미지 전환 + 친구 얼굴 이름 매칭. 멀티플레이 지원!",
       "tag": "기억력 · 집중력",
       "path": "age_5/image_matching/index.html",
       "icon": "🌈⭐",
@@ -130,6 +130,18 @@
       "path": "age_5/seat_memory/index.html",
       "icon": "🪑",
       "tip": "교실 안 실제 친구들의 자리를 떠올리며 이야기 나누어 보세요.",
+      "isNew": false
+    },
+    {
+      "id": "daily_routine_game",
+      "title": "하루 일과 순서 맞추기",
+      "age": [5],
+      "area": "사고력",
+      "desc": "어린이집 일과를 올바른 순서로 맞춰요.",
+      "tag": "순서 개념",
+      "path": "age_5/daily_routine/index.html",
+      "icon": "📅",
+      "tip": "일과 시간표를 보며 다음 활동을 예측해 보는 습관을 길러줍니다.",
       "isNew": false
     },
     {
@@ -157,6 +169,18 @@
       "isNew": false
     },
     {
+      "id": "friend_custom",
+      "title": "친구 맞춤 모드",
+      "age": [0],
+      "area": "기억력",
+      "desc": "쉬움: 얼굴-얼굴 / 어려움: 얼굴-이름. 연령에 맞게 선택!",
+      "tag": "맞춤 설정",
+      "path": "mixed/friend_custom/index.html",
+      "icon": "👫",
+      "tip": "우리 반 친구들의 사진을 활용해 더 친밀감을 높여보세요.",
+      "isNew": false
+    },
+    {
       "id": "rhythm_game",
       "title": "리듬 따라하기",
       "age": [0],
@@ -169,6 +193,18 @@
       "isNew": true
     },
     {
+      "id": "routine_hub",
+      "title": "생활 루틴 도구 모음",
+      "age": [0],
+      "area": "루틴",
+      "desc": "정리 시간, 손씻기, 하루 일과, 역할 보드를 한곳에서 바로 열 수 있습니다.",
+      "tag": "루틴 허브",
+      "path": "routine_tools/index.html",
+      "icon": "⏰",
+      "tip": "수업 시작 전 미리 띄워두면 편리하게 사용할 수 있습니다.",
+      "isNew": false
+    },
+    {
       "id": "cleanup_timer",
       "title": "정리 시간 타이머",
       "age": [0],
@@ -178,6 +214,42 @@
       "path": "routine_tools/cleanup_timer/index.html",
       "icon": "🌈",
       "tip": "정리가 끝난 후 무지개가 완성되면 다 함께 박수를 쳐주세요.",
+      "isNew": false
+    },
+    {
+      "id": "daily_schedule",
+      "title": "하루 일과 순서판",
+      "age": [0],
+      "area": "루틴",
+      "desc": "지금, 다음, 그다음 활동을 큰 카드로 보여줘 아이들이 일과 흐름을 쉽게 이해합니다.",
+      "tag": "현재-다음-그다음",
+      "path": "routine_tools/daily_schedule/index.html",
+      "icon": "🗓️",
+      "tip": "활동 전환 시간에 아이들과 함께 다음 순서를 확인해 보세요.",
+      "isNew": false
+    },
+    {
+      "id": "handwashing_timer",
+      "title": "손씻기 순서 타이머",
+      "age": [0],
+      "area": "루틴",
+      "desc": "손씻기 단계를 따라가며 20초 또는 30초 타이머를 함께 보여줍니다.",
+      "tag": "순서 + 시간 안내",
+      "path": "routine_tools/handwashing_timer/index.html",
+      "icon": "🫧",
+      "tip": "식사 전이나 바깥놀이 후에 큰 화면에 띄워주세요.",
+      "isNew": false
+    },
+    {
+      "id": "helper_board",
+      "title": "오늘의 도우미 보드",
+      "age": [0],
+      "area": "루틴",
+      "desc": "출석, 간식, 정리 역할을 랜덤으로 정하고 큰 화면에 띄울 수 있습니다.",
+      "tag": "반 운영 도구",
+      "path": "routine_tools/helper_board/index.html",
+      "icon": "⭐",
+      "tip": "매일 아침 도우미를 뽑는 시간을 아이들이 매우 기다릴 거예요!",
       "isNew": false
     }
   ]
