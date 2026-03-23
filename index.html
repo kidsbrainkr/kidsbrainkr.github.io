@@ -587,9 +587,31 @@
     renderGames();
   });
 
-  // --- BGM 제어 로직 ---
+  // --- BGM 제어 및 설정 유지 로직 ---
 
-  // 현재 선택된 스타일의 음악 파일을 로드
+  // 페이지 로드 시 로컬 스토리지에서 이전 설정 불러오기 (없으면 기본값 사용)
+  let bgmEnabled = localStorage.getItem('bgmEnabled') === null ? true : localStorage.getItem('bgmEnabled') === 'true';
+  let selectedMusicStyle = localStorage.getItem('bgmStyle') || 'calm';
+  let bgmStarted = false;
+
+  /**
+   * 음악 On/Off 버튼 상태 및 텍스트 업데이트
+   * 저장된 설정에 따라 버튼의 디자인과 텍스트를 동기화합니다.
+   */
+  function syncMusicButton() {
+    musicBtn.textContent = bgmEnabled ? 'BGM 끄기' : 'BGM 켜기';
+    musicBtn.classList.toggle('music-on', bgmEnabled);
+    
+    // 스타일 버튼들도 현재 선택된 스타일에 맞춰 활성화 표시
+    musicStyleButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.style === selectedMusicStyle);
+    });
+  }
+
+  /**
+   * 음악 파일 로드
+   * 선택된 스타일(차분한 교실 등)에 맞는 오디오 소스를 설정합니다.
+   */
   function loadMainBgm() {
     bgmAudio.pause();
     bgmAudio.currentTime = 0;
@@ -597,27 +619,33 @@
     bgmAudio.load();
   }
 
-  // 음악 On/Off 버튼 텍스트 업데이트
-  function syncMusicButton() {
-    musicBtn.textContent = bgmEnabled ? 'BGM 끄기' : 'BGM 켜기';
-    musicBtn.classList.toggle('music-on', bgmEnabled);
-  }
-
-  // 음악 재생 시작 (브라우저 정책상 사용자 클릭/움직임 후에만 소리가 날 수 있음)
+  /**
+   * 배경음악 재생 시작
+   * 사용자가 BGM을 켠 상태일 때만 재생을 시도합니다.
+   */
   function startMainBgm() {
+    // 1. 사용자가 BGM을 꺼두었다면 절대 재생하지 않음
     if (!bgmEnabled) return;
+    
+    // 2. 이미 재생 중이라면 중복 실행 방지
     if (bgmStarted) return;
+    
     bgmStarted = true;
     bgmAudio.play().catch(() => {
-      // 자동 재생 차단 시 무시 (사용자가 직접 클릭할 때 재생됨)
+      // 자동 재생 정책으로 인해 차단된 경우, 다음 인터랙션 시 재시도할 수 있게 상태 리셋
       bgmStarted = false;
     });
   }
 
-  // BGM On/Off 토글 버튼 클릭
+  // BGM On/Off 토글 버튼 클릭 이벤트
   musicBtn.addEventListener('click', () => {
     bgmEnabled = !bgmEnabled;
+    
+    // 설정값을 브라우저에 영구 저장 (새로고침해도 유지됨)
+    localStorage.setItem('bgmEnabled', bgmEnabled);
+    
     syncMusicButton();
+    
     if (bgmEnabled) {
       bgmStarted = false; 
       startMainBgm();
@@ -627,12 +655,17 @@
     }
   });
 
-  // BGM 스타일 변경 버튼 클릭
+  // BGM 스타일(분위기) 변경 버튼 클릭 이벤트
   musicStyleButtons.forEach(button => {
     button.addEventListener('click', () => {
       selectedMusicStyle = button.dataset.style;
+      
+      // 선택한 스타일 저장
+      localStorage.setItem('bgmStyle', selectedMusicStyle);
+      
       musicStyleButtons.forEach(item => item.classList.toggle('active', item === button));
       loadMainBgm();
+      
       if (bgmEnabled) {
         bgmStarted = false;
         startMainBgm();
@@ -640,7 +673,7 @@
     });
   });
 
-  // 초기 로드 실행
+  // 초기 로드 시 실행
   init();
   loadMainBgm();
   syncMusicButton();
