@@ -121,15 +121,85 @@
       background: linear-gradient(135deg, #8f8dff, #b388ff);
     }
 
-    /* ─── 탭 바 ─── */
-    .tab-bar {
+    /* ─── 검색 및 서브 필터 ─── */
+    .filter-section {
+      background: rgba(255, 255, 255, 0.6);
+      padding: 20px 16px 10px;
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(91,79,207,0.1);
+    }
+    .search-container {
+      max-width: 600px;
+      margin: 0 auto 16px;
+      position: relative;
+    }
+    .search-container input {
+      width: 100%;
+      padding: 14px 20px 14px 46px;
+      border-radius: 999px;
+      border: 2px solid #E0DBF7;
+      font-family: var(--font);
+      font-size: 0.95rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .search-container input:focus {
+      border-color: var(--header-bg);
+      box-shadow: 0 0 0 4px rgba(91,79,207,0.1);
+    }
+    .search-icon {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.1rem;
+      color: #999;
+    }
+
+    .sub-filter-bar {
       display: flex;
-      gap: 6px;
-      padding: 16px 16px 2px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      background: rgba(237, 233, 255, 0.82);
-      backdrop-filter: blur(10px);
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .sub-filter-btn {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid #E0DBF7;
+      background: #fff;
+      color: #5B4FCF;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .sub-filter-btn.active {
+      background: #5B4FCF;
+      color: #fff;
+      border-color: #5B4FCF;
+    }
+    .sub-filter-btn:hover:not(.active) {
+      background: #F0EDFF;
+    }
+
+    /* ─── 선생님 팁 스타일 ─── */
+    .teacher-tip {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #EEE;
+      font-size: 0.76rem;
+      color: #667866;
+      line-height: 1.4;
+      font-style: italic;
+      background: #F9FFF9;
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    /* ─── 기존 탭바 디자인 수정 ─── */
+    .tab-bar {
+      justify-content: center;
+      padding-bottom: 16px;
     }
     .tab-bar::-webkit-scrollbar { display: none; }
 
@@ -346,264 +416,177 @@
   </div>
 </header>
 
-<!-- 탭 바 -->
-<div class="tab-bar">
-  <button class="tab-btn active" data-tab="age2">🍊 만 2세</button>
-  <button class="tab-btn" data-tab="age3">🌿 만 3세</button>
-  <button class="tab-btn" data-tab="age4">💙 만 4세</button>
-  <button class="tab-btn" data-tab="age5">⭐ 만 5세</button>
-  <button class="tab-btn" data-tab="mixed">🌈 혼합반</button>
-  <button class="tab-btn" data-tab="routine">⏰ 생활 루틴</button>
+<!-- 검색 및 상세 필터 -->
+<div class="filter-section">
+  <div class="search-container">
+    <input type="text" id="gameSearch" placeholder="찾고 싶은 게임을 검색하세요 (예: 색깔, 기억)">
+    <span class="search-icon">🔍</span>
+  </div>
+  <div class="sub-filter-bar" id="areaFilter">
+    <button class="sub-filter-btn active" data-area="all">전체 영역</button>
+    <button class="sub-filter-btn" data-area="기억력">🧠 기억력</button>
+    <button class="sub-filter-btn" data-area="관찰력">👁️ 관찰력</button>
+    <button class="sub-filter-btn" data-area="사고력">💡 사고력</button>
+    <button class="sub-filter-btn" data-area="루틴">⏰ 생활루틴</button>
+  </div>
 </div>
 
 <div class="content">
-
-  <!-- ══════ 만 2세 ══════ -->
-  <div class="tab-panel active" id="panel-age2">
-    <div class="section-header">
-      <span class="badge" style="background:var(--age2)">만 2세</span>
-      <div>
-        <h2>만 2세 게임</h2>
-        <p>큰 이미지 · 단순한 규칙 · 실패 부담 없음</p>
-      </div>
-    </div>
-    <div class="game-grid">
-      <a class="game-card age2" href="age_2/color_finder/index.html">
-        <div class="card-icon">🎨</div>
-        <div class="card-name">색깔 찾기</div>
-        <div class="card-desc">보여주는 색과 같은 색을 찾아요. 색 인식의 첫 걸음!</div>
-        <div class="card-tag">색 인식</div>
-      </a>
-      <a class="game-card age2" href="age_2/same_picture/index.html">
-        <div class="card-icon">🖼️</div>
-        <div class="card-name">같은 그림 고르기</div>
-        <div class="card-desc">위에 보이는 그림과 똑같은 그림을 찾아요.</div>
-        <div class="card-tag">시각 변별</div>
-      </a>
-      <a class="game-card age2" href="age_2/color_basket/index.html">
-        <div class="new-badge">NEW</div>
-        <div class="card-icon">🧺</div>
-        <div class="card-name">색깔 바구니 넣기</div>
-        <div class="card-desc">같은 색 바구니에 물건을 넣어요. 색 분류 + 손-눈 협응!</div>
-        <div class="card-tag">색 분류</div>
-      </a>
-    </div>
+  <!-- 게임 카드가 동적으로 생성될 영역 -->
+  <div id="gameContainer" class="game-grid">
+    <!-- JS에서 렌더링함 -->
   </div>
-
-  <!-- ══════ 만 3세 ══════ -->
-  <div class="tab-panel" id="panel-age3">
-    <div class="section-header">
-      <span class="badge" style="background:var(--age3)">만 3세</span>
-      <div>
-        <h2>만 3세 게임</h2>
-        <p>같은 것 찾기 · 분류 · 쉬운 짝맞추기</p>
-      </div>
-    </div>
-    <div class="game-grid">
-      <a class="game-card age3" href="age_3/easy_matching/index.html">
-        <div class="card-icon">🃏</div>
-        <div class="card-name">쉬운 짝맞추기</div>
-        <div class="card-desc">4~5쌍의 카드를 뒤집어서 같은 그림을 찾아요.</div>
-        <div class="card-tag">기억력</div>
-      </a>
-      <a class="game-card age3" href="age_3/shadow_matching/index.html">
-        <div class="card-icon">🌑</div>
-        <div class="card-name">그림자 맞추기</div>
-        <div class="card-desc">물건과 그림자를 연결해요. 형태 인식 훈련!</div>
-        <div class="card-tag">형태 인식</div>
-      </a>
-      <a class="game-card age3" href="age_3/home_matching/index.html">
-        <div class="new-badge">NEW</div>
-        <div class="card-icon">🏠</div>
-        <div class="card-name">짝이 되는 집 찾기</div>
-        <div class="card-desc">물고기는 바다, 새는 둥지! 동물과 맞는 집을 찾아요.</div>
-        <div class="card-tag">연관 개념</div>
-      </a>
-    </div>
-  </div>
-
-  <!-- ══════ 만 4세 ══════ -->
-  <div class="tab-panel" id="panel-age4">
-    <div class="section-header">
-      <span class="badge" style="background:var(--age4)">만 4세</span>
-      <div>
-        <h2>만 4세 게임</h2>
-        <p>기억 · 패턴 · 위치 · 집중력</p>
-      </div>
-    </div>
-    <div class="game-grid">
-      <a class="game-card age4" href="age_4/position_memory/index.html">
-        <div class="card-icon">📍</div>
-        <div class="card-name">위치 기억 게임</div>
-        <div class="card-desc">물건이 어디 있었는지 기억해서 맞춰요.</div>
-        <div class="card-tag">공간 기억</div>
-      </a>
-      <a class="game-card age4" href="age_4/sequence_memory/index.html">
-        <div class="card-icon">🔢</div>
-        <div class="card-name">순서 기억 게임</div>
-        <div class="card-desc">순서대로 나온 그림을 같은 순서로 눌러요.</div>
-        <div class="card-tag">작업 기억</div>
-      </a>
-      <a class="game-card age4" href="age_4/opposite_game/index.html">
-        <div class="new-badge">NEW</div>
-        <div class="card-icon">🔄</div>
-        <div class="card-name">반대 규칙 게임</div>
-        <div class="card-desc">사과가 나오면 바나나를! 반대로 선택하는 게임이에요.</div>
-        <div class="card-tag">억제 조절</div>
-      </a>
-    </div>
-  </div>
-
-  <!-- ══════ 만 5세 ══════ -->
-  <div class="tab-panel" id="panel-age5">
-    <div class="section-header">
-      <span class="badge" style="background:var(--age5)">만 5세</span>
-      <div>
-        <h2>만 5세 게임</h2>
-        <p>이름 · 규칙 · 기억 · 학기 초 적응</p>
-      </div>
-    </div>
-    <div class="game-grid">
-      <a class="game-card age5" href="age_5/image_matching/index.html">
-        <div class="card-icon">🌈⭐</div>
-        <div class="card-name">두뇌 쑥쑥 짝맞추기</div>
-        <div class="card-desc">기본 이모지·고급 이미지 전환 + 친구 얼굴 이름 매칭. 멀티플레이 지원!</div>
-        <div class="card-tag">기억력 · 집중력</div>
-      </a>
-      <a class="game-card age5" href="age_5/seat_memory/index.html">
-        <div class="card-icon">🪑</div>
-        <div class="card-name">자리 기억 게임</div>
-        <div class="card-desc">친구나 캐릭터가 어디 앉았는지 기억해서 맞춰요.</div>
-        <div class="card-tag">공간 기억</div>
-      </a>
-      <a class="game-card age5" href="age_5/daily_routine/index.html">
-        <div class="card-icon">📅</div>
-        <div class="card-name">하루 일과 순서 맞추기</div>
-        <div class="card-desc">어린이집 일과를 올바른 순서로 맞춰요.</div>
-        <div class="card-tag">순서 개념</div>
-      </a>
-      <a class="game-card age5" href="age_5/rule_switching/index.html">
-        <div class="new-badge">NEW</div>
-        <div class="card-icon">🔀</div>
-        <div class="card-name">규칙 바꾸기 분류</div>
-        <div class="card-desc">색깔로 → 모양으로! 기준이 바뀌면 분류도 달라져요.</div>
-        <div class="card-tag">인지 유연성</div>
-      </a>
-    </div>
-  </div>
-
-  <!-- ══════ 혼합반 ══════ -->
-  <div class="tab-panel" id="panel-mixed">
-    <div class="section-header">
-      <span class="badge" style="background:var(--mixed)">혼합반</span>
-      <div>
-        <h2>혼합반 · 다연령 게임</h2>
-        <p>난이도 조절 가능 · 넓은 연령대를 함께</p>
-      </div>
-    </div>
-    <div class="game-grid">
-      <a class="game-card mixed" href="mixed/difficulty_matching/index.html">
-        <div class="card-icon">🎯</div>
-        <div class="card-name">난이도 선택 짝맞추기</div>
-        <div class="card-desc">카드 수와 공개 시간을 조정해서 어떤 연령에도 맞춰요.</div>
-        <div class="card-tag">난이도 조절</div>
-      </a>
-      <a class="game-card mixed" href="mixed/friend_custom/index.html">
-        <div class="card-icon">👫</div>
-        <div class="card-name">친구 맞춤 모드</div>
-        <div class="card-desc">쉬움: 얼굴-얼굴 / 어려움: 얼굴-이름. 연령에 맞게 선택!</div>
-        <div class="card-tag">맞춤 설정</div>
-      </a>
-      <a class="game-card mixed" href="mixed/rhythm_game/index.html">
-        <div class="new-badge">NEW</div>
-        <div class="card-icon">🥁</div>
-        <div class="card-name">리듬 따라하기</div>
-        <div class="card-desc">순서대로 빛나는 버튼을 같은 순서로 눌러요. 기억력 + 리듬!</div>
-        <div class="card-tag">작업 기억</div>
-      </a>
-    </div>
-  </div>
-
-  <!-- ══════ 생활 루틴 ══════ -->
-  <div class="tab-panel" id="panel-routine">
-    <div class="section-header">
-      <span class="badge" style="background:var(--routine)">루틴 도구</span>
-      <div>
-        <h2>생활 루틴 타이머</h2>
-        <p>정리 · 줄 서기 · 손 씻기 시간에 활용</p>
-      </div>
-    </div>
-    <div class="routine-info">
-      <strong>교실 보조 도구입니다.</strong> 선생님이 시작만 해두면 자동으로 진행돼요.<br>
-      TV · 모니터 · 태블릿에 띄워두기에 최적화되어 있습니다.
-    </div>
-    <div class="game-grid">
-      <a class="game-card routine" href="routine_tools/index.html">
-        <div class="card-icon">⏰</div>
-        <div class="card-name">생활 루틴 도구 모음</div>
-        <div class="card-desc">정리 시간, 손씻기, 하루 일과, 역할 보드를 한곳에서 바로 열 수 있습니다.</div>
-        <div class="card-tag">루틴 허브</div>
-      </a>
-      <a class="game-card routine" href="routine_tools/cleanup_timer/index.html">
-        <div class="card-icon">🌈</div>
-        <div class="card-name">정리 시간 타이머</div>
-        <div class="card-desc">무지개가 줄어드는 화면으로 정리 시간을 직관적으로 보여주는 핵심 도구입니다.</div>
-        <div class="card-tag">3/5/10/15분</div>
-      </a>
-      <a class="game-card routine" href="routine_tools/daily_schedule/index.html">
-        <div class="card-icon">🗓️</div>
-        <div class="card-name">하루 일과 순서판</div>
-        <div class="card-desc">지금, 다음, 그다음 활동을 큰 카드로 보여줘 아이들이 일과 흐름을 쉽게 이해합니다.</div>
-        <div class="card-tag">현재-다음-그다음</div>
-      </a>
-      <a class="game-card routine" href="routine_tools/handwashing_timer/index.html">
-        <div class="card-icon">🫧</div>
-        <div class="card-name">손씻기 순서 타이머</div>
-        <div class="card-desc">손씻기 단계를 따라가며 20초 또는 30초 타이머를 함께 보여줍니다.</div>
-        <div class="card-tag">순서 + 시간 안내</div>
-      </a>
-      <a class="game-card routine" href="routine_tools/helper_board/index.html">
-        <div class="card-icon">⭐</div>
-        <div class="card-name">오늘의 도우미 보드</div>
-        <div class="card-desc">출석, 간식, 정리 역할을 랜덤으로 정하고 큰 화면에 띄울 수 있습니다.</div>
-        <div class="card-tag">반 운영 도구</div>
-      </a>
-    </div>
-<div class="section-divider"></div>
-
-    <div class="section-header">
-      <h2 style="font-size:1rem;color:#555;">⚙️ 공통 기능</h2>
-    </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.82rem;color:#555;">
-      <span style="background:#E0F2F1;padding:6px 14px;border-radius:20px;">정리 타이머</span>
-      <span style="background:#E0F2F1;padding:6px 14px;border-radius:20px;">일과 순서판</span>
-      <span style="background:#E0F2F1;padding:6px 14px;border-radius:20px;">손씻기 안내</span>
-      <span style="background:#E0F2F1;padding:6px 14px;border-radius:20px;">도우미 보드</span>
-      <span style="background:#E0F2F1;padding:6px 14px;border-radius:20px;">전체 화면</span>
-      <span style="background:#E0F2F1;padding:6px 14px;border-radius:20px;">BGM 선택</span>
-    </div>
-  </div>
-
-</div><!-- /content -->
+</div>
 
 <audio id="bgmAudio" loop preload="auto"></audio>
 
 <script>
+  /**
+   * KidsBrain Game Hub 메인 로직
+   * 1. 데이터 로드: games.json에서 게임 목록을 가져옴
+   * 2. 필터링: 선택된 연령 탭, 영역 버튼, 검색어에 따라 목록 필터링
+   * 3. 렌더링: 필터링된 데이터를 바탕으로 게임 카드 HTML 동적 생성
+   * 4. BGM 관리: 배경음악 온/오프 및 스타일 전환 제어
+   */
+
+  let gameData = [];        // 전체 게임 목록 저장 변수
+  let currentTab = 'age2';  // 현재 선택된 연령 탭 (기본값: 만 2세)
+  let currentArea = 'all';  // 현재 선택된 영역 필터 (기본값: 전체)
+  let searchQuery = '';     // 현재 입력된 검색어
+
+  // DOM 요소 참조
+  const gameContainer = document.getElementById('gameContainer');
   const tabs = document.querySelectorAll('.tab-btn');
-  const panels = document.querySelectorAll('.tab-panel');
+  const areaBtns = document.querySelectorAll('.sub-filter-btn');
+  const searchInput = document.getElementById('gameSearch');
+  
   const musicBtn = document.getElementById('musicBtn');
   const musicStyleButtons = document.querySelectorAll('.hero-music-style');
   const bgmAudio = document.getElementById('bgmAudio');
-  let bgmEnabled = true;
-  let bgmStarted = false;
-  let selectedMusicStyle = 'calm';
+  
+  let bgmEnabled = true;    // BGM 활성화 여부
+  let bgmStarted = false;    // BGM 재생 시작 여부 (중복 재생 방지)
+  let selectedMusicStyle = 'calm'; // 현재 선택된 음악 스타일
 
+  // 배경음악 소스 경로 설정
   const bgmSources = {
     dreamy: './routine_tools/cleanup_timer/bgm-dreamy.mp3',
     rainbow: './routine_tools/cleanup_timer/bgm-rainbow.mp3',
     calm: './routine_tools/cleanup_timer/bgm-calm.mp3'
   };
 
+  /**
+   * 초기화 함수: 외부 JSON 데이터를 불러오고 첫 렌더링 수행
+   */
+  async function init() {
+    try {
+      // 캐시 방지를 위해 fetch 사용 (로컬 테스트 시 주의)
+      const response = await fetch('./data/games.json');
+      const data = await response.json();
+      gameData = data.games;
+      renderGames(); // 초기 화면 렌더링
+    } catch (e) {
+      console.error("데이터 로드 실패:", e);
+      gameContainer.innerHTML = '<p style="text-align:center; padding:20px;">게임을 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.</p>';
+    }
+  }
+
+  /**
+   * 게임 목록 렌더링 함수: 현재 필터 상태에 따라 화면 업데이트
+   */
+  function renderGames() {
+    gameContainer.innerHTML = ''; // 기존 목록 초기화
+    
+    // 복합 필터 로직 적용
+    const filtered = gameData.filter(game => {
+      // 1. 연령 탭 매칭 (mixed 탭은 다연령 또는 공용 게임 포함)
+      const tabMatch = (currentTab === 'age2' && game.age.includes(2)) ||
+                       (currentTab === 'age3' && game.age.includes(3)) ||
+                       (currentTab === 'age4' && game.age.includes(4)) ||
+                       (currentTab === 'age5' && game.age.includes(5)) ||
+                       (currentTab === 'mixed' && (game.age.includes(0) || game.age.length > 1)) ||
+                       (currentTab === 'routine' && game.area === '루틴');
+      
+      // 2. 영역 필터 매칭
+      const areaMatch = (currentArea === 'all') || (game.area === currentArea);
+      
+      // 3. 검색어 매칭 (제목, 설명, 태그 포함 검색)
+      const searchMatch = game.title.includes(searchQuery) || 
+                          game.desc.includes(searchQuery) || 
+                          game.tag.includes(searchQuery);
+      
+      return tabMatch && areaMatch && searchMatch;
+    });
+
+    // 검색 결과가 없는 경우 안내 메시지 표시
+    if (filtered.length === 0) {
+      gameContainer.innerHTML = `
+        <div style="grid-column: 1/-1; text-align: center; padding: 60px 40px; color: #888;">
+          <div style="font-size: 3rem; margin-bottom: 20px;">🍎</div>
+          찾으시는 조건의 게임이 아직 없어요.<br>
+          선생님이 제안해 주시면 새로운 게임을 준비하겠습니다!
+        </div>`;
+      return;
+    }
+
+    // 필터링된 데이터를 바탕으로 카드 생성
+    filtered.forEach(game => {
+      // 연령/영역에 따른 카드 상단 색상 테마 결정
+      const ageClass = game.age.includes(2) ? 'age2' : 
+                       game.age.includes(3) ? 'age3' :
+                       game.age.includes(4) ? 'age4' :
+                       game.age.includes(5) ? 'age5' : 
+                       game.area === '루틴' ? 'routine' : 'mixed';
+
+      const card = document.createElement('a');
+      card.className = `game-card ${ageClass}`;
+      card.href = game.path;
+      card.innerHTML = `
+        ${game.isNew ? '<div class="new-badge">NEW</div>' : ''}
+        <div class="card-icon">${game.icon}</div>
+        <div class="card-name">${game.title}</div>
+        <div class="card-desc">${game.desc}</div>
+        <div class="card-tag">${game.tag}</div>
+        <div class="teacher-tip">💡 ${game.tip}</div>
+      `;
+      
+      // 카드 위에 마우스를 올리면 BGM이 준비되도록 설정 (사용자 인터랙션 대응)
+      card.addEventListener('mouseenter', startMainBgm, { passive: true });
+      gameContainer.appendChild(card);
+    });
+  }
+
+  // --- 이벤트 리스너 설정 ---
+
+  // 상단 연령 탭 클릭 이벤트
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabs.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTab = btn.dataset.tab;
+      renderGames();
+    });
+  });
+
+  // 영역별 서브 필터 버튼 클릭 이벤트
+  areaBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      areaBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentArea = btn.dataset.area;
+      renderGames();
+    });
+  });
+
+  // 검색창 입력 이벤트 (실시간 필터링)
+  searchInput.addEventListener('input', (e) => {
+    searchQuery = e.target.value;
+    renderGames();
+  });
+
+  // --- BGM 제어 로직 ---
+
+  // 현재 선택된 스타일의 음악 파일을 로드
   function loadMainBgm() {
     bgmAudio.pause();
     bgmAudio.currentTime = 0;
@@ -611,63 +594,55 @@
     bgmAudio.load();
   }
 
+  // 음악 On/Off 버튼 텍스트 업데이트
   function syncMusicButton() {
     musicBtn.textContent = bgmEnabled ? 'BGM 끄기' : 'BGM 켜기';
     musicBtn.classList.toggle('music-on', bgmEnabled);
   }
 
+  // 음악 재생 시작 (브라우저 정책상 사용자 클릭/움직임 후에만 소리가 날 수 있음)
   function startMainBgm() {
     if (!bgmEnabled) return;
+    if (bgmStarted) return;
     bgmStarted = true;
-    bgmAudio.currentTime = 0;
-    bgmAudio.play().catch(() => {});
-  }
-
-  function stopMainBgm() {
-    bgmAudio.pause();
-    bgmAudio.currentTime = 0;
-  }
-
-  tabs.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const target = btn.dataset.tab;
-      tabs.forEach(b => b.classList.remove('active'));
-      panels.forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('panel-' + target).classList.add('active');
-      startMainBgm();
+    bgmAudio.play().catch(() => {
+      // 자동 재생 차단 시 무시 (사용자가 직접 클릭할 때 재생됨)
+      bgmStarted = false;
     });
-  });
+  }
 
+  // BGM On/Off 토글 버튼 클릭
   musicBtn.addEventListener('click', () => {
     bgmEnabled = !bgmEnabled;
     syncMusicButton();
     if (bgmEnabled) {
+      bgmStarted = false; 
       startMainBgm();
     } else {
-      stopMainBgm();
+      bgmAudio.pause();
+      bgmStarted = false;
     }
   });
 
+  // BGM 스타일 변경 버튼 클릭
   musicStyleButtons.forEach(button => {
     button.addEventListener('click', () => {
       selectedMusicStyle = button.dataset.style;
       musicStyleButtons.forEach(item => item.classList.toggle('active', item === button));
       loadMainBgm();
-      if (bgmEnabled && bgmStarted) {
+      if (bgmEnabled) {
+        bgmStarted = false;
         startMainBgm();
       }
     });
   });
 
-  document.querySelectorAll('.game-card').forEach(card => {
-    card.addEventListener('mouseenter', startMainBgm, { passive: true });
-    card.addEventListener('click', startMainBgm);
-  });
-
+  // 초기 로드 실행
+  init();
   loadMainBgm();
   syncMusicButton();
 </script>
+
 </body>
 </html>
 
