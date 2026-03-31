@@ -46,27 +46,105 @@
     /* ─── 헤더 ─── */
     header {
       background:
+        radial-gradient(circle at 20% 80%, rgba(255,183,77,0.15), transparent 40%),
+        radial-gradient(circle at 80% 20%, rgba(129,212,250,0.15), transparent 40%),
         radial-gradient(circle at top center, rgba(255,255,255,0.2), transparent 28%),
-        linear-gradient(135deg, #6558d9 0%, #5b4fcf 52%, #786cf0 100%);
+        linear-gradient(135deg, #6558d9 0%, #5b4fcf 40%, #7c6cf0 70%, #9c8cff 100%);
       color: var(--header-text);
       text-align: center;
-      padding: 40px 20px 34px;
+      padding: 44px 20px 38px;
       box-shadow: 0 18px 40px rgba(91,79,207,0.18);
+      position: relative;
+      overflow: hidden;
     }
+    /* 헤더 배경 떠다니는 도형들 */
+    header::before, header::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.08;
+      background: #fff;
+    }
+    header::before {
+      width: 200px; height: 200px;
+      top: -60px; left: -40px;
+      animation: floatShape 8s ease-in-out infinite;
+    }
+    header::after {
+      width: 150px; height: 150px;
+      bottom: -40px; right: -30px;
+      animation: floatShape 6s ease-in-out infinite reverse;
+    }
+    @keyframes floatShape {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(20px, -15px) scale(1.1); }
+    }
+
+    /* SVG 로고 */
     header .logo {
-      font-size: 2.8rem;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 78px;
-      height: 78px;
+      width: 96px;
+      height: 96px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.14);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.15);
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.1);
       backdrop-filter: blur(10px);
+      animation: logoEntry 0.8s cubic-bezier(.4,0,.2,1), logoPulse 3s ease-in-out 0.8s infinite;
+      position: relative;
+      z-index: 1;
     }
-    header h1 { font-size: 1.95rem; font-weight: 900; margin: 12px 0 8px; letter-spacing: -0.7px; }
-    header p { font-size: 0.97rem; opacity: 0.88; }
+    .logo svg { width: 64px; height: 64px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
+    @keyframes logoEntry {
+      from { transform: scale(0) rotate(-180deg); opacity: 0; }
+      to { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    @keyframes logoPulse {
+      0%, 100% { box-shadow: 0 0 0 4px rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.1); }
+      50% { box-shadow: 0 0 0 8px rgba(255,255,255,0.15), 0 8px 32px rgba(0,0,0,0.1); }
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 900;
+      margin: 14px 0 8px;
+      letter-spacing: -0.7px;
+      animation: fadeUp 0.6s ease-out 0.2s both;
+      position: relative;
+      z-index: 1;
+    }
+    header p {
+      font-size: 0.95rem;
+      opacity: 0.85;
+      animation: fadeUp 0.6s ease-out 0.35s both;
+      position: relative;
+      z-index: 1;
+    }
+    @keyframes fadeUp {
+      from { transform: translateY(16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* 헤더 떠다니는 이모지 파티클 */
+    .header-particles {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .h-particle {
+      position: absolute;
+      font-size: 1.2rem;
+      opacity: 0.2;
+      animation: particleFloat var(--dur) ease-in-out infinite;
+      animation-delay: var(--delay);
+    }
+    @keyframes particleFloat {
+      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.15; }
+      50% { transform: translateY(-20px) rotate(180deg); opacity: 0.3; }
+    }
     .hero-actions {
       display: flex;
       gap: 8px;
@@ -74,6 +152,9 @@
       align-items: center;
       flex-wrap: wrap;
       margin-top: 16px;
+      animation: fadeUp 0.6s ease-out 0.5s both;
+      position: relative;
+      z-index: 1;
     }
     .hero-btn {
       border: none;
@@ -103,6 +184,9 @@
       align-items: center;
       flex-wrap: wrap;
       margin-top: 10px;
+      animation: fadeUp 0.6s ease-out 0.65s both;
+      position: relative;
+      z-index: 1;
     }
     .hero-music-style {
       border: none;
@@ -364,6 +448,14 @@
     @keyframes newPulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,0.4); }
       50% { box-shadow: 0 0 0 6px rgba(255,59,48,0); }
+    }
+    /* 카드 입장 애니메이션 */
+    @keyframes cardEntry {
+      from { transform: translateY(24px) scale(0.95); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .game-card {
+      animation: cardEntry 0.4s cubic-bezier(.4,0,.2,1) both;
     }
     /* 색상 줄 */
     .game-card::before {
@@ -758,8 +850,9 @@
 
     /* ─── 반응형 ─── */
     @media (max-width: 480px) {
-      header { padding: 32px 16px 26px; }
-      header .logo { width: 64px; height: 64px; font-size: 2.35rem; }
+      header { padding: 32px 16px 28px; }
+      header .logo { width: 78px; height: 78px; }
+      .logo svg { width: 52px; height: 52px; }
       header h1 { font-size: 1.55rem; }
       .tab-btn { font-size: 0.8rem; padding: 8px 14px; }
       .game-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -783,7 +876,61 @@
 <body>
 
 <header>
-  <div class="logo">🌈⭐</div>
+  <!-- 떠다니는 이모지 파티클 -->
+  <div class="header-particles" id="headerParticles"></div>
+
+  <div class="logo">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <!-- 두뇌 모양 베이스 -->
+      <defs>
+        <linearGradient id="brainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#FFD54F"/>
+          <stop offset="50%" style="stop-color:#FF8A65"/>
+          <stop offset="100%" style="stop-color:#CE93D8"/>
+        </linearGradient>
+        <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#FFF176"/>
+          <stop offset="100%" style="stop-color:#FFD54F"/>
+        </linearGradient>
+      </defs>
+      <!-- 두뇌 -->
+      <path d="M28 55 Q15 52 18 38 Q16 24 30 20 Q36 10 50 14 Q64 8 72 20 Q84 24 82 38 Q86 52 72 55 Q68 65 50 62 Q32 65 28 55Z" fill="url(#brainGrad)" opacity="0.9"/>
+      <!-- 두뇌 주름 -->
+      <path d="M35 22 Q42 32 50 22 Q58 32 65 22" fill="none" stroke="#fff" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
+      <path d="M30 38 Q40 45 50 36 Q60 45 70 38" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.4" stroke-linecap="round"/>
+      <!-- 별 -->
+      <polygon points="50,2 56,20 74,20 60,30 65,48 50,37 35,48 40,30 26,20 44,20" fill="url(#starGrad)" transform="translate(0,0) scale(0.35)" style="transform-origin:50px 25px">
+        <animateTransform attributeName="transform" type="rotate" values="0 50 25;10 50 25;0 50 25;-10 50 25;0 50 25" dur="4s" repeatCount="indefinite"/>
+      </polygon>
+      <!-- 반짝이 -->
+      <circle cx="25" cy="48" r="2" fill="#fff" opacity="0.8">
+        <animate attributeName="opacity" values="0.8;0.2;0.8" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="75" cy="30" r="1.5" fill="#fff" opacity="0.6">
+        <animate attributeName="opacity" values="0.6;0.1;0.6" dur="1.5s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="60" cy="55" r="1.8" fill="#fff" opacity="0.7">
+        <animate attributeName="opacity" values="0.7;0.2;0.7" dur="2.5s" repeatCount="indefinite"/>
+      </circle>
+      <!-- 눈 -->
+      <circle cx="40" cy="38" r="4" fill="#fff"/>
+      <circle cx="60" cy="38" r="4" fill="#fff"/>
+      <circle cx="41" cy="38" r="2.2" fill="#333"/>
+      <circle cx="61" cy="38" r="2.2" fill="#333"/>
+      <circle cx="42" cy="37" r="0.9" fill="#fff"/>
+      <circle cx="62" cy="37" r="0.9" fill="#fff"/>
+      <!-- 웃는 입 -->
+      <path d="M44 47 Q50 53 56 47" fill="none" stroke="#E65100" stroke-width="2" stroke-linecap="round"/>
+      <!-- 볼터치 -->
+      <ellipse cx="33" cy="46" rx="4" ry="2.5" fill="#FF8A80" opacity="0.4"/>
+      <ellipse cx="67" cy="46" rx="4" ry="2.5" fill="#FF8A80" opacity="0.4"/>
+      <!-- 무지개 아치 -->
+      <path d="M15 72 Q50 58 85 72" fill="none" stroke="#EF5350" stroke-width="2.5" opacity="0.6"/>
+      <path d="M18 76 Q50 62 82 76" fill="none" stroke="#FFA726" stroke-width="2.5" opacity="0.6"/>
+      <path d="M21 80 Q50 66 79 80" fill="none" stroke="#66BB6A" stroke-width="2.5" opacity="0.6"/>
+      <path d="M24 84 Q50 70 76 84" fill="none" stroke="#42A5F5" stroke-width="2.5" opacity="0.6"/>
+    </svg>
+  </div>
   <h1>두뇌 쑥쑥 놀이터</h1>
   <p>어린이집 · 유치원 선생님을 위한 두뇌발달 게임 모음</p>
   <div class="hero-actions">
@@ -1030,7 +1177,7 @@
     }
 
     // 필터링된 데이터를 바탕으로 카드 생성
-    filtered.forEach(game => {
+    filtered.forEach((game, idx) => {
       // 연령/영역에 따른 카드 상단 색상 테마 결정
       const ageClass = game.age.includes(2) ? 'age2' : 
                        game.age.includes(3) ? 'age3' :
@@ -1064,6 +1211,8 @@
         <div class="teacher-tip">💡 ${game.tip}</div>
       `;
       
+      // 순차 입장 애니메이션 딜레이
+      card.style.animationDelay = (idx * 0.06) + 's';
       // 카드 클릭 시 사운드 + BGM 준비
       card.addEventListener('mouseenter', startMainBgm, { passive: true });
       card.addEventListener('click', () => { try { kbrSound.click(); } catch {} }, { passive: true });
@@ -1181,6 +1330,23 @@
       }
     });
   });
+
+  // ─── 헤더 파티클 생성 ───
+  (function() {
+    const container = document.getElementById('headerParticles');
+    const emojis = ['⭐','🌟','✨','💜','🧠','🎨','🎵','🌈','💡','🎯','🔮','🦋'];
+    for (let i = 0; i < 14; i++) {
+      const el = document.createElement('span');
+      el.className = 'h-particle';
+      el.textContent = emojis[i % emojis.length];
+      el.style.left = (5 + Math.random() * 90) + '%';
+      el.style.top = (5 + Math.random() * 85) + '%';
+      el.style.setProperty('--dur', (4 + Math.random() * 5) + 's');
+      el.style.setProperty('--delay', (-Math.random() * 5) + 's');
+      el.style.fontSize = (0.7 + Math.random() * 0.8) + 'rem';
+      container.appendChild(el);
+    }
+  })();
 
   // ─── 마스코트 대사 ───
   const MASCOT_GREETINGS = [
