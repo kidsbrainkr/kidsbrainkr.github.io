@@ -1,0 +1,42 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- 두뇌 쑥쑥 놀이터 메인 로고 -->
+  <defs>
+    <linearGradient id="brainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD54F"/>
+      <stop offset="50%" style="stop-color:#FF8A65"/>
+      <stop offset="100%" style="stop-color:#CE93D8"/>
+    </linearGradient>
+    <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFF176"/>
+      <stop offset="100%" style="stop-color:#FFD54F"/>
+    </linearGradient>
+  </defs>
+  <!-- 두뇌 -->
+  <path d="M28 55 Q15 52 18 38 Q16 24 30 20 Q36 10 50 14 Q64 8 72 20 Q84 24 82 38 Q86 52 72 55 Q68 65 50 62 Q32 65 28 55Z" fill="url(#brainGrad)" opacity="0.9"/>
+  <!-- 두뇌 주름 -->
+  <path d="M35 22 Q42 32 50 22 Q58 32 65 22" fill="none" stroke="#fff" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
+  <path d="M30 38 Q40 45 50 36 Q60 45 70 38" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.4" stroke-linecap="round"/>
+  <!-- 별 -->
+  <polygon points="50,2 56,20 74,20 60,30 65,48 50,37 35,48 40,30 26,20 44,20" fill="url(#starGrad)" transform="translate(0,0) scale(0.35)" style="transform-origin:50px 25px"/>
+  <!-- 반짝이 -->
+  <circle cx="25" cy="48" r="2" fill="#fff" opacity="0.8"/>
+  <circle cx="75" cy="30" r="1.5" fill="#fff" opacity="0.6"/>
+  <circle cx="60" cy="55" r="1.8" fill="#fff" opacity="0.7"/>
+  <!-- 눈 -->
+  <circle cx="40" cy="38" r="4" fill="#fff"/>
+  <circle cx="60" cy="38" r="4" fill="#fff"/>
+  <circle cx="41" cy="38" r="2.2" fill="#333"/>
+  <circle cx="61" cy="38" r="2.2" fill="#333"/>
+  <circle cx="42" cy="37" r="0.9" fill="#fff"/>
+  <circle cx="62" cy="37" r="0.9" fill="#fff"/>
+  <!-- 웃는 입 -->
+  <path d="M44 47 Q50 53 56 47" fill="none" stroke="#E65100" stroke-width="2" stroke-linecap="round"/>
+  <!-- 볼터치 -->
+  <ellipse cx="33" cy="46" rx="4" ry="2.5" fill="#FF8A80" opacity="0.4"/>
+  <ellipse cx="67" cy="46" rx="4" ry="2.5" fill="#FF8A80" opacity="0.4"/>
+  <!-- 무지개 아치 -->
+  <path d="M15 72 Q50 58 85 72" fill="none" stroke="#EF5350" stroke-width="2.5" opacity="0.6"/>
+  <path d="M18 76 Q50 62 82 76" fill="none" stroke="#FFA726" stroke-width="2.5" opacity="0.6"/>
+  <path d="M21 80 Q50 66 79 80" fill="none" stroke="#66BB6A" stroke-width="2.5" opacity="0.6"/>
+  <path d="M24 84 Q50 70 76 84" fill="none" stroke="#42A5F5" stroke-width="2.5" opacity="0.6"/>
+</svg>

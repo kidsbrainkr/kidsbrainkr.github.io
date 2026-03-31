@@ -1,0 +1,29 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- 마스코트 "뇌또리" -->
+  <!-- 몸통 -->
+  <ellipse cx="50" cy="58" rx="30" ry="32" fill="#B39DDB"/>
+  <!-- 얼굴 -->
+  <circle cx="50" cy="44" r="28" fill="#E1BEE7"/>
+  <!-- 뇌 모양 머리 -->
+  <path d="M30 32 Q25 18 38 16 Q42 8 52 10 Q62 6 66 16 Q78 18 72 32" fill="#CE93D8" stroke="#AB47BC" stroke-width="1.5"/>
+  <path d="M38 16 Q45 20 52 10" fill="none" stroke="#AB47BC" stroke-width="1" opacity="0.5"/>
+  <path d="M52 10 Q58 18 66 16" fill="none" stroke="#AB47BC" stroke-width="1" opacity="0.5"/>
+  <!-- 눈 -->
+  <circle cx="40" cy="42" r="5" fill="#fff"/>
+  <circle cx="60" cy="42" r="5" fill="#fff"/>
+  <circle cx="41" cy="42" r="2.8" fill="#333"/>
+  <circle cx="61" cy="42" r="2.8" fill="#333"/>
+  <!-- 눈 반짝 -->
+  <circle cx="42.5" cy="40.5" r="1.2" fill="#fff"/>
+  <circle cx="62.5" cy="40.5" r="1.2" fill="#fff"/>
+  <!-- 볼 -->
+  <ellipse cx="33" cy="50" rx="5" ry="3" fill="#F48FB1" opacity="0.5"/>
+  <ellipse cx="67" cy="50" rx="5" ry="3" fill="#F48FB1" opacity="0.5"/>
+  <!-- 입 -->
+  <path d="M44 54 Q50 60 56 54" fill="none" stroke="#7B1FA2" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- 팔 -->
+  <ellipse cx="24" cy="62" rx="7" ry="5" fill="#B39DDB" transform="rotate(-20 24 62)"/>
+  <ellipse cx="76" cy="62" rx="7" ry="5" fill="#B39DDB" transform="rotate(20 76 62)"/>
+  <!-- 별 장식 -->
+  <text x="74" y="26" font-size="10" transform="rotate(15 74 26)">⭐</text>
+</svg>
