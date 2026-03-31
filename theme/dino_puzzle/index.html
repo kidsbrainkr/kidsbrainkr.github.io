@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta http-equiv="X-Content-Type-Options" content="nosniff"><meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>공룡 퍼즐 맞추기 🦕</title>
+  <style>
+    :root {
+      --accent:#FF6B35; --accent-h:#e85a25; --mint:#4ECDC4; --mint-h:#38b8ae;
+      --bg:#FFF8F0; --card-bg:#FFFFFF; --text:#333333;
+      --shadow:0 4px 16px rgba(0,0,0,.12); --shadow-lg:0 8px 32px rgba(0,0,0,.18);
+      --radius-sm:12px; --radius-md:20px; --radius-lg:24px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      font-family:'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+      background:var(--bg);color:var(--text);
+      min-height:100vh;display:flex;flex-direction:column;align-items:center;
+      padding:16px 12px 40px;user-select:none;-webkit-user-select:none;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .header{text-align:center;margin-bottom:14px;}
+    .header h1{font-size:clamp(1.4rem,5vw,2rem);font-weight:800;color:var(--accent);}
+    .header .subtitle{font-size:clamp(.8rem,2.5vw,.95rem);color:#888;margin-top:4px;}
+
+    .screen{width:100%;max-width:500px;display:none;flex-direction:column;align-items:center;gap:14px;}
+    .screen.active{display:flex;animation:fadeIn .3s ease;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+    .start-title{font-size:clamp(1.1rem,3.5vw,1.4rem);font-weight:700;text-align:center;}
+    .start-desc{font-size:.9rem;color:#777;text-align:center;line-height:1.5;}
+    .difficulty-buttons{display:flex;flex-direction:column;gap:14px;width:100%;}
+    .btn-difficulty{
+      display:flex;align-items:center;gap:14px;padding:18px 22px;
+      border:none;border-radius:18px;font-family:inherit;font-size:1.05rem;font-weight:700;
+      cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:var(--shadow);
+    }
+    .btn-difficulty:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
+    .btn-difficulty:active{transform:scale(.97);}
+    .btn-difficulty .diff-icon{font-size:1.8rem;}
+    .btn-difficulty .diff-info{text-align:left;}
+    .btn-difficulty .diff-name{font-size:1.1rem;}
+    .btn-difficulty .diff-detail{font-size:.78rem;font-weight:400;opacity:.75;margin-top:2px;}
+    .btn-difficulty.easy{background:linear-gradient(135deg,#84FAB0,#8FD3F4);color:#1a4a3a;}
+    .btn-difficulty.normal{background:linear-gradient(135deg,#FFD86F,#FFAC5F);color:#5a3200;}
+
+    .game-top{
+      width:100%;display:flex;justify-content:space-between;align-items:center;
+      background:var(--card-bg);border-radius:14px;padding:10px 16px;box-shadow:var(--shadow);
+    }
+    .game-top-left{font-size:.85rem;font-weight:700;color:var(--accent);}
+    .game-top-right{font-size:.8rem;color:#888;}
+
+    .progress-wrap{width:100%;height:8px;background:#e8e8e8;border-radius:4px;overflow:hidden;}
+    .progress-fill{height:100%;background:linear-gradient(90deg,var(--mint),var(--accent));border-radius:4px;transition:width .3s ease;width:0%;}
+
+    .preview-label{
+      font-size:1rem;font-weight:700;color:var(--accent);
+      background:var(--card-bg);padding:10px 20px;border-radius:var(--radius-sm);box-shadow:var(--shadow);
+    }
+
+    .puzzle-grid{
+      display:grid;gap:6px;width:100%;max-width:360px;aspect-ratio:1/1;
+      background:var(--card-bg);border-radius:var(--radius-lg);padding:12px;box-shadow:var(--shadow-lg);
+    }
+    .puzzle-cell{
+      display:flex;align-items:center;justify-content:center;
+      font-size:2.5rem;border-radius:var(--radius-sm);
+      cursor:pointer;transition:transform .15s,box-shadow .15s,background .2s;
+      background:#FFF3E0;border:3px solid transparent;
+    }
+    .puzzle-cell:hover{transform:scale(1.05);box-shadow:var(--shadow);}
+    .puzzle-cell:active{transform:scale(.93);}
+    .puzzle-cell.selected{
+      border-color:var(--accent);background:#FFE8D6;
+      transform:scale(1.08);box-shadow:var(--shadow-lg);
+    }
+    .puzzle-cell.correct{background:#D4EDDA;border-color:#38b8ae;}
+
+    .moves-display{font-size:.9rem;font-weight:600;color:#888;}
+
+    /* Reference image */
+    .ref-container{
+      width:100%;max-width:200px;
+      background:var(--card-bg);border-radius:var(--radius-sm);padding:8px;box-shadow:var(--shadow);
+    }
+    .ref-label{font-size:.7rem;color:#aaa;text-align:center;margin-bottom:4px;}
+    .ref-grid{display:grid;gap:2px;}
+    .ref-cell{display:flex;align-items:center;justify-content:center;font-size:1rem;}
+
+    /* Correct overlay */
+    .correct-overlay{
+      position:fixed;top:0;left:0;width:100%;height:100%;
+      display:none;align-items:center;justify-content:center;z-index:100;
+      background:rgba(0,0,0,.3);
+    }
+    .correct-overlay.show{display:flex;animation:fadeIn .3s ease;}
+    .correct-box{
+      background:var(--card-bg);border-radius:var(--radius-lg);padding:30px 40px;
+      text-align:center;box-shadow:var(--shadow-lg);
+    }
+    .correct-box .emoji{font-size:3rem;}
+    .correct-box .msg{font-size:1.2rem;font-weight:700;color:var(--accent);margin-top:8px;}
+
+    .particle-container{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99;}
+    .particle{
+      position:absolute;width:10px;height:10px;border-radius:50%;
+      animation:particleFall 1s ease-out forwards;
+    }
+    @keyframes particleFall{
+      0%{opacity:1;transform:translateY(0) scale(1);}
+      100%{opacity:0;transform:translateY(120px) scale(0);}
+    }
+
+    /* Result */
+    .result-card{
+      background:var(--card-bg);border-radius:var(--radius-lg);padding:30px 24px;
+      text-align:center;box-shadow:var(--shadow-lg);width:100%;
+    }
+    .result-card .result-emoji{font-size:3.5rem;}
+    .result-card .result-title{font-size:1.4rem;font-weight:800;color:var(--accent);margin:10px 0;}
+    .result-card .result-detail{font-size:.9rem;color:#888;margin-bottom:6px;}
+    .stars-display{font-size:2.5rem;margin:10px 0;}
+    .star{display:inline-block;transition:transform .3s;opacity:.25;}
+    .star.earned{opacity:1;animation:starPop .4s cubic-bezier(.34,1.56,.64,1);}
+    @keyframes starPop{0%{transform:scale(0);}100%{transform:scale(1);}}
+
+    .btn-primary{
+      display:inline-block;padding:14px 36px;border:none;border-radius:var(--radius-md);
+      font-family:inherit;font-size:1.05rem;font-weight:700;color:#fff;
+      background:linear-gradient(135deg,var(--accent),var(--accent-h));
+      cursor:pointer;box-shadow:var(--shadow);transition:transform .15s;
+    }
+    .btn-primary:hover{transform:translateY(-2px);}
+    .btn-primary:active{transform:scale(.97);}
+
+    .game-layout{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;}
+    .puzzle-row{display:flex;gap:12px;align-items:flex-start;justify-content:center;width:100%;}
+
+    @media(max-width:480px){
+      .puzzle-cell{font-size:2rem;}
+      .ref-cell{font-size:.8rem;}
+      .ref-container{max-width:150px;}
+    }
+    @media(max-width:360px){
+      .puzzle-cell{font-size:1.6rem;}
+      body{padding:10px 8px 30px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>공룡 퍼즐 맞추기 🦕</h1>
+    <div class="subtitle">조각을 맞춰 공룡 그림을 완성하세요!</div>
+  </div>
+
+  <!-- Start Screen -->
+  <div class="screen active" id="startScreen">
+    <div class="start-title">🧩 난이도를 골라주세요!</div>
+    <div class="start-desc">공룡 그림 퍼즐을 맞춰보세요.<br>먼저 완성된 그림을 보여줄게요!</div>
+    <div class="difficulty-buttons">
+      <button class="btn-difficulty easy" onclick="startGame(2)">
+        <span class="diff-icon">🌟</span>
+        <span class="diff-info"><span class="diff-name">쉬움</span><span class="diff-detail">2×2 = 4조각</span></span>
+      </button>
+      <button class="btn-difficulty normal" onclick="startGame(3)">
+        <span class="diff-icon">⭐</span>
+        <span class="diff-info"><span class="diff-name">보통</span><span class="diff-detail">3×3 = 9조각</span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Preview Screen -->
+  <div class="screen" id="previewScreen">
+    <div class="preview-label">🔍 그림을 잘 기억하세요!</div>
+    <div class="puzzle-grid" id="previewGrid"></div>
+    <div class="preview-label" id="countdownLabel">3초 후에 섞어요...</div>
+  </div>
+
+  <!-- Game Screen -->
+  <div class="screen" id="gameScreen">
+    <div class="game-top">
+      <div class="game-top-left">퍼즐 <span id="puzzleNum">1</span>/5</div>
+      <div class="game-top-right">이동: <span id="movesCount">0</span>회</div>
+    </div>
+    <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="game-layout">
+      <div class="puzzle-row">
+        <div class="puzzle-grid" id="gameGrid"></div>
+        <div class="ref-container">
+          <div class="ref-label">완성 그림</div>
+          <div class="ref-grid" id="refGrid"></div>
+        </div>
+      </div>
+    </div>
+    <div class="moves-display">두 조각을 터치해서 바꿔보세요!</div>
+  </div>
+
+  <!-- Result Screen -->
+  <div class="screen" id="resultScreen">
+    <div class="result-card">
+      <div class="result-emoji">🦕</div>
+      <div class="result-title">퍼즐 완성!</div>
+      <div class="result-detail" id="resultDetail"></div>
+      <div class="stars-display" id="starsDisplay"></div>
+      <button class="btn-primary" onclick="resetGame()" style="margin-top:16px;">🔄 다시 하기</button>
+    </div>
+  </div>
+
+  <!-- Correct Overlay -->
+  <div class="correct-overlay" id="correctOverlay">
+    <div class="correct-box">
+      <div class="emoji">🎉</div>
+      <div class="msg">퍼즐 완성!</div>
+    </div>
+  </div>
+  <div class="particle-container" id="particleContainer"></div>
+
+  <script>
+    const AudioSys=(()=>{
+      let ctx=null;
+      function getCtx(){if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();return ctx;}
+      function beep(freq,type,start,dur,vol=.4){
+        const c=getCtx(),osc=c.createOscillator(),gain=c.createGain();
+        osc.connect(gain);gain.connect(c.destination);
+        osc.type=type;osc.frequency.setValueAtTime(freq,c.currentTime+start);
+        gain.gain.setValueAtTime(vol,c.currentTime+start);
+        gain.gain.exponentialRampToValueAtTime(.001,c.currentTime+start+dur);
+        osc.start(c.currentTime+start);osc.stop(c.currentTime+start+dur+.05);
+      }
+      return{
+        playCorrect(){beep(523,'sine',0,.12,.5);beep(659,'sine',.12,.12,.5);beep(784,'sine',.24,.22,.5);},
+        playWrong(){beep(300,'square',0,.10,.3);beep(220,'square',.12,.15,.3);},
+        playWin(){[523,659,784,880,1046].forEach((f,i)=>beep(f,'sine',i*.12,.18,.4));},
+      };
+    })();
+
+    function reportReward(stars){
+      try{
+        const data=JSON.parse(localStorage.getItem('kbr.rewards')||'null')||{totalStars:0,totalGames:0,badges:[],history:[],streak:0,lastDate:null};
+        data.totalStars+=stars;data.totalGames+=1;
+        const today=new Date().toISOString().slice(0,10);
+        data.history.unshift({gameId:'dino_puzzle',area:'사고력',stars,date:today,timestamp:Date.now()});
+        if(data.history.length>100)data.history=data.history.slice(0,100);
+        if(data.lastDate!==today){if(data.lastDate){const d=Math.floor((new Date(today)-new Date(data.lastDate))/86400000);data.streak=d===1?data.streak+1:1;}else{data.streak=1;}data.lastDate=today;}
+        localStorage.setItem('kbr.rewards',JSON.stringify(data));
+      }catch(e){}
+    }
+
+    function shuffle(arr){
+      const a=[...arr];
+      for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+      return a;
+    }
+
+    function showParticles(){
+      const container=document.getElementById('particleContainer');
+      const colors=['#FF6B35','#4ECDC4','#FFD86F','#FF8E53','#84FAB0'];
+      for(let i=0;i<20;i++){
+        const p=document.createElement('div');
+        p.className='particle';
+        p.style.left=Math.random()*100+'%';
+        p.style.top=(Math.random()*40+20)+'%';
+        p.style.background=colors[Math.floor(Math.random()*colors.length)];
+        p.style.width=p.style.height=(Math.random()*8+6)+'px';
+        p.style.animationDelay=Math.random()*.3+'s';
+        container.appendChild(p);
+      }
+      setTimeout(()=>container.innerHTML='',1500);
+    }
+
+    const scenes=[
+      ['🦕','🌿','🌋','🦖','🌴','🥚','🦴','🪨','🌸'],
+      ['🦖','🌋','🦴','🌿','🥚','🪨','🌴','🦕','🌺'],
+      ['🌴','🦕','🌋','🥚','🦖','🌿','🌸','🦴','🪨'],
+      ['🦴','🥚','🦕','🌋','🌿','🦖','🪨','🌸','🌴'],
+      ['🌋','🦖','🌴','🦴','🌿','🦕','🥚','🪨','🌸'],
+    ];
+
+    let gridSize=3, currentScene=0, totalPuzzles=5;
+    let board=[], selectedIdx=null, moves=0, puzzlesDone=0, totalMoves=0;
+
+    function showScreen(id){
+      document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function startGame(size){
+      gridSize=size;
+      currentScene=0;puzzlesDone=0;totalMoves=0;
+      startPuzzle();
+    }
+
+    function startPuzzle(){
+      moves=0;selectedIdx=null;
+      document.getElementById('movesCount').textContent='0';
+      document.getElementById('puzzleNum').textContent=currentScene+1;
+      document.getElementById('progressFill').style.width=(currentScene/totalPuzzles*100)+'%';
+
+      const scene=scenes[currentScene];
+      const total=gridSize*gridSize;
+      const original=scene.slice(0,total);
+
+      // Show preview
+      const previewGrid=document.getElementById('previewGrid');
+      previewGrid.style.gridTemplateColumns=`repeat(${gridSize},1fr)`;
+      previewGrid.innerHTML='';
+      original.forEach(e=>{
+        const cell=document.createElement('div');
+        cell.className='puzzle-cell';cell.textContent=e;
+        previewGrid.appendChild(cell);
+      });
+      showScreen('previewScreen');
+
+      let countdown=3;
+      const label=document.getElementById('countdownLabel');
+      label.textContent=countdown+'초 후에 섞어요...';
+      const timer=setInterval(()=>{
+        countdown--;
+        if(countdown>0){label.textContent=countdown+'초 후에 섞어요...';}
+        else{clearInterval(timer);beginPuzzle(original);}
+      },1000);
+    }
+
+    function beginPuzzle(original){
+      board=[...original];
+      // Shuffle until different from original
+      do{board=shuffle(original);}while(board.every((v,i)=>v===original[i]));
+
+      const gameGrid=document.getElementById('gameGrid');
+      gameGrid.style.gridTemplateColumns=`repeat(${gridSize},1fr)`;
+
+      // Reference grid
+      const refGrid=document.getElementById('refGrid');
+      refGrid.style.gridTemplateColumns=`repeat(${gridSize},1fr)`;
+      refGrid.innerHTML='';
+      original.forEach(e=>{
+        const cell=document.createElement('div');
+        cell.className='ref-cell';cell.textContent=e;
+        refGrid.appendChild(cell);
+      });
+
+      renderBoard(original);
+      showScreen('gameScreen');
+    }
+
+    function renderBoard(original){
+      const gameGrid=document.getElementById('gameGrid');
+      gameGrid.innerHTML='';
+      board.forEach((emoji,idx)=>{
+        const cell=document.createElement('div');
+        cell.className='puzzle-cell';
+        if(emoji===original[idx])cell.classList.add('correct');
+        if(idx===selectedIdx)cell.classList.add('selected');
+        cell.textContent=emoji;
+        cell.onclick=()=>selectCell(idx,original);
+        gameGrid.appendChild(cell);
+      });
+    }
+
+    function selectCell(idx,original){
+      if(selectedIdx===null){
+        selectedIdx=idx;
+        renderBoard(original);
+      }else if(selectedIdx===idx){
+        selectedIdx=null;
+        renderBoard(original);
+      }else{
+        [board[selectedIdx],board[idx]]=[board[idx],board[selectedIdx]];
+        moves++;totalMoves++;
+        selectedIdx=null;
+        document.getElementById('movesCount').textContent=moves;
+        renderBoard(original);
+
+        if(board.every((v,i)=>v===original[i])){
+          puzzlesDone++;
+          AudioSys.playCorrect();
+          showParticles();
+
+          if(puzzlesDone>=totalPuzzles){
+            setTimeout(()=>showResult(),800);
+          }else{
+            const overlay=document.getElementById('correctOverlay');
+            overlay.classList.add('show');
+            setTimeout(()=>{
+              overlay.classList.remove('show');
+              currentScene++;
+              startPuzzle();
+            },1200);
+          }
+        }
+      }
+    }
+
+    function showResult(){
+      AudioSys.playWin();showParticles();
+      const total=gridSize*gridSize;
+      const optimal=totalPuzzles*(total*2);
+      let stars=1;
+      if(totalMoves<=optimal)stars=3;
+      else if(totalMoves<=optimal*1.5)stars=2;
+
+      document.getElementById('resultDetail').textContent=`총 ${totalMoves}회 이동으로 ${totalPuzzles}개 퍼즐 완성!`;
+      const sd=document.getElementById('starsDisplay');
+      sd.innerHTML='';
+      for(let i=0;i<3;i++){
+        const s=document.createElement('span');
+        s.className='star'+(i<stars?' earned':'');
+        s.textContent='⭐';
+        s.style.animationDelay=i*.15+'s';
+        sd.appendChild(s);
+      }
+      reportReward(stars);
+      showScreen('resultScreen');
+    }
+
+    function resetGame(){showScreen('startScreen');}
+  </script>
+</body>
+</html>

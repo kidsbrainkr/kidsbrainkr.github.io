@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta http-equiv="X-Content-Type-Options" content="nosniff"><meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>숨은 그림 찾기</title>
+  <style>
+    :root {
+      --accent:#FF6B35; --accent-h:#e85a25; --mint:#4ECDC4; --mint-h:#38b8ae;
+      --bg:#FFF8F0; --card-bg:#FFFFFF; --text:#333333;
+      --shadow:0 4px 16px rgba(0,0,0,.12); --shadow-lg:0 8px 32px rgba(0,0,0,.18);
+      --radius-sm:12px; --radius-md:20px; --radius-lg:24px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+      padding: 16px 12px 40px;
+      user-select: none; -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .header { text-align: center; margin-bottom: 14px; }
+    .header h1 { font-size: clamp(1.4rem,5vw,2rem); font-weight: 800; color: var(--accent); }
+    .header .subtitle { font-size: clamp(.8rem,2.5vw,.95rem); color: #888; margin-top: 4px; }
+
+    .screen { width: 100%; max-width: 500px; display: none; flex-direction: column; align-items: center; gap: 14px; }
+    .screen.active { display: flex; animation: fadeIn .3s ease; }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+
+    /* Start */
+    .start-title { font-size: clamp(1.1rem,3.5vw,1.4rem); font-weight: 700; text-align: center; }
+    .start-desc { font-size: .9rem; color: #777; text-align: center; line-height: 1.5; }
+    .difficulty-buttons { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+    .btn-difficulty {
+      display: flex; align-items: center; gap: 14px; padding: 18px 22px;
+      border: none; border-radius: 18px; font-family: inherit; font-size: 1.05rem; font-weight: 700;
+      cursor: pointer; transition: transform .15s, box-shadow .15s; box-shadow: var(--shadow);
+    }
+    .btn-difficulty:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .btn-difficulty:active { transform: scale(.97); }
+    .btn-difficulty .diff-icon { font-size: 1.8rem; }
+    .btn-difficulty .diff-info { text-align: left; }
+    .btn-difficulty .diff-name { font-size: 1.1rem; }
+    .btn-difficulty .diff-detail { font-size: .78rem; font-weight: 400; opacity: .75; margin-top: 2px; }
+    .btn-difficulty.easy { background: linear-gradient(135deg,#84FAB0,#8FD3F4); color: #1a4a3a; }
+    .btn-difficulty.normal { background: linear-gradient(135deg,#FFD86F,#FFAC5F); color: #5a3200; }
+    .btn-difficulty.hard { background: linear-gradient(135deg,#FF6B6B,#FF8E53); color: #fff; }
+
+    /* Game */
+    .game-top {
+      width: 100%; display: flex; justify-content: space-between; align-items: center;
+      background: var(--card-bg); border-radius: 14px; padding: 10px 16px; box-shadow: var(--shadow);
+    }
+    .game-top-left { font-size: .85rem; font-weight: 700; color: var(--accent); }
+    .game-top-right { font-size: .8rem; color: #888; }
+
+    .progress-wrap { width: 100%; height: 8px; background: #e8e8e8; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--mint), var(--accent)); border-radius: 4px; transition: width .3s ease; width: 0%; }
+
+    /* Target bar */
+    .target-bar {
+      width: 100%; background: var(--card-bg); border-radius: 14px; padding: 12px 16px;
+      box-shadow: var(--shadow); display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      justify-content: center;
+    }
+    .target-label { font-size: .8rem; color: #888; font-weight: 600; width: 100%; text-align: center; margin-bottom: 4px; }
+    .target-item {
+      font-size: 1.6rem; padding: 4px 10px; border-radius: 10px; background: #FFF3E0;
+      transition: all .3s;
+    }
+    .target-item.found {
+      text-decoration: line-through; background: #E0F7F0; opacity: .6;
+      transform: scale(.9);
+    }
+
+    /* Scene */
+    .scene-container {
+      width: 100%; aspect-ratio: 1/1; max-height: 400px; position: relative;
+      background: var(--card-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+      overflow: hidden; border: 3px solid #f0e8e0;
+    }
+    .scene-emoji {
+      position: absolute; cursor: pointer; transition: transform .15s;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1;
+    }
+    .scene-emoji:active { transform: scale(.85); }
+    .scene-emoji.found-anim {
+      animation: foundBounce .5s cubic-bezier(.34,1.56,.64,1);
+      z-index: 10;
+    }
+    @keyframes foundBounce { 0% { transform: scale(1); } 40% { transform: scale(1.5); } 100% { transform: scale(1); } }
+    .scene-emoji.wrong-shake {
+      animation: wrongShake .4s ease;
+    }
+    @keyframes wrongShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-5px); }
+      40% { transform: translateX(5px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(3px); }
+    }
+    .scene-emoji.fade-found {
+      opacity: .35; pointer-events: none; transition: opacity .5s;
+    }
+
+    /* Theme label */
+    .theme-label {
+      font-size: .9rem; font-weight: 700; color: var(--mint); text-align: center;
+    }
+
+    /* Result */
+    .result-card {
+      background: var(--card-bg); border-radius: var(--radius-lg); padding: 32px 28px;
+      text-align: center; box-shadow: var(--shadow-lg); width: 100%; max-width: 380px;
+    }
+    .result-emoji { font-size: 3.5rem; margin-bottom: 8px; }
+    .result-title { font-size: 1.5rem; font-weight: 800; color: var(--accent); margin-bottom: 6px; }
+    .result-detail { font-size: 1rem; color: #666; margin-bottom: 4px; }
+    .result-stars { font-size: 2.4rem; margin: 12px 0; letter-spacing: 4px; }
+    .btn-restart {
+      padding: 16px 36px; border: none; border-radius: 16px; font-family: inherit;
+      font-size: 1.1rem; font-weight: 700; background: var(--accent); color: #fff;
+      cursor: pointer; box-shadow: var(--shadow); transition: transform .15s;
+    }
+    .btn-restart:active { transform: scale(.96); }
+    .btn-home {
+      margin-top: 10px; padding: 12px 28px; border: none; border-radius: 14px;
+      font-family: inherit; font-size: .95rem; font-weight: 600;
+      background: #f0f0f0; color: #555; cursor: pointer;
+    }
+
+    /* Correct overlay */
+    .correct-overlay {
+      position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+      z-index: 200; pointer-events: none;
+    }
+    .correct-overlay.show { display: flex; }
+    .correct-text {
+      font-size: 2.8rem; font-weight: 800; color: var(--mint);
+      animation: popBounce .6s cubic-bezier(.34,1.56,.64,1) forwards;
+      text-shadow: 0 4px 12px rgba(78,205,196,.4);
+    }
+    @keyframes popBounce { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+
+    /* Particles */
+    .particle {
+      position: fixed; width: 10px; height: 10px; border-radius: 50%; pointer-events: none; z-index: 201;
+      animation: particleFly .8s ease-out forwards;
+    }
+    @keyframes particleFly {
+      0% { transform: translate(0,0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+    }
+
+    /* Sparkle on found item */
+    .sparkle {
+      position: absolute; font-size: 1.2rem; pointer-events: none; z-index: 202;
+      animation: sparklePop .6s ease-out forwards;
+    }
+    @keyframes sparklePop {
+      0% { transform: scale(0) rotate(0deg); opacity: 1; }
+      100% { transform: scale(1.5) rotate(180deg) translateY(-20px); opacity: 0; }
+    }
+
+    @media (max-width: 380px) {
+      .scene-container { border-radius: 16px; }
+      .target-item { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <h1>🔍 숨은 그림 찾기</h1>
+    <p class="subtitle">숨어있는 그림을 찾아보세요!</p>
+  </header>
+
+  <!-- Start Screen -->
+  <section id="screen-start" class="screen active">
+    <p class="start-title">난이도를 선택하세요</p>
+    <p class="start-desc">그림 속에 숨어있는 물건을<br>찾아서 터치하세요!</p>
+    <div class="difficulty-buttons">
+      <button class="btn-difficulty easy" onclick="startGame('easy')">
+        <span class="diff-icon">🌱</span>
+        <span class="diff-info"><span class="diff-name">쉬움</span><span class="diff-detail">12개 중 2개 찾기</span></span>
+      </button>
+      <button class="btn-difficulty normal" onclick="startGame('normal')">
+        <span class="diff-icon">⚡</span>
+        <span class="diff-info"><span class="diff-name">보통</span><span class="diff-detail">16개 중 3개 찾기</span></span>
+      </button>
+      <button class="btn-difficulty hard" onclick="startGame('hard')">
+        <span class="diff-icon">🔥</span>
+        <span class="diff-info"><span class="diff-name">어려움</span><span class="diff-detail">25개 중 5개 찾기</span></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Game Screen -->
+  <section id="screen-game" class="screen">
+    <div class="game-top">
+      <div class="game-top-left" id="round-label">라운드 1/5</div>
+      <div class="theme-label" id="theme-label">🐻 동물원</div>
+      <div class="game-top-right" id="found-label">0/2 발견</div>
+    </div>
+    <div class="progress-wrap"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="target-bar" id="target-bar">
+      <div class="target-label">이것을 찾아보세요!</div>
+    </div>
+    <div class="scene-container" id="scene-container"></div>
+  </section>
+
+  <!-- Result Screen -->
+  <section id="screen-result" class="screen">
+    <div class="result-card">
+      <div class="result-emoji" id="result-emoji">🏆</div>
+      <div class="result-title" id="result-title">대단해요!</div>
+      <div class="result-detail" id="result-detail"></div>
+      <div class="result-stars" id="result-stars"></div>
+      <button class="btn-restart" onclick="goToStart()">다시 하기</button>
+      <br><button class="btn-home" onclick="goToStart()">처음으로</button>
+    </div>
+  </section>
+
+  <!-- Correct Overlay -->
+  <div class="correct-overlay" id="correct-overlay"><div class="correct-text">찾았다! 🎉</div></div>
+
+  <script>
+    /* ===== Config ===== */
+    const GAME_ID = 'hidden_picture';
+    const AREA = '관찰력';
+    const TOTAL_ROUNDS = 5;
+
+    const DIFF_CONFIG = {
+      easy:   { targetCount: 2, totalItems: 12 },
+      normal: { targetCount: 3, totalItems: 16 },
+      hard:   { targetCount: 5, totalItems: 25 },
+    };
+
+    /* ===== Themes ===== */
+    const THEMES = [
+      { name: '동물원', icon: '🐻', emojis: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜'] },
+      { name: '바다', icon: '🐠', emojis: ['🐳','🐋','🐬','🐟','🐠','🐡','🦈','🐙','🐚','🦀','🦞','🦐','🦑','🐢','🪸','🐊','🦭','🪼','🐚','🦐','🐬','🐋','🐡','🐟','🦈','🐙','🦑','🐢','🦀','🦞','🐳','🐠'] },
+      { name: '우주', icon: '🚀', emojis: ['🚀','🛸','🌍','🌙','⭐','🌟','💫','✨','☀️','🌈','🪐','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🛰️','👽','🤖','🔭','🌌','💥','☄️','🌠','🪐','⭐','🌟','🚀','🛸'] },
+      { name: '숲', icon: '🌲', emojis: ['🌲','🌳','🌴','🍀','🍁','🍂','🍃','🌿','🌱','🍄','🌸','🌺','🌻','🌹','🌷','🌼','🪻','🪴','🎋','🎍','🐿️','🦔','🦡','🦎','🐍','🐛','🦋','🐝','🐞','🪲','🌲','🌳'] },
+      { name: '집', icon: '🏠', emojis: ['🏠','🛋️','🪑','🚪','🪟','🛏️','🛁','🚿','🪥','🧸','📺','💡','🕯️','🖼️','🧹','🗑️','📦','🎒','👟','🧢','🎩','🧤','🧣','🥾','👓','⌚','📱','💻','🎮','📚','🏠','🛋️'] },
+    ];
+
+    /* ===== State ===== */
+    let difficulty = 'normal';
+    let cfg = DIFF_CONFIG.normal;
+    let currentRound = 0;
+    let foundCount = 0;
+    let totalFound = 0;
+    let targets = [];
+    let foundSet = new Set();
+    let themeOrder = [];
+    let roundScores = []; // per-round: 1 if all found without too many wrong taps
+
+    /* ===== Audio ===== */
+    let audioCtx = null;
+    function ensureAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    function playTone(freq, dur, vol = .4, type = 'sine', offset = 0) {
+      ensureAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + offset);
+      gain.gain.setValueAtTime(0, audioCtx.currentTime + offset);
+      gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + offset + .02);
+      gain.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + offset + dur);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(audioCtx.currentTime + offset);
+      osc.stop(audioCtx.currentTime + offset + dur + .05);
+    }
+    function playCorrect() { playTone(523, .12, .35, 'sine', 0); playTone(659, .12, .35, 'sine', .12); playTone(784, .18, .35, 'sine', .24); }
+    function playWrong() { playTone(300, .2, .3, 'square', 0); playTone(220, .25, .25, 'sawtooth', .08); }
+    function playWin() {
+      const notes = [523, 587, 659, 784, 1047];
+      notes.forEach((f, i) => playTone(f, .22, .35, 'sine', i * .15));
+    }
+
+    /* ===== DOM ===== */
+    const sceneContainer = document.getElementById('scene-container');
+    const targetBar = document.getElementById('target-bar');
+    const roundLabel = document.getElementById('round-label');
+    const themeLabel = document.getElementById('theme-label');
+    const foundLabel = document.getElementById('found-label');
+    const progressFill = document.getElementById('progress-fill');
+    const correctOverlay = document.getElementById('correct-overlay');
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    /* ===== Shuffle ===== */
+    function shuffle(arr) { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+    /* ===== Particles ===== */
+    function spawnParticles(x, y) {
+      const colors = ['#FF6B35','#4ECDC4','#FFD166','#FF4757','#2F86FF'];
+      for (let i = 0; i < 10; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = x + 'px'; p.style.top = y + 'px';
+        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 30 + Math.random() * 60;
+        p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+        p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 850);
+      }
+    }
+
+    function spawnSparkle(el) {
+      const sparkles = ['✨','⭐','💫'];
+      for (let i = 0; i < 3; i++) {
+        const s = document.createElement('div');
+        s.className = 'sparkle';
+        s.textContent = sparkles[i % sparkles.length];
+        s.style.left = (Math.random() * 40 - 10) + 'px';
+        s.style.top = (Math.random() * 40 - 20) + 'px';
+        el.appendChild(s);
+        setTimeout(() => s.remove(), 700);
+      }
+    }
+
+    function showCorrectOverlay() {
+      correctOverlay.classList.add('show');
+      spawnParticles(window.innerWidth / 2, window.innerHeight / 2);
+      setTimeout(() => correctOverlay.classList.remove('show'), 700);
+    }
+
+    /* ===== Rewards ===== */
+    function reportReward(stars) {
+      try {
+        const key = 'kbr.rewards';
+        const data = JSON.parse(localStorage.getItem(key) || '[]');
+        data.push({ gameId: GAME_ID, area: AREA, stars, ts: Date.now() });
+        localStorage.setItem(key, JSON.stringify(data));
+      } catch (e) {}
+    }
+
+    /* ===== Game Logic ===== */
+    function goToStart() { showScreen('screen-start'); }
+
+    function startGame(diff) {
+      ensureAudio();
+      difficulty = diff;
+      cfg = DIFF_CONFIG[diff];
+      currentRound = 0;
+      totalFound = 0;
+      roundScores = [];
+      themeOrder = shuffle([0, 1, 2, 3, 4]);
+      showScreen('screen-game');
+      nextRound();
+    }
+
+    function nextRound() {
+      currentRound++;
+      if (currentRound > TOTAL_ROUNDS) { endGame(); return; }
+
+      foundCount = 0;
+      foundSet = new Set();
+      const theme = THEMES[themeOrder[(currentRound - 1) % THEMES.length]];
+
+      roundLabel.textContent = `라운드 ${currentRound}/${TOTAL_ROUNDS}`;
+      themeLabel.textContent = `${theme.icon} ${theme.name}`;
+      foundLabel.textContent = `0/${cfg.targetCount} 발견`;
+      progressFill.style.width = ((currentRound - 1) / TOTAL_ROUNDS * 100) + '%';
+
+      // Pick unique emojis for this round
+      const uniqueEmojis = [...new Set(theme.emojis)];
+      const shuffled = shuffle(uniqueEmojis);
+      const needed = Math.min(cfg.totalItems, shuffled.length);
+      const sceneEmojis = shuffled.slice(0, needed);
+
+      // Pick targets from scene emojis
+      targets = shuffle([...sceneEmojis]).slice(0, cfg.targetCount);
+
+      // Build target bar
+      targetBar.innerHTML = '<div class="target-label">이것을 찾아보세요!</div>';
+      targets.forEach((emoji, i) => {
+        const el = document.createElement('span');
+        el.className = 'target-item';
+        el.textContent = emoji;
+        el.id = 'target-' + i;
+        targetBar.appendChild(el);
+      });
+
+      // Build scene with non-overlapping placement
+      buildScene(sceneEmojis);
+    }
+
+    function buildScene(emojis) {
+      sceneContainer.innerHTML = '';
+      const rect = sceneContainer.getBoundingClientRect();
+      const w = rect.width || 340;
+      const h = rect.height || 340;
+
+      // Emoji size based on count
+      const emojiSize = emojis.length > 20 ? 32 : emojis.length > 14 ? 36 : 42;
+      const padding = 8;
+      const placed = [];
+
+      // Shuffle placement order
+      const shuffledEmojis = shuffle([...emojis]);
+
+      shuffledEmojis.forEach((emoji) => {
+        let x, y, attempts = 0;
+        const isTarget = targets.includes(emoji);
+
+        // Try to place without overlap
+        do {
+          x = padding + Math.random() * (w - emojiSize - padding * 2);
+          y = padding + Math.random() * (h - emojiSize - padding * 2);
+          attempts++;
+        } while (attempts < 80 && placed.some(p =>
+          Math.abs(p.x - x) < emojiSize * .85 && Math.abs(p.y - y) < emojiSize * .85
+        ));
+
+        placed.push({ x, y });
+
+        const el = document.createElement('div');
+        el.className = 'scene-emoji';
+        el.textContent = emoji;
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        el.style.fontSize = emojiSize + 'px';
+        el.style.width = emojiSize + 'px';
+        el.style.height = emojiSize + 'px';
+        el.dataset.emoji = emoji;
+        el.dataset.isTarget = isTarget ? '1' : '0';
+
+        el.addEventListener('click', (e) => handleTap(e, el));
+        sceneContainer.appendChild(el);
+      });
+    }
+
+    let wrongTaps = 0;
+
+    function handleTap(e, el) {
+      ensureAudio();
+      const emoji = el.dataset.emoji;
+      const isTarget = el.dataset.isTarget === '1';
+
+      if (el.classList.contains('fade-found')) return;
+
+      if (isTarget && !foundSet.has(emoji)) {
+        // Correct!
+        foundSet.add(emoji);
+        foundCount++;
+        playCorrect();
+
+        el.classList.add('found-anim');
+        spawnSparkle(el);
+
+        const rect = el.getBoundingClientRect();
+        spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2);
+
+        setTimeout(() => el.classList.add('fade-found'), 500);
+
+        // Update target bar
+        targets.forEach((t, i) => {
+          if (t === emoji) {
+            const targetEl = document.getElementById('target-' + i);
+            if (targetEl) targetEl.classList.add('found');
+          }
+        });
+
+        foundLabel.textContent = `${foundCount}/${cfg.targetCount} 발견`;
+
+        if (foundCount >= cfg.targetCount) {
+          // Round complete
+          roundScores.push(1);
+          totalFound += foundCount;
+          showCorrectOverlay();
+          setTimeout(() => nextRound(), 1000);
+        }
+      } else if (!isTarget) {
+        // Wrong
+        playWrong();
+        wrongTaps++;
+        el.classList.add('wrong-shake');
+        setTimeout(() => el.classList.remove('wrong-shake'), 450);
+      }
+    }
+
+    function endGame() {
+      playWin();
+
+      const maxPossible = TOTAL_ROUNDS * cfg.targetCount;
+      const ratio = totalFound / maxPossible;
+      let stars = 0;
+      if (ratio >= .9) stars = 3;
+      else if (ratio >= .6) stars = 2;
+      else if (ratio >= .3) stars = 1;
+
+      // If completed all rounds, at least 2 stars
+      if (roundScores.length >= TOTAL_ROUNDS) stars = Math.max(stars, 2);
+      // Bonus: few wrong taps
+      if (wrongTaps <= 3 && stars >= 2) stars = 3;
+
+      reportReward(stars);
+
+      document.getElementById('result-emoji').textContent = stars >= 3 ? '🏆' : stars >= 2 ? '🎉' : stars >= 1 ? '👍' : '💪';
+      document.getElementById('result-title').textContent = stars >= 3 ? '완벽해요!' : stars >= 2 ? '잘했어요!' : '좋은 시작이에요!';
+      document.getElementById('result-detail').textContent = `${TOTAL_ROUNDS}라운드 중 ${roundScores.length}라운드 완료! (총 ${totalFound}개 발견)`;
+      document.getElementById('result-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+
+      showScreen('screen-result');
+      wrongTaps = 0;
+    }
+  </script>
+</body>
+</html>

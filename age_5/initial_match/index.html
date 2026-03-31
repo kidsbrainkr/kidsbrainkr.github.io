@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta http-equiv="X-Content-Type-Options" content="nosniff"><meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>이름과 초성 연결 🔤</title>
+  <style>
+    :root { --accent:#FF6B35; --accent-h:#e85a25; --mint:#4ECDC4; --mint-h:#38b8ae; --bg:#FFF8F0; --card-bg:#FFFFFF; --text:#333333; --shadow:0 4px 16px rgba(0,0,0,.12); --shadow-lg:0 8px 32px rgba(0,0,0,.18); --radius-sm:12px; --radius-md:20px; --radius-lg:24px; }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    html, body { height:100%; background:var(--bg); font-family:'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif; overflow:hidden; user-select:none; -webkit-tap-highlight-color:transparent; }
+
+    .screen { display:none; flex-direction:column; align-items:center; justify-content:center; height:100%; width:100%; position:fixed; inset:0; }
+    .screen.active { display:flex; animation:fadeIn 0.4s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+
+    /* Start */
+    #start-screen { background:linear-gradient(135deg,#FFF8F0,#E8F6F5); gap:20px; padding:24px; }
+    #start-screen .title-emoji { font-size:clamp(4rem,14vw,7rem); }
+    #start-screen h1 { font-size:clamp(1.6rem,5vw,2.4rem); font-weight:900; color:var(--mint); text-align:center; }
+    #start-screen p { font-size:clamp(1rem,3vw,1.3rem); color:#666; text-align:center; max-width:320px; line-height:1.5; }
+    .btn-start { padding:18px 52px; border:none; border-radius:50px; font-size:clamp(1.2rem,4vw,1.5rem); font-weight:900; background:var(--mint); color:#fff; cursor:pointer; box-shadow:0 6px 20px rgba(78,205,196,0.4); transition:transform 0.15s; }
+    .btn-start:active { transform:scale(0.93); }
+
+    /* Game */
+    #game-screen { background:var(--bg); padding:16px; gap:12px; justify-content:flex-start; padding-top:20px; }
+
+    .progress-area { width:100%; max-width:500px; display:flex; align-items:center; gap:8px; }
+    .progress-label { font-size:0.9rem; font-weight:700; color:#888; white-space:nowrap; }
+    .progress-track { flex:1; height:10px; background:#E0D8D0; border-radius:99px; overflow:hidden; }
+    .progress-fill { height:100%; background:linear-gradient(90deg,var(--mint),#7EDDD6); border-radius:99px; transition:width 0.5s ease; width:0%; }
+
+    /* Word display */
+    .word-area { width:100%; max-width:500px; background:var(--card-bg); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:28px 20px; text-align:center; margin-top:8px; }
+    .word-emoji { font-size:clamp(3.5rem,12vw,6rem); display:block; margin-bottom:8px; }
+    .word-text { font-size:clamp(1.8rem,6vw,2.8rem); font-weight:900; color:var(--text); letter-spacing:4px; }
+    .word-hint { font-size:clamp(0.9rem,2.8vw,1.1rem); color:#999; margin-top:8px; font-weight:600; }
+
+    /* Choices */
+    .choices-area { width:100%; max-width:500px; display:flex; flex-direction:column; gap:14px; margin-top:16px; flex:1; justify-content:center; }
+    .choice-card { width:100%; padding:20px; border:4px solid #E0D8D0; border-radius:var(--radius-md); background:var(--card-bg); cursor:pointer; text-align:center; box-shadow:var(--shadow); transition:transform 0.15s, border-color 0.2s, background 0.2s; }
+    .choice-card:active { transform:scale(0.96); }
+    .choice-card .chosung { font-size:clamp(1.6rem,5vw,2.2rem); font-weight:900; color:var(--text); letter-spacing:6px; }
+    .choice-card.correct { border-color:#2ECC71; background:#E8F8E8; animation:cardPop 0.5s ease; }
+    .choice-card.wrong { border-color:#E74C3C; background:#FDE8E8; animation:cardShake 0.4s ease; }
+    @keyframes cardPop { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} }
+    @keyframes cardShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+
+    /* Feedback overlay */
+    .feedback-overlay { position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; }
+    .feedback-overlay.active { display:flex; }
+    .feedback-overlay .fb-bg { position:absolute; inset:0; background:rgba(0,0,0,0.3); }
+    .feedback-overlay .fb-box { position:relative; z-index:1; background:#fff; border-radius:28px; padding:36px 40px; text-align:center; box-shadow:var(--shadow-lg); animation:overlayPop 0.4s cubic-bezier(.17,.67,.36,1.3); }
+    @keyframes overlayPop { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
+    .fb-emoji { font-size:clamp(3rem,10vw,5rem); }
+    .fb-text { font-size:clamp(1.2rem,4vw,1.6rem); font-weight:800; margin-top:12px; }
+    .fb-text.correct-text { color:#2ECC71; }
+    .fb-text.wrong-text { color:#E74C3C; }
+
+    /* Particles */
+    .particle { position:fixed; z-index:200; pointer-events:none; font-size:1.5rem; animation:particleFly 1s ease-out forwards; }
+    @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--px),var(--py)) scale(0.3)} }
+
+    /* Result */
+    #result-screen { background:linear-gradient(135deg,#FFF8F0,#E8F6F5); gap:22px; padding:24px; }
+    #result-screen .result-emoji { font-size:clamp(4rem,14vw,7rem); animation:spin 1.2s ease-in-out; }
+    @keyframes spin { 0%{transform:rotate(0) scale(0.5)} 60%{transform:rotate(380deg) scale(1.1)} 100%{transform:rotate(360deg) scale(1)} }
+    #result-screen h1 { font-size:clamp(1.6rem,5vw,2.4rem); font-weight:900; color:var(--mint); text-align:center; }
+    .result-score { font-size:clamp(1.1rem,3.5vw,1.5rem); font-weight:700; color:#555; }
+    .stars-row { display:flex; gap:8px; font-size:clamp(2rem,8vw,3.5rem); }
+    .star-item { animation:starPop 0.4s ease both; }
+    .star-item:nth-child(1){animation-delay:0.2s} .star-item:nth-child(2){animation-delay:0.45s} .star-item:nth-child(3){animation-delay:0.7s}
+    @keyframes starPop { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+    .btn-restart { padding:18px 52px; border:none; border-radius:50px; font-size:clamp(1.2rem,4vw,1.5rem); font-weight:900; background:var(--mint); color:#fff; cursor:pointer; box-shadow:0 6px 20px rgba(78,205,196,0.4); transition:transform 0.15s; }
+    .btn-restart:active { transform:scale(0.93); }
+  </style>
+</head>
+<body>
+
+<div id="start-screen" class="screen active">
+  <div class="title-emoji">🔤</div>
+  <h1>이름과 초성 연결</h1>
+  <p>단어를 보고 맞는 초성을 골라봐요!<br>예: 사과 → ㅅㄱ</p>
+  <button class="btn-start" id="btn-start">시작하기 🚀</button>
+</div>
+
+<div id="game-screen" class="screen">
+  <div class="progress-area">
+    <span class="progress-label" id="progress-label">1 / 10</span>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <span class="progress-label" id="score-label">⭐ 0</span>
+  </div>
+  <div class="word-area">
+    <span class="word-emoji" id="word-emoji"></span>
+    <div class="word-text" id="word-text"></div>
+    <div class="word-hint">초성을 골라봐요!</div>
+  </div>
+  <div class="choices-area" id="choices-area"></div>
+</div>
+
+<div class="feedback-overlay" id="feedback-overlay">
+  <div class="fb-bg"></div>
+  <div class="fb-box">
+    <div class="fb-emoji" id="fb-emoji"></div>
+    <div class="fb-text" id="fb-text"></div>
+  </div>
+</div>
+
+<div id="result-screen" class="screen">
+  <div class="result-emoji">🎉</div>
+  <h1>초성 박사가 되었어요!</h1>
+  <div class="stars-row" id="stars-row"></div>
+  <div class="result-score" id="result-score"></div>
+  <button class="btn-restart" id="btn-restart">다시 하기 🔄</button>
+</div>
+
+<script>
+/* ===== 이름과 초성 연결 게임 ===== */
+
+// ─── Audio System ─────────────────────────────────────────
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+function ensureAudio() { if(!audioCtx) audioCtx = new AudioCtx(); if(audioCtx.state==='suspended') audioCtx.resume(); }
+function playTones(freqs, dur=0.15, mode='seq', type='sine') {
+  if(!audioCtx) return;
+  const now = audioCtx.currentTime;
+  freqs.forEach((f,i) => {
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.type = type; osc.frequency.value = f;
+    const start = mode==='seq' ? now + i*dur : now;
+    gain.gain.setValueAtTime(0.28, start);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + dur*0.95);
+    osc.start(start); osc.stop(start + dur);
+  });
+}
+function playCorrect() { ensureAudio(); playTones([523,659,784], 0.13, 'seq', 'sine'); }
+function playWrong() { ensureAudio(); playTones([300,220], 0.18, 'seq', 'sawtooth'); }
+function playWin() { ensureAudio(); playTones([523,659,784,1047,1319], 0.15, 'seq', 'sine'); }
+
+// ─── Reward System ────────────────────────────────────────
+function reportReward(stars) {
+  try {
+    const data = JSON.parse(localStorage.getItem('kbr.rewards')||'null') || { totalStars:0, totalGames:0, badges:[], history:[], streak:0, lastDate:null };
+    data.totalStars += stars; data.totalGames += 1;
+    const today = new Date().toISOString().slice(0,10);
+    data.history.unshift({ gameId:'initial_match', area:'언어', stars, date:today, timestamp:Date.now() });
+    if(data.history.length > 100) data.history = data.history.slice(0,100);
+    if(data.lastDate !== today) {
+      if(data.lastDate) { const diff = Math.floor((new Date(today)-new Date(data.lastDate))/86400000); data.streak = diff===1 ? data.streak+1 : 1; }
+      else { data.streak = 1; }
+      data.lastDate = today;
+    }
+    localStorage.setItem('kbr.rewards', JSON.stringify(data));
+  } catch(e) {}
+}
+
+// ─── Particles ────────────────────────────────────────────
+function spawnParticles(x, y) {
+  const emojis = ['⭐','🌟','✨','💛','🔤'];
+  for(let i=0; i<8; i++) {
+    const el = document.createElement('div');
+    el.className = 'particle';
+    el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.left = x+'px'; el.style.top = y+'px';
+    el.style.setProperty('--px', (Math.random()*160-80)+'px');
+    el.style.setProperty('--py', (Math.random()*-120-40)+'px');
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+}
+
+// ─── Game Data ────────────────────────────────────────────
+const WORDS = [
+  { word:'사과', emoji:'🍎', chosung:'ㅅㄱ' },
+  { word:'바나나', emoji:'🍌', chosung:'ㅂㄴㄴ' },
+  { word:'토끼', emoji:'🐰', chosung:'ㅌㄲ' },
+  { word:'강아지', emoji:'🐶', chosung:'ㄱㅇㅈ' },
+  { word:'비행기', emoji:'✈️', chosung:'ㅂㅎㄱ' },
+  { word:'자동차', emoji:'🚗', chosung:'ㅈㄷㅊ' },
+  { word:'무지개', emoji:'🌈', chosung:'ㅁㅈㄱ' },
+  { word:'딸기', emoji:'🍓', chosung:'ㄸㄱ' },
+  { word:'포도', emoji:'🍇', chosung:'ㅍㄷ' },
+  { word:'햄버거', emoji:'🍔', chosung:'ㅎㅂㄱ' },
+  { word:'연필', emoji:'✏️', chosung:'ㅇㅍ' },
+  { word:'우산', emoji:'☂️', chosung:'ㅇㅅ' },
+];
+
+const TOTAL_Q = 10;
+let currentQ = 0;
+let score = 0;
+let busy = false;
+let shuffledWords = [];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for(let i=a.length-1; i>0; i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ─── Generate wrong chosung options ───────────────────────
+function getWrongOptions(correctChosung, count) {
+  const allChosung = WORDS.map(w => w.chosung).filter(c => c !== correctChosung);
+  const unique = [...new Set(allChosung)];
+  const shuffledAll = shuffle(unique);
+  return shuffledAll.slice(0, count);
+}
+
+// ─── Start Game ───────────────────────────────────────────
+function startGame() {
+  ensureAudio();
+  currentQ = 0; score = 0;
+  shuffledWords = shuffle(WORDS).slice(0, TOTAL_Q);
+  showScreen('game-screen');
+  showQuestion();
+}
+
+// ─── Show Question ────────────────────────────────────────
+function showQuestion() {
+  if(currentQ >= TOTAL_Q) { endGame(); return; }
+  busy = false;
+  const w = shuffledWords[currentQ];
+
+  document.getElementById('progress-label').textContent = `${currentQ+1} / ${TOTAL_Q}`;
+  document.getElementById('progress-fill').style.width = `${(currentQ/TOTAL_Q)*100}%`;
+  document.getElementById('score-label').textContent = `⭐ ${score}`;
+  document.getElementById('word-emoji').textContent = w.emoji;
+  document.getElementById('word-text').textContent = w.word;
+
+  const wrongOpts = getWrongOptions(w.chosung, 2);
+  const choices = shuffle([
+    { text: w.chosung, isCorrect: true },
+    { text: wrongOpts[0], isCorrect: false },
+    { text: wrongOpts[1], isCorrect: false },
+  ]);
+
+  const area = document.getElementById('choices-area');
+  area.innerHTML = '';
+  choices.forEach(ch => {
+    const card = document.createElement('div');
+    card.className = 'choice-card';
+    const span = document.createElement('span');
+    span.className = 'chosung';
+    span.textContent = ch.text;
+    card.appendChild(span);
+    card.addEventListener('click', () => onChoice(ch.isCorrect, card));
+    area.appendChild(card);
+  });
+}
+
+// ─── Handle Choice ────────────────────────────────────────
+function onChoice(isCorrect, cardEl) {
+  if(busy) return;
+  busy = true;
+  const w = shuffledWords[currentQ];
+
+  if(isCorrect) {
+    score += 10;
+    playCorrect();
+    cardEl.classList.add('correct');
+
+    const rect = cardEl.getBoundingClientRect();
+    spawnParticles(rect.left + rect.width/2, rect.top + rect.height/2);
+
+    const overlay = document.getElementById('feedback-overlay');
+    document.getElementById('fb-emoji').textContent = '🎯';
+    const fbText = document.getElementById('fb-text');
+    fbText.textContent = `정답! ${w.word} → ${w.chosung}`;
+    fbText.className = 'fb-text correct-text';
+    overlay.classList.add('active');
+
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      currentQ++;
+      showQuestion();
+    }, 1200);
+  } else {
+    playWrong();
+    cardEl.classList.add('wrong');
+
+    const overlay = document.getElementById('feedback-overlay');
+    document.getElementById('fb-emoji').textContent = '🤔';
+    const fbText = document.getElementById('fb-text');
+    fbText.textContent = '다시 생각해봐요!';
+    fbText.className = 'fb-text wrong-text';
+    overlay.classList.add('active');
+
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      cardEl.classList.remove('wrong');
+      busy = false;
+    }, 1000);
+  }
+}
+
+// ─── End Game ─────────────────────────────────────────────
+function endGame() {
+  playWin();
+  const stars = score >= 90 ? 3 : score >= 60 ? 2 : 1;
+  reportReward(stars);
+
+  document.getElementById('progress-fill').style.width = '100%';
+  document.getElementById('result-score').textContent = `${score} / ${TOTAL_Q * 10} 점`;
+
+  const row = document.getElementById('stars-row');
+  row.innerHTML = '';
+  for(let i=0; i<3; i++) {
+    const s = document.createElement('span');
+    s.className = 'star-item';
+    s.textContent = i < stars ? '⭐' : '☆';
+    row.appendChild(s);
+  }
+  showScreen('result-screen');
+}
+
+// ─── Event Listeners ──────────────────────────────────────
+document.getElementById('btn-start').addEventListener('click', startGame);
+document.getElementById('btn-restart').addEventListener('click', startGame);
+</script>
+</body>
+</html>

@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>큰 것 작은 것 고르기</title>
+<style>
+:root {
+  --accent: #FF6B35;
+  --accent-h: #e85a25;
+  --mint: #4ECDC4;
+  --mint-h: #38b8ae;
+  --bg: #FFF8F0;
+  --card-bg: #FFFFFF;
+  --text: #333333;
+  --shadow: 0 4px 16px rgba(0,0,0,.12);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.18);
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 24px;
+  --font: 'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 15% 15%, rgba(255,107,53,.07) 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, rgba(78,205,196,.07) 0%, transparent 50%);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.screen { display: none; width: 100%; max-width: 480px; }
+.screen.active { display: flex; flex-direction: column; align-items: center; }
+
+#game-screen {
+  min-height: calc(100vh - 24px);
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.status-bar {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-badge {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  padding: 8px 22px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+
+.progress-bar-wrap {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--mint));
+  border-radius: 4px;
+  transition: width .4s ease;
+}
+
+.question-area {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.question-label {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.4;
+  animation: popIn .35s cubic-bezier(.34,1.56,.64,1);
+}
+
+.question-label .highlight {
+  color: var(--accent);
+  font-size: 2rem;
+}
+
+.choices-area {
+  width: 100%;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  padding: 0 8px;
+  flex: 1;
+}
+
+.choice-card {
+  flex: 1;
+  max-width: 220px;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 5px solid rgba(255,255,255,.7);
+  background: var(--card-bg);
+  transition: transform .12s, box-shadow .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.choice-card:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: var(--shadow-lg);
+}
+
+.choice-emoji {
+  line-height: 1;
+  transition: font-size .3s ease;
+}
+
+.correct-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(46,204,113,.82);
+  z-index: 100;
+  animation: fadeIn .2s ease;
+  pointer-events: none;
+}
+
+.correct-emoji-big {
+  font-size: min(120px, 28vw);
+  animation: bounceIn .4s cubic-bezier(.34,1.56,.64,1);
+  line-height: 1;
+}
+
+.correct-text {
+  font-size: min(3rem, 9vw);
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 3px 12px rgba(0,0,0,.25);
+  animation: bounceIn .45s .08s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+/* Particles */
+.particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 101;
+  font-size: 1.5rem;
+  animation: particleFly 1s ease-out forwards;
+}
+
+@keyframes particleFly {
+  0% { opacity: 1; transform: translate(0,0) scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.3) rotate(360deg); }
+}
+
+#result-screen {
+  min-height: calc(100vh - 24px);
+  justify-content: center;
+  gap: 28px;
+  padding: 24px 0;
+}
+
+.result-card {
+  background: #fff;
+  border-radius: 28px;
+  box-shadow: var(--shadow-lg);
+  padding: 40px 32px;
+  text-align: center;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  animation: popIn .4s cubic-bezier(.34,1.56,.64,1);
+}
+
+.result-emoji {
+  font-size: min(96px, 22vw);
+  line-height: 1;
+  animation: bounceIn .5s cubic-bezier(.34,1.56,.64,1);
+}
+
+.result-title {
+  font-size: min(2.6rem, 8vw);
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1.3;
+}
+
+.result-subtitle {
+  font-size: 1.2rem;
+  color: #888;
+  font-weight: 600;
+}
+
+.result-stars {
+  font-size: min(3rem, 9vw);
+  letter-spacing: 8px;
+  animation: bounceIn .5s .1s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+.btn-restart {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 20px 56px;
+  border-radius: 32px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-family: var(--font);
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(255,107,53,.4);
+  transition: transform .15s, box-shadow .15s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.btn-restart:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(255,107,53,.5); }
+.btn-restart:active { transform: translateY(0); }
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes bounceIn {
+  from { opacity: 0; transform: scale(.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shake {
+  0%,100% { transform: translateX(0) rotate(0deg); }
+  15%     { transform: translateX(-10px) rotate(-3deg); }
+  30%     { transform: translateX(10px) rotate(3deg); }
+  45%     { transform: translateX(-8px) rotate(-2deg); }
+  60%     { transform: translateX(8px) rotate(2deg); }
+  75%     { transform: translateX(-4px) rotate(-1deg); }
+  90%     { transform: translateX(4px) rotate(1deg); }
+}
+
+@keyframes jumpUp {
+  0%   { transform: scale(1) translateY(0); }
+  40%  { transform: scale(1.15) translateY(-18px); }
+  70%  { transform: scale(.97) translateY(-4px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+@keyframes starPop {
+  0%   { transform: scale(0) rotate(-30deg); opacity: 0; }
+  60%  { transform: scale(1.2) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes errorPulse {
+  0%,100% { border-color: rgba(255,255,255,.7); }
+  40%     { border-color: #E74C3C; box-shadow: 0 0 0 4px rgba(231,76,60,.35); }
+}
+
+.shake { animation: shake .5s ease both !important; }
+.error-pulse { animation: errorPulse .5s ease both !important; }
+.jump { animation: jumpUp .45s ease both !important; }
+.disabled { pointer-events: none; }
+
+.choice-card:nth-child(1) { animation: popIn .3s .0s cubic-bezier(.34,1.56,.64,1) both; }
+.choice-card:nth-child(2) { animation: popIn .3s .1s cubic-bezier(.34,1.56,.64,1) both; }
+
+@media (max-width: 480px) {
+  .question-label { font-size: 1.5rem; }
+  .question-label .highlight { font-size: 1.7rem; }
+  .choice-card { max-width: 180px; }
+}
+
+@media (max-width: 360px) {
+  .question-label { font-size: 1.3rem; }
+  .question-label .highlight { font-size: 1.5rem; }
+  .choice-card { max-width: 150px; }
+  .progress-badge { font-size: 1rem; padding: 6px 16px; }
+  .btn-restart { padding: 16px 40px; font-size: 1.3rem; }
+}
+</style>
+</head>
+<body>
+
+<div id="game-screen" class="screen active">
+  <div class="status-bar">
+    <div class="progress-badge" id="progress-badge">1 / 10</div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progress-bar" style="width:10%"></div>
+  </div>
+
+  <div class="question-area">
+    <p class="question-label" id="question-label"></p>
+  </div>
+
+  <div class="choices-area" id="choices-area"></div>
+</div>
+
+<div id="result-screen" class="screen">
+  <div class="result-card">
+    <div class="result-emoji">🎉</div>
+    <div class="result-title">잘했어요!</div>
+    <div class="result-stars" id="result-stars"></div>
+    <div class="result-subtitle">크기 비교를 잘 했어요!</div>
+    <button class="btn-restart" onclick="restartGame()">다시 하기 🔍</button>
+  </div>
+</div>
+
+<script>
+/* ===== Audio System ===== */
+const AudioSys = (() => {
+  let ctx = null;
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function beep(freq, type, start, dur, vol = .4) {
+    const c = getCtx();
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.connect(gain); gain.connect(c.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, c.currentTime + start);
+    gain.gain.setValueAtTime(vol, c.currentTime + start);
+    gain.gain.exponentialRampToValueAtTime(.001, c.currentTime + start + dur);
+    osc.start(c.currentTime + start);
+    osc.stop(c.currentTime + start + dur + .05);
+  }
+  return {
+    playCorrect() { beep(523,'sine',0,.12,.5); beep(659,'sine',.12,.12,.5); beep(784,'sine',.24,.22,.5); },
+    playWrong() { beep(300,'square',0,.10,.3); beep(220,'square',.12,.15,.3); },
+    playWin() { [523,659,784,880,1046].forEach((f,i) => beep(f,'sine',i*.12,.18,.4)); },
+  };
+})();
+
+/* ===== Fisher-Yates Shuffle ===== */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ===== Reward Reporting ===== */
+function reportReward(stars) {
+  try {
+    const data = JSON.parse(localStorage.getItem('kbr.rewards') || 'null') || {
+      totalStars: 0, totalGames: 0, badges: [], history: [], streak: 0, lastDate: null
+    };
+    data.totalStars += stars;
+    data.totalGames += 1;
+    const today = new Date().toISOString().slice(0, 10);
+    data.history.unshift({ gameId: 'size_compare', area: '관찰력', stars, date: today, timestamp: Date.now() });
+    if (data.history.length > 100) data.history = data.history.slice(0, 100);
+    if (data.lastDate !== today) {
+      if (data.lastDate) {
+        const diff = Math.floor((new Date(today) - new Date(data.lastDate)) / 86400000);
+        data.streak = diff === 1 ? data.streak + 1 : 1;
+      } else { data.streak = 1; }
+      data.lastDate = today;
+    }
+    localStorage.setItem('kbr.rewards', JSON.stringify(data));
+  } catch {}
+}
+
+/* ===== Screen Helpers ===== */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ===== Game Data ===== */
+const EMOJIS = ['🐻','🐶','🐱','🐸','🌸','🍎','⭐','🚗','🐘','🦋','🍰','🎈','🐥','🌻','🍉'];
+const BIG_SIZE = 'min(8rem, 28vw)';
+const SMALL_SIZE = 'min(4rem, 14vw)';
+
+const state = {
+  totalQuestions: 10,
+  currentQ: 0,
+  score: 0,
+  isBusy: false,
+  emojiOrder: [],
+  askBig: [],  // true = ask for big, false = ask for small
+};
+
+/* ===== Game Start ===== */
+function restartGame() {
+  state.currentQ = 0;
+  state.score = 0;
+  state.isBusy = false;
+  state.emojiOrder = shuffle(EMOJIS).slice(0, state.totalQuestions);
+  state.askBig = [];
+  for (let i = 0; i < state.totalQuestions; i++) {
+    state.askBig.push(Math.random() < 0.5);
+  }
+  showScreen('game-screen');
+  renderQuestion();
+}
+
+/* ===== Render Question ===== */
+function renderQuestion() {
+  const q = state.currentQ;
+  const emoji = state.emojiOrder[q];
+  const wantBig = state.askBig[q];
+
+  document.getElementById('progress-badge').textContent = `${q + 1} / ${state.totalQuestions}`;
+  document.getElementById('progress-bar').style.width = `${((q + 1) / state.totalQuestions) * 100}%`;
+
+  const label = document.getElementById('question-label');
+  label.innerHTML = wantBig
+    ? '<span class="highlight">큰 것</span>을 찾아요!'
+    : '<span class="highlight">작은 것</span>을 찾아요!';
+  label.style.animation = 'none';
+  void label.offsetWidth;
+  label.style.animation = 'popIn .35s cubic-bezier(.34,1.56,.64,1)';
+
+  // Randomly decide which side is big
+  const leftBig = Math.random() < 0.5;
+
+  const area = document.getElementById('choices-area');
+  area.innerHTML = '';
+
+  [0, 1].forEach(i => {
+    const isBig = (i === 0) ? leftBig : !leftBig;
+    const isCorrect = isBig === wantBig;
+
+    const card = document.createElement('div');
+    card.className = 'choice-card';
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+
+    const emojiEl = document.createElement('span');
+    emojiEl.className = 'choice-emoji';
+    emojiEl.textContent = emoji;
+    emojiEl.style.fontSize = isBig ? BIG_SIZE : SMALL_SIZE;
+
+    card.appendChild(emojiEl);
+
+    card.addEventListener('click', () => onChoiceClick(card, isCorrect));
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') onChoiceClick(card, isCorrect);
+    });
+
+    area.appendChild(card);
+  });
+}
+
+/* ===== Choice Click ===== */
+function onChoiceClick(card, isCorrect) {
+  if (state.isBusy) return;
+
+  if (isCorrect) {
+    state.isBusy = true;
+    state.score++;
+    AudioSys.playCorrect();
+    card.classList.add('jump');
+    showCorrectOverlay();
+    spawnParticles();
+
+    setTimeout(() => {
+      hideCorrectOverlay();
+      state.currentQ++;
+      if (state.currentQ >= state.totalQuestions) {
+        setTimeout(() => {
+          AudioSys.playWin();
+          showResultScreen();
+        }, 150);
+      } else {
+        state.isBusy = false;
+        renderQuestion();
+      }
+    }, 1100);
+  } else {
+    AudioSys.playWrong();
+    card.classList.add('shake', 'error-pulse');
+    card.addEventListener('animationend', () => {
+      card.classList.remove('shake', 'error-pulse');
+    }, { once: true });
+  }
+}
+
+/* ===== Correct Overlay ===== */
+function showCorrectOverlay() {
+  hideCorrectOverlay();
+  const overlay = document.createElement('div');
+  overlay.className = 'correct-overlay';
+  overlay.id = 'correct-overlay';
+
+  const emoji = document.createElement('div');
+  emoji.className = 'correct-emoji-big';
+  emoji.textContent = ['🌟','✨','🎊','🥳','🎉','💫'][Math.floor(Math.random() * 6)];
+
+  const text = document.createElement('div');
+  text.className = 'correct-text';
+  text.textContent = ['잘했어요!','맞았어요!','훌륭해요!','완벽해요!'][Math.floor(Math.random() * 4)];
+
+  overlay.appendChild(emoji);
+  overlay.appendChild(text);
+  document.body.appendChild(overlay);
+}
+
+function hideCorrectOverlay() {
+  const el = document.getElementById('correct-overlay');
+  if (el) el.remove();
+}
+
+/* ===== Particles ===== */
+function spawnParticles() {
+  const emojis = ['⭐','🌟','✨','💛','🧡'];
+  for (let i = 0; i < 10; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    p.style.left = `${30 + Math.random() * 40}%`;
+    p.style.top = `${30 + Math.random() * 40}%`;
+    p.style.setProperty('--dx', `${(Math.random() - 0.5) * 200}px`);
+    p.style.setProperty('--dy', `${(Math.random() - 0.5) * 200}px`);
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1000);
+  }
+}
+
+/* ===== Result Screen ===== */
+function showResultScreen() {
+  const stars = state.score >= 9 ? 3 : state.score >= 7 ? 2 : 1;
+  reportReward(stars);
+
+  const starsEl = document.getElementById('result-stars');
+  starsEl.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const span = document.createElement('span');
+    span.textContent = i < stars ? '⭐' : '☆';
+    span.style.display = 'inline-block';
+    span.style.animation = `starPop .4s ${i * 0.12}s cubic-bezier(.34,1.56,.64,1) both`;
+    starsEl.appendChild(span);
+  }
+
+  showScreen('result-screen');
+}
+
+/* ===== Init ===== */
+restartGame();
+</script>
+</body>
+</html>

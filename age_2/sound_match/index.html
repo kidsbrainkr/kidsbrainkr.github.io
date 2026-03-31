@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>같은 소리 찾기</title>
+<style>
+:root {
+  --accent: #FF6B35;
+  --accent-h: #e85a25;
+  --mint: #4ECDC4;
+  --mint-h: #38b8ae;
+  --bg: #FFF8F0;
+  --card-bg: #FFFFFF;
+  --text: #333333;
+  --shadow: 0 4px 16px rgba(0,0,0,.12);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.18);
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 24px;
+  --font: 'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 15% 15%, rgba(255,107,53,.07) 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, rgba(78,205,196,.07) 0%, transparent 50%);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.screen { display: none; width: 100%; max-width: 480px; }
+.screen.active { display: flex; flex-direction: column; align-items: center; }
+
+#game-screen {
+  min-height: calc(100vh - 24px);
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.status-bar {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-badge {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  padding: 8px 22px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+
+.progress-bar-wrap {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--mint));
+  border-radius: 4px;
+  transition: width .4s ease;
+}
+
+.sound-area {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.sound-label {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.btn-play-sound {
+  background: var(--mint);
+  color: #fff;
+  border: none;
+  padding: 24px 48px;
+  border-radius: 32px;
+  font-size: 2rem;
+  font-weight: 800;
+  font-family: var(--font);
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(78,205,196,.4);
+  transition: transform .15s, box-shadow .15s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: popIn .35s cubic-bezier(.34,1.56,.64,1);
+}
+
+.btn-play-sound:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 8px 24px rgba(78,205,196,.5); }
+.btn-play-sound:active { transform: translateY(0) scale(0.98); }
+
+.btn-play-sound .speaker-icon {
+  font-size: 2.4rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.choices-area {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: stretch;
+  padding: 0 4px;
+  flex-wrap: wrap;
+}
+
+.choice-card {
+  flex: 1;
+  min-width: 100px;
+  max-width: 150px;
+  aspect-ratio: 1 / 1.1;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  border: 5px solid rgba(255,255,255,.7);
+  background: var(--card-bg);
+  transition: transform .12s, box-shadow .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.choice-card:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: var(--shadow-lg);
+}
+
+.choice-emoji {
+  font-size: min(5rem, 16vw);
+  line-height: 1;
+}
+
+.choice-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.correct-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(46,204,113,.82);
+  z-index: 100;
+  animation: fadeIn .2s ease;
+  pointer-events: none;
+}
+
+.correct-emoji-big {
+  font-size: min(120px, 28vw);
+  animation: bounceIn .4s cubic-bezier(.34,1.56,.64,1);
+  line-height: 1;
+}
+
+.correct-text {
+  font-size: min(3rem, 9vw);
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 3px 12px rgba(0,0,0,.25);
+  animation: bounceIn .45s .08s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+.particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 101;
+  font-size: 1.5rem;
+  animation: particleFly 1s ease-out forwards;
+}
+
+@keyframes particleFly {
+  0% { opacity: 1; transform: translate(0,0) scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.3) rotate(360deg); }
+}
+
+#result-screen {
+  min-height: calc(100vh - 24px);
+  justify-content: center;
+  gap: 28px;
+  padding: 24px 0;
+}
+
+.result-card {
+  background: #fff;
+  border-radius: 28px;
+  box-shadow: var(--shadow-lg);
+  padding: 40px 32px;
+  text-align: center;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  animation: popIn .4s cubic-bezier(.34,1.56,.64,1);
+}
+
+.result-emoji {
+  font-size: min(96px, 22vw);
+  line-height: 1;
+  animation: bounceIn .5s cubic-bezier(.34,1.56,.64,1);
+}
+
+.result-title {
+  font-size: min(2.6rem, 8vw);
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1.3;
+}
+
+.result-subtitle {
+  font-size: 1.2rem;
+  color: #888;
+  font-weight: 600;
+}
+
+.result-stars {
+  font-size: min(3rem, 9vw);
+  letter-spacing: 8px;
+  animation: bounceIn .5s .1s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+.btn-restart {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 20px 56px;
+  border-radius: 32px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-family: var(--font);
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(255,107,53,.4);
+  transition: transform .15s, box-shadow .15s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.btn-restart:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(255,107,53,.5); }
+.btn-restart:active { transform: translateY(0); }
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes bounceIn {
+  from { opacity: 0; transform: scale(.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shake {
+  0%,100% { transform: translateX(0) rotate(0deg); }
+  15%     { transform: translateX(-10px) rotate(-3deg); }
+  30%     { transform: translateX(10px) rotate(3deg); }
+  45%     { transform: translateX(-8px) rotate(-2deg); }
+  60%     { transform: translateX(8px) rotate(2deg); }
+  75%     { transform: translateX(-4px) rotate(-1deg); }
+  90%     { transform: translateX(4px) rotate(1deg); }
+}
+
+@keyframes jumpUp {
+  0%   { transform: scale(1) translateY(0); }
+  40%  { transform: scale(1.15) translateY(-18px); }
+  70%  { transform: scale(.97) translateY(-4px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+@keyframes starPop {
+  0%   { transform: scale(0) rotate(-30deg); opacity: 0; }
+  60%  { transform: scale(1.2) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes errorPulse {
+  0%,100% { border-color: rgba(255,255,255,.7); }
+  40%     { border-color: #E74C3C; box-shadow: 0 0 0 4px rgba(231,76,60,.35); }
+}
+
+.shake { animation: shake .5s ease both !important; }
+.error-pulse { animation: errorPulse .5s ease both !important; }
+.jump { animation: jumpUp .45s ease both !important; }
+.disabled { pointer-events: none; }
+
+.choice-card:nth-child(1) { animation: popIn .3s .0s cubic-bezier(.34,1.56,.64,1) both; }
+.choice-card:nth-child(2) { animation: popIn .3s .07s cubic-bezier(.34,1.56,.64,1) both; }
+.choice-card:nth-child(3) { animation: popIn .3s .14s cubic-bezier(.34,1.56,.64,1) both; }
+
+@media (max-width: 480px) {
+  .sound-label { font-size: 1.4rem; }
+  .btn-play-sound { padding: 20px 40px; font-size: 1.6rem; }
+  .choice-card { max-width: 130px; }
+  .choice-emoji { font-size: min(4rem, 14vw); }
+  .choice-name { font-size: 1rem; }
+}
+
+@media (max-width: 360px) {
+  .sound-label { font-size: 1.2rem; }
+  .btn-play-sound { padding: 16px 32px; font-size: 1.4rem; }
+  .choice-card { max-width: 110px; min-width: 80px; }
+  .choice-emoji { font-size: min(3.5rem, 13vw); }
+  .choice-name { font-size: 0.9rem; }
+  .progress-badge { font-size: 1rem; padding: 6px 16px; }
+  .btn-restart { padding: 16px 40px; font-size: 1.3rem; }
+}
+</style>
+</head>
+<body>
+
+<div id="game-screen" class="screen active">
+  <div class="status-bar">
+    <div class="progress-badge" id="progress-badge">1 / 8</div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progress-bar" style="width:12.5%"></div>
+  </div>
+
+  <div class="sound-area">
+    <p class="sound-label">어떤 동물 소리일까요?</p>
+    <button class="btn-play-sound" id="btn-play" onclick="playCurrentSound()">
+      <span class="speaker-icon">🔊</span> 듣기
+    </button>
+  </div>
+
+  <div class="choices-area" id="choices-area"></div>
+</div>
+
+<div id="result-screen" class="screen">
+  <div class="result-card">
+    <div class="result-emoji">🎶</div>
+    <div class="result-title">잘했어요!</div>
+    <div class="result-stars" id="result-stars"></div>
+    <div class="result-subtitle">동물 소리를 잘 맞혔어요!</div>
+    <button class="btn-restart" onclick="restartGame()">다시 하기 🔊</button>
+  </div>
+</div>
+
+<script>
+/* ===== Audio System ===== */
+const AudioSys = (() => {
+  let ctx = null;
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function beep(freq, type, start, dur, vol = .4) {
+    const c = getCtx();
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.connect(gain); gain.connect(c.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, c.currentTime + start);
+    gain.gain.setValueAtTime(vol, c.currentTime + start);
+    gain.gain.exponentialRampToValueAtTime(.001, c.currentTime + start + dur);
+    osc.start(c.currentTime + start);
+    osc.stop(c.currentTime + start + dur + .05);
+  }
+  function slide(from, to, type, start, dur, vol = .4) {
+    const c = getCtx();
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.connect(gain); gain.connect(c.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(from, c.currentTime + start);
+    osc.frequency.linearRampToValueAtTime(to, c.currentTime + start + dur);
+    gain.gain.setValueAtTime(vol, c.currentTime + start);
+    gain.gain.exponentialRampToValueAtTime(.001, c.currentTime + start + dur);
+    osc.start(c.currentTime + start);
+    osc.stop(c.currentTime + start + dur + .05);
+  }
+  return {
+    playCorrect() { beep(523,'sine',0,.12,.5); beep(659,'sine',.12,.12,.5); beep(784,'sine',.24,.22,.5); },
+    playWrong() { beep(300,'square',0,.10,.3); beep(220,'square',.12,.15,.3); },
+    playWin() { [523,659,784,880,1046].forEach((f,i) => beep(f,'sine',i*.12,.18,.4)); },
+    beep, slide, getCtx
+  };
+})();
+
+/* ===== Animal Sound Synthesizer ===== */
+const AnimalSounds = {
+  dog() {
+    // Short high barks - 2 quick pulses
+    AudioSys.beep(800, 'square', 0, .08, .35);
+    AudioSys.beep(850, 'square', .12, .08, .35);
+  },
+  cat() {
+    // Smooth sine wave slide from 600 to 400Hz
+    AudioSys.slide(600, 400, 'sine', 0, .6, .4);
+  },
+  bird() {
+    // High chirp 1200Hz triangle wave
+    AudioSys.beep(1200, 'triangle', 0, .08, .35);
+    AudioSys.beep(1400, 'triangle', .1, .06, .3);
+    AudioSys.beep(1200, 'triangle', .18, .1, .35);
+  },
+  frog() {
+    // Low 200Hz then 300Hz square
+    AudioSys.beep(200, 'square', 0, .15, .35);
+    AudioSys.beep(300, 'square', .2, .15, .35);
+  },
+  cow() {
+    // Long low 150Hz sine
+    AudioSys.slide(150, 140, 'sine', 0, .8, .45);
+  },
+  pig() {
+    // 400Hz nasal-sounding square bursts
+    AudioSys.beep(400, 'square', 0, .06, .3);
+    AudioSys.beep(420, 'square', .08, .06, .3);
+    AudioSys.beep(380, 'square', .16, .06, .3);
+    AudioSys.beep(410, 'square', .24, .08, .3);
+  },
+  chicken() {
+    // 900Hz descending to 600Hz sine
+    AudioSys.slide(900, 600, 'sine', 0, .3, .4);
+    AudioSys.beep(600, 'sine', .35, .15, .35);
+  },
+  duck() {
+    // 500Hz-600Hz alternating square
+    AudioSys.beep(500, 'square', 0, .1, .3);
+    AudioSys.beep(600, 'square', .12, .1, .3);
+    AudioSys.beep(500, 'square', .24, .1, .3);
+  }
+};
+
+/* ===== Animal Data ===== */
+const ANIMALS = [
+  { id: 'dog',     emoji: '🐶', name: '강아지', play: AnimalSounds.dog },
+  { id: 'cat',     emoji: '🐱', name: '고양이', play: AnimalSounds.cat },
+  { id: 'bird',    emoji: '🐦', name: '새',     play: AnimalSounds.bird },
+  { id: 'frog',    emoji: '🐸', name: '개구리', play: AnimalSounds.frog },
+  { id: 'cow',     emoji: '🐄', name: '소',     play: AnimalSounds.cow },
+  { id: 'pig',     emoji: '🐷', name: '돼지',   play: AnimalSounds.pig },
+  { id: 'chicken', emoji: '🐔', name: '닭',     play: AnimalSounds.chicken },
+  { id: 'duck',    emoji: '🐥', name: '오리',   play: AnimalSounds.duck },
+];
+
+/* ===== Fisher-Yates Shuffle ===== */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ===== Reward Reporting ===== */
+function reportReward(stars) {
+  try {
+    const data = JSON.parse(localStorage.getItem('kbr.rewards') || 'null') || {
+      totalStars: 0, totalGames: 0, badges: [], history: [], streak: 0, lastDate: null
+    };
+    data.totalStars += stars;
+    data.totalGames += 1;
+    const today = new Date().toISOString().slice(0, 10);
+    data.history.unshift({ gameId: 'sound_match', area: '청각', stars, date: today, timestamp: Date.now() });
+    if (data.history.length > 100) data.history = data.history.slice(0, 100);
+    if (data.lastDate !== today) {
+      if (data.lastDate) {
+        const diff = Math.floor((new Date(today) - new Date(data.lastDate)) / 86400000);
+        data.streak = diff === 1 ? data.streak + 1 : 1;
+      } else { data.streak = 1; }
+      data.lastDate = today;
+    }
+    localStorage.setItem('kbr.rewards', JSON.stringify(data));
+  } catch {}
+}
+
+/* ===== Screen Helpers ===== */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ===== Game State ===== */
+const state = {
+  totalQuestions: 8,
+  currentQ: 0,
+  score: 0,
+  isBusy: false,
+  questionOrder: [],   // shuffled ANIMALS indices
+  currentAnswer: null, // the correct animal for current question
+};
+
+/* ===== Game Start ===== */
+function restartGame() {
+  state.currentQ = 0;
+  state.score = 0;
+  state.isBusy = false;
+  state.questionOrder = shuffle(ANIMALS);
+  showScreen('game-screen');
+  renderQuestion();
+}
+
+/* ===== Play Current Sound ===== */
+function playCurrentSound() {
+  if (state.currentAnswer) {
+    state.currentAnswer.play();
+  }
+}
+
+/* ===== Render Question ===== */
+function renderQuestion() {
+  const q = state.currentQ;
+  const target = state.questionOrder[q];
+  state.currentAnswer = target;
+
+  document.getElementById('progress-badge').textContent = `${q + 1} / ${state.totalQuestions}`;
+  document.getElementById('progress-bar').style.width = `${((q + 1) / state.totalQuestions) * 100}%`;
+
+  // Reset play button animation
+  const playBtn = document.getElementById('btn-play');
+  playBtn.style.animation = 'none';
+  void playBtn.offsetWidth;
+  playBtn.style.animation = 'popIn .35s cubic-bezier(.34,1.56,.64,1)';
+
+  // Pick 2 wrong animals
+  const others = ANIMALS.filter(a => a.id !== target.id);
+  const wrong2 = shuffle(others).slice(0, 2);
+  const choices = shuffle([target, ...wrong2]);
+
+  const area = document.getElementById('choices-area');
+  area.innerHTML = '';
+
+  choices.forEach(animal => {
+    const card = document.createElement('div');
+    card.className = 'choice-card';
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('data-id', animal.id);
+
+    const emojiEl = document.createElement('span');
+    emojiEl.className = 'choice-emoji';
+    emojiEl.textContent = animal.emoji;
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'choice-name';
+    nameEl.textContent = animal.name;
+
+    card.appendChild(emojiEl);
+    card.appendChild(nameEl);
+
+    card.addEventListener('click', () => onChoiceClick(card, animal.id === target.id));
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') onChoiceClick(card, animal.id === target.id);
+    });
+
+    area.appendChild(card);
+  });
+
+  // Auto-play sound after a brief delay
+  setTimeout(() => playCurrentSound(), 400);
+}
+
+/* ===== Choice Click ===== */
+function onChoiceClick(card, isCorrect) {
+  if (state.isBusy) return;
+
+  if (isCorrect) {
+    state.isBusy = true;
+    state.score++;
+    AudioSys.playCorrect();
+    card.classList.add('jump');
+    showCorrectOverlay();
+    spawnParticles();
+
+    setTimeout(() => {
+      hideCorrectOverlay();
+      state.currentQ++;
+      if (state.currentQ >= state.totalQuestions) {
+        setTimeout(() => {
+          AudioSys.playWin();
+          showResultScreen();
+        }, 150);
+      } else {
+        state.isBusy = false;
+        renderQuestion();
+      }
+    }, 1100);
+  } else {
+    AudioSys.playWrong();
+    card.classList.add('shake', 'error-pulse');
+    card.addEventListener('animationend', () => {
+      card.classList.remove('shake', 'error-pulse');
+    }, { once: true });
+  }
+}
+
+/* ===== Correct Overlay ===== */
+function showCorrectOverlay() {
+  hideCorrectOverlay();
+  const overlay = document.createElement('div');
+  overlay.className = 'correct-overlay';
+  overlay.id = 'correct-overlay';
+
+  const emoji = document.createElement('div');
+  emoji.className = 'correct-emoji-big';
+  emoji.textContent = ['🌟','✨','🎊','🥳','🎉','💫'][Math.floor(Math.random() * 6)];
+
+  const text = document.createElement('div');
+  text.className = 'correct-text';
+  text.textContent = ['잘했어요!','맞았어요!','훌륭해요!','완벽해요!'][Math.floor(Math.random() * 4)];
+
+  overlay.appendChild(emoji);
+  overlay.appendChild(text);
+  document.body.appendChild(overlay);
+}
+
+function hideCorrectOverlay() {
+  const el = document.getElementById('correct-overlay');
+  if (el) el.remove();
+}
+
+/* ===== Particles ===== */
+function spawnParticles() {
+  const emojis = ['🎵','🎶','🎼','💛','🧡'];
+  for (let i = 0; i < 10; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    p.style.left = `${30 + Math.random() * 40}%`;
+    p.style.top = `${30 + Math.random() * 40}%`;
+    p.style.setProperty('--dx', `${(Math.random() - 0.5) * 200}px`);
+    p.style.setProperty('--dy', `${(Math.random() - 0.5) * 200}px`);
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1000);
+  }
+}
+
+/* ===== Result Screen ===== */
+function showResultScreen() {
+  const stars = state.score >= 7 ? 3 : state.score >= 5 ? 2 : 1;
+  reportReward(stars);
+
+  const starsEl = document.getElementById('result-stars');
+  starsEl.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const span = document.createElement('span');
+    span.textContent = i < stars ? '⭐' : '☆';
+    span.style.display = 'inline-block';
+    span.style.animation = `starPop .4s ${i * 0.12}s cubic-bezier(.34,1.56,.64,1) both`;
+    starsEl.appendChild(span);
+  }
+
+  showScreen('result-screen');
+}
+
+/* ===== Init ===== */
+restartGame();
+</script>
+</body>
+</html>

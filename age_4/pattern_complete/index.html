@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta http-equiv="X-Content-Type-Options" content="nosniff"><meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>패턴 완성 게임 🧩</title>
+  <style>
+    :root {
+      --accent:#FF6B35; --accent-h:#e85a25; --mint:#4ECDC4; --mint-h:#38b8ae;
+      --bg:#FFF8F0; --card-bg:#FFFFFF; --text:#333333;
+      --shadow:0 4px 16px rgba(0,0,0,.12); --shadow-lg:0 8px 32px rgba(0,0,0,.18);
+      --radius-sm:12px; --radius-md:20px; --radius-lg:24px;
+      --correct:#2ECC71; --wrong:#E74C3C;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);font-family:'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:hidden;user-select:none}
+
+    .screen{display:none;flex-direction:column;align-items:center;width:100%;max-width:480px;gap:20px}
+    .screen.active{display:flex;animation:fadeIn .4s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Start Screen */
+    #startScreen{text-align:center;gap:28px}
+    .start-logo{font-size:5rem;line-height:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.15));animation:float 2.4s ease-in-out infinite}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+    .start-title{font-size:2.2rem;font-weight:900;color:var(--accent);line-height:1.2}
+    .start-desc{font-size:1.1rem;color:#666;line-height:1.6}
+    .rule-box{background:#fff;border:3px solid var(--mint);border-radius:var(--radius-md);padding:18px 24px;font-size:1rem;color:#444;line-height:1.8;width:100%}
+    .rule-box strong{color:var(--accent)}
+
+    /* Buttons */
+    .btn-primary{background:var(--accent);color:#fff;border:none;border-radius:50px;padding:18px 52px;font-size:1.5rem;font-weight:800;cursor:pointer;box-shadow:0 6px 20px rgba(255,107,53,.35);transition:transform .12s,box-shadow .12s;font-family:inherit}
+    .btn-primary:active{transform:scale(.95);box-shadow:0 2px 8px rgba(255,107,53,.3)}
+
+    /* Game Screen */
+    #gameScreen{gap:0}
+    .rule-banner{background:var(--accent);color:#fff;font-size:1.15rem;font-weight:800;border-radius:50px;padding:10px 28px;letter-spacing:.03em;margin-bottom:14px}
+    .info-bar{display:flex;justify-content:space-between;width:100%;font-size:1rem;color:#888;font-weight:600;margin-bottom:10px}
+    .info-bar span{color:var(--accent);font-size:1.1rem;font-weight:800}
+
+    /* Progress Bar */
+    .progress-wrap{width:100%;height:14px;background:#e0e0e0;border-radius:50px;overflow:hidden;margin-bottom:22px}
+    .progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--mint),var(--accent));border-radius:50px;transition:width .3s ease}
+
+    /* Pattern Row */
+    .pattern-row{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-bottom:28px;min-height:90px}
+    .pattern-item{font-size:3rem;width:64px;height:64px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:var(--radius-sm);box-shadow:var(--shadow)}
+    .pattern-missing{border:3px dashed var(--accent);background:#fff5ee;font-size:2rem;animation:pulse 1s ease-in-out infinite}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+    /* Choices */
+    .choices{display:flex;gap:16px;width:100%;justify-content:center;flex-wrap:wrap}
+    .choice-btn{width:100px;height:100px;font-size:3rem;background:#fff;border:4px solid #e0e0e0;border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);transition:transform .1s,border-color .1s,background .1s;font-family:inherit}
+    .choice-btn:active{transform:scale(.93)}
+    .choice-btn.btn-correct{border-color:var(--correct);background:#eafaf1}
+    .choice-btn.btn-wrong{border-color:var(--wrong);background:#fde8e8}
+
+    /* Correct Overlay */
+    .correct-overlay{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:100}
+    .particle{position:absolute;font-size:2rem;animation:particleFly 1s ease-out forwards}
+    @keyframes particleFly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0.3)}}
+
+    /* Result Screen */
+    #resultScreen{text-align:center;gap:24px}
+    .result-emoji{font-size:5rem;animation:float 2.4s ease-in-out infinite}
+    .result-title{font-size:2rem;font-weight:900;color:var(--accent)}
+    .result-stars{font-size:3.5rem;line-height:1}
+    .result-score{font-size:1.3rem;font-weight:700;color:var(--mint)}
+    .result-msg{font-size:1.3rem;font-weight:700;color:#444;background:#fff;border-radius:var(--radius-md);padding:14px 24px;border:3px solid var(--mint);width:100%}
+
+    /* Responsive */
+    @media(max-width:480px){.pattern-item{font-size:2.5rem;width:54px;height:54px}.choice-btn{width:85px;height:85px;font-size:2.5rem}}
+    @media(max-width:360px){.pattern-item{font-size:2rem;width:46px;height:46px}.choice-btn{width:75px;height:75px;font-size:2.2rem}.start-title{font-size:1.8rem}}
+  </style>
+</head>
+<body>
+
+<div id="startScreen" class="screen active">
+  <div class="start-logo">🧩</div>
+  <div class="start-title">패턴 완성 게임!</div>
+  <div class="start-desc">빠진 조각을 찾아서 <strong style="color:var(--accent)">패턴을 완성</strong>해요!</div>
+  <div class="rule-box">
+    🍎🍌🍎🍌🍎<strong>❓</strong> ← 다음에 올 것은?<br>
+    규칙을 찾아서 빈 칸을 채워요!<br><br>
+    총 <strong>10문제</strong> · 잘 살펴보세요! 👀
+  </div>
+  <button class="btn-primary" id="btnStart">시작! 🚀</button>
+</div>
+
+<div id="gameScreen" class="screen">
+  <div class="rule-banner">🧩 빠진 조각을 찾아요!</div>
+  <div class="info-bar">
+    <div>문제 <span id="qNum">1</span> / 10</div>
+    <div>점수 <span id="score">0</span></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+  <div class="pattern-row" id="patternRow"></div>
+  <div class="choices" id="choicesContainer"></div>
+</div>
+
+<div id="resultScreen" class="screen">
+  <div class="result-emoji" id="resultEmoji">🎉</div>
+  <div class="result-title">게임 끝!</div>
+  <div class="result-stars" id="resultStars"></div>
+  <div class="result-score" id="resultScore"></div>
+  <div class="result-msg" id="resultMsg"></div>
+  <button class="btn-primary" id="btnRestart">다시 하기 🔄</button>
+</div>
+
+<div class="correct-overlay" id="overlay"></div>
+
+<script>
+/* Audio System */
+let audioCtx=null;
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx}
+function playNotes(notes,type='sine',vol=0.4,startAt=0){const ctx=getAudioCtx();let t=ctx.currentTime+startAt;notes.forEach(([freq,dur])=>{const osc=ctx.createOscillator();const gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);osc.type=type;osc.frequency.setValueAtTime(freq,t);gain.gain.setValueAtTime(vol,t);gain.gain.exponentialRampToValueAtTime(0.0001,t+dur);osc.start(t);osc.stop(t+dur+0.01);t+=dur})}
+function playCorrect(){playNotes([[523,.1],[659,.1],[784,.15]],'sine',.35)}
+function playWrong(){playNotes([[300,.12],[220,.22]],'square',.25)}
+function playWin(){playNotes([[523,.1],[587,.1],[659,.1],[784,.12],[1047,.25]],'sine',.3)}
+
+/* Fisher-Yates Shuffle */
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+
+/* Particles */
+function spawnParticles(){const ol=document.getElementById('overlay');ol.innerHTML='';const emojis=['🌟','✨','⭐','💫','🎉'];for(let i=0;i<12;i++){const p=document.createElement('div');p.className='particle';p.textContent=emojis[Math.floor(Math.random()*emojis.length)];p.style.left=Math.random()*100+'%';p.style.top=Math.random()*100+'%';p.style.setProperty('--dx',(Math.random()-0.5)*200+'px');p.style.setProperty('--dy',(Math.random()-0.5)*200+'px');ol.appendChild(p)}setTimeout(()=>{ol.innerHTML=''},1200)}
+
+/* Screen transitions */
+const screens={start:document.getElementById('startScreen'),game:document.getElementById('gameScreen'),result:document.getElementById('resultScreen')};
+function showScreen(name){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[name].classList.add('active')}
+
+/* Pattern definitions */
+const emojiPools={
+  fruits:['🍎','🍌','🍊','🍇','🍓','🍑','🍉'],
+  animals:['🐶','🐱','🐰','🐻','🐸','🐥','🐷'],
+  shapes:['🔴','🔵','🟡','🟢','🟣','🟠'],
+  sky:['⭐','🌙','☀️','🌈','⛅','💧'],
+  food:['🍕','🍔','🍩','🧁','🍪','🍰'],
+  nature:['🌸','🌻','🌺','🍀','🌿','🌵']
+};
+
+const TOTAL_Q=10;
+let questions=[],curQ=0,scoreCount=0,inputLocked=false;
+
+function pickN(arr,n){const s=shuffle([...arr]);return s.slice(0,n)}
+
+function generatePattern(difficulty){
+  const poolKeys=Object.keys(emojiPools);
+  const pool=emojiPools[poolKeys[Math.floor(Math.random()*poolKeys.length)]];
+
+  if(difficulty<=2){
+    // AB pattern: length 6
+    const [a,b]=pickN(pool,2);
+    const pattern=[a,b,a,b,a,b];
+    const missingIdx=5;
+    const answer=b;
+    const distractors=pickN(pool.filter(e=>e!==answer),2);
+    return{pattern,missingIdx,answer,choices:shuffle([answer,...distractors])}
+  } else if(difficulty<=5){
+    // ABC pattern: length 6
+    const [a,b,c]=pickN(pool,3);
+    const pattern=[a,b,c,a,b,c];
+    const missingIdx=5;
+    const answer=c;
+    const distractors=pickN(pool.filter(e=>e!==answer),2);
+    return{pattern,missingIdx,answer,choices:shuffle([answer,...distractors])}
+  } else if(difficulty<=8){
+    // AAB pattern: length 6
+    const [a,b]=pickN(pool,2);
+    const pattern=[a,a,b,a,a,b];
+    const missingIdx=5;
+    const answer=b;
+    const distractors=pickN(pool.filter(e=>e!==answer),2);
+    return{pattern,missingIdx,answer,choices:shuffle([answer,...distractors])}
+  } else {
+    // ABBA pattern: length 6
+    const [a,b]=pickN(pool,2);
+    const pattern=[a,b,b,a,a,b];
+    const missingIdx=5;
+    const answer=b;
+    const distractors=pickN(pool.filter(e=>e!==answer),2);
+    return{pattern,missingIdx,answer,choices:shuffle([answer,...distractors])}
+  }
+}
+
+function generateQuestions(){
+  const qs=[];
+  for(let i=0;i<TOTAL_Q;i++){
+    qs.push(generatePattern(i));
+  }
+  return qs;
+}
+
+function renderQuestion(){
+  inputLocked=false;
+  const q=questions[curQ];
+  document.getElementById('qNum').textContent=curQ+1;
+  document.getElementById('score').textContent=scoreCount;
+  document.getElementById('progressBar').style.width=((curQ)/TOTAL_Q*100)+'%';
+
+  const row=document.getElementById('patternRow');
+  row.innerHTML='';
+  q.pattern.forEach((emoji,i)=>{
+    const div=document.createElement('div');
+    div.className='pattern-item';
+    if(i===q.missingIdx){
+      div.classList.add('pattern-missing');
+      div.textContent='❓';
+      div.id='missingSlot';
+    }else{
+      div.textContent=emoji;
+    }
+    row.appendChild(div);
+  });
+
+  const container=document.getElementById('choicesContainer');
+  container.innerHTML='';
+  q.choices.forEach((emoji,i)=>{
+    const btn=document.createElement('button');
+    btn.className='choice-btn';
+    btn.textContent=emoji;
+    btn.addEventListener('click',()=>handleChoice(btn,emoji));
+    container.appendChild(btn);
+  });
+}
+
+function handleChoice(btn,selected){
+  if(inputLocked)return;
+  inputLocked=true;
+  const q=questions[curQ];
+  const isCorrect=selected===q.answer;
+  const allBtns=document.querySelectorAll('#choicesContainer .choice-btn');
+
+  if(isCorrect){
+    scoreCount++;
+    playCorrect();
+    btn.classList.add('btn-correct');
+    document.getElementById('missingSlot').textContent=q.answer;
+    document.getElementById('missingSlot').classList.remove('pattern-missing');
+    spawnParticles();
+  }else{
+    playWrong();
+    btn.classList.add('btn-wrong');
+    allBtns.forEach(b=>{if(b.textContent===q.answer)b.classList.add('btn-correct')});
+  }
+  allBtns.forEach(b=>b.disabled=true);
+  setTimeout(()=>{curQ++;if(curQ<TOTAL_Q){renderQuestion()}else{endGame()}},900);
+}
+
+function reportReward(stars){
+  try{
+    const data=JSON.parse(localStorage.getItem('kbr.rewards')||'null')||{totalStars:0,totalGames:0,badges:[],history:[],streak:0,lastDate:null};
+    data.totalStars+=stars;data.totalGames+=1;
+    const today=new Date().toISOString().slice(0,10);
+    data.history.unshift({gameId:'pattern_complete',area:'사고력',stars,date:today,timestamp:Date.now()});
+    if(data.history.length>100)data.history=data.history.slice(0,100);
+    if(data.lastDate!==today){if(data.lastDate){const diff=Math.floor((new Date(today)-new Date(data.lastDate))/86400000);data.streak=diff===1?data.streak+1:1}else{data.streak=1}data.lastDate=today}
+    localStorage.setItem('kbr.rewards',JSON.stringify(data));
+  }catch(e){}
+}
+
+function endGame(){
+  playWin();
+  const stars=scoreCount>=9?3:(scoreCount>=6?2:1);
+  reportReward(stars);
+
+  document.getElementById('resultStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+  document.getElementById('resultScore').textContent=scoreCount+' / '+TOTAL_Q+' 문제 맞았어요!';
+
+  let emoji,msg;
+  if(scoreCount===TOTAL_Q){emoji='🏆';msg='완벽해요! 패턴 천재! 👑'}
+  else if(scoreCount>=8){emoji='🎉';msg='정말 잘했어요! 최고예요! 🌟'}
+  else if(scoreCount>=6){emoji='😊';msg='잘했어요! 한 번 더 해볼까요?'}
+  else if(scoreCount>=4){emoji='🙂';msg='조금 더 연습하면 잘할 수 있어요!'}
+  else{emoji='💪';msg='다시 한번 도전해봐요! 파이팅!'}
+
+  document.getElementById('resultEmoji').textContent=emoji;
+  document.getElementById('resultMsg').textContent=msg;
+  showScreen('result');
+}
+
+function startGame(){
+  questions=generateQuestions();curQ=0;scoreCount=0;inputLocked=false;
+  showScreen('game');renderQuestion();
+}
+
+document.getElementById('btnStart').addEventListener('click',()=>{getAudioCtx();startGame()});
+document.getElementById('btnRestart').addEventListener('click',()=>{startGame()});
+</script>
+</body>
+</html>

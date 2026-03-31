@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta http-equiv="X-Content-Type-Options" content="nosniff"><meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>교실 물건 찾기 🏫</title>
+  <style>
+    :root {
+      --accent:#FF6B35; --accent-h:#e85a25; --mint:#4ECDC4; --mint-h:#38b8ae;
+      --bg:#FFF8F0; --card-bg:#FFFFFF; --text:#333333;
+      --shadow:0 4px 16px rgba(0,0,0,.12); --shadow-lg:0 8px 32px rgba(0,0,0,.18);
+      --radius-sm:12px; --radius-md:20px; --radius-lg:24px;
+      --correct:#2ECC71; --wrong:#E74C3C;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);font-family:'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow-x:hidden;user-select:none}
+
+    .screen{display:none;flex-direction:column;align-items:center;width:100%;max-width:480px;gap:20px}
+    .screen.active{display:flex;animation:fadeIn .4s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+    #startScreen{text-align:center;gap:28px}
+    .start-logo{font-size:5rem;line-height:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.15));animation:float 2.4s ease-in-out infinite}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+    .start-title{font-size:2.2rem;font-weight:900;color:var(--accent);line-height:1.2}
+    .start-desc{font-size:1.1rem;color:#666;line-height:1.6}
+    .rule-box{background:#fff;border:3px solid var(--mint);border-radius:var(--radius-md);padding:18px 24px;font-size:1rem;color:#444;line-height:1.8;width:100%}
+    .rule-box strong{color:var(--accent)}
+
+    .btn-primary{background:var(--accent);color:#fff;border:none;border-radius:50px;padding:18px 52px;font-size:1.5rem;font-weight:800;cursor:pointer;box-shadow:0 6px 20px rgba(255,107,53,.35);transition:transform .12s,box-shadow .12s;font-family:inherit}
+    .btn-primary:active{transform:scale(.95);box-shadow:0 2px 8px rgba(255,107,53,.3)}
+
+    #gameScreen{gap:0}
+    .target-banner{background:var(--accent);color:#fff;font-size:1.3rem;font-weight:800;border-radius:50px;padding:12px 28px;letter-spacing:.03em;margin-bottom:14px;text-align:center}
+    .info-bar{display:flex;justify-content:space-between;width:100%;font-size:1rem;color:#888;font-weight:600;margin-bottom:10px}
+    .info-bar span{color:var(--accent);font-size:1.1rem;font-weight:800}
+
+    .progress-wrap{width:100%;height:14px;background:#e0e0e0;border-radius:50px;overflow:hidden;margin-bottom:16px}
+    .progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--mint),var(--accent));border-radius:50px;transition:width .3s ease}
+
+    /* Classroom scene */
+    .classroom{position:relative;width:100%;max-width:480px;height:380px;background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);overflow:hidden;border:3px solid #e8ddd0}
+    .classroom-bg{position:absolute;inset:0;background:linear-gradient(180deg,#e8f4f8 0%,#f5efe6 60%,#d4c4a8 100%);z-index:0}
+    .classroom-item{position:absolute;font-size:2.5rem;cursor:pointer;z-index:1;transition:transform .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.15));line-height:1}
+    .classroom-item:active{transform:scale(1.2)}
+
+    @keyframes foundBounce{0%{transform:scale(1)}30%{transform:scale(1.6)}50%{transform:scale(0.9)}70%{transform:scale(1.3)}100%{transform:scale(1.1)}}
+    .classroom-item.found{animation:foundBounce .6s ease;z-index:10}
+
+    @keyframes wrongShake{0%{transform:translateX(0)}15%{transform:translateX(-5px)}30%{transform:translateX(5px)}45%{transform:translateX(-3px)}60%{transform:translateX(3px)}100%{transform:translateX(0)}}
+    .classroom-item.wrong-click{animation:wrongShake .35s ease}
+
+    .correct-overlay{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:100}
+    .particle{position:absolute;font-size:2rem;animation:particleFly 1s ease-out forwards}
+    @keyframes particleFly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0.3)}}
+
+    #resultScreen{text-align:center;gap:24px}
+    .result-emoji{font-size:5rem;animation:float 2.4s ease-in-out infinite}
+    .result-title{font-size:2rem;font-weight:900;color:var(--accent)}
+    .result-stars{font-size:3.5rem;line-height:1}
+    .result-score{font-size:1.3rem;font-weight:700;color:var(--mint)}
+    .result-msg{font-size:1.3rem;font-weight:700;color:#444;background:#fff;border-radius:var(--radius-md);padding:14px 24px;border:3px solid var(--mint);width:100%}
+
+    @media(max-width:480px){.classroom{height:340px}.classroom-item{font-size:2.2rem}}
+    @media(max-width:360px){.classroom{height:300px}.classroom-item{font-size:2rem}.start-title{font-size:1.8rem}.target-banner{font-size:1.1rem}}
+  </style>
+</head>
+<body>
+
+<div id="startScreen" class="screen active">
+  <div class="start-logo">🏫</div>
+  <div class="start-title">교실 물건 찾기!</div>
+  <div class="start-desc">교실에서 <strong style="color:var(--accent)">물건을 찾아</strong>보세요!</div>
+  <div class="rule-box">
+    위에 나오는 물건을 교실에서 찾아요!<br>
+    여러 물건 중에서 <strong>하나</strong>를 골라요!<br><br>
+    총 <strong>8문제</strong> · 잘 찾아보세요! 🔍
+  </div>
+  <button class="btn-primary" id="btnStart">시작! 🚀</button>
+</div>
+
+<div id="gameScreen" class="screen">
+  <div class="target-banner" id="targetBanner">✏️ 연필을 찾아요!</div>
+  <div class="info-bar">
+    <div>문제 <span id="qNum">1</span> / 8</div>
+    <div>점수 <span id="score">0</span></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+  <div class="classroom" id="classroom">
+    <div class="classroom-bg"></div>
+  </div>
+</div>
+
+<div id="resultScreen" class="screen">
+  <div class="result-emoji" id="resultEmoji">🎉</div>
+  <div class="result-title">게임 끝!</div>
+  <div class="result-stars" id="resultStars"></div>
+  <div class="result-score" id="resultScore"></div>
+  <div class="result-msg" id="resultMsg"></div>
+  <button class="btn-primary" id="btnRestart">다시 하기 🔄</button>
+</div>
+
+<div class="correct-overlay" id="overlay"></div>
+
+<script>
+let audioCtx=null;
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx}
+function playNotes(notes,type='sine',vol=0.4,startAt=0){const ctx=getAudioCtx();let t=ctx.currentTime+startAt;notes.forEach(([freq,dur])=>{const osc=ctx.createOscillator();const gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);osc.type=type;osc.frequency.setValueAtTime(freq,t);gain.gain.setValueAtTime(vol,t);gain.gain.exponentialRampToValueAtTime(0.0001,t+dur);osc.start(t);osc.stop(t+dur+0.01);t+=dur})}
+function playCorrect(){playNotes([[523,.1],[659,.1],[784,.15]],'sine',.35)}
+function playWrong(){playNotes([[300,.12],[220,.22]],'square',.25)}
+function playWin(){playNotes([[523,.1],[587,.1],[659,.1],[784,.12],[1047,.25]],'sine',.3)}
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+
+function spawnParticles(){const ol=document.getElementById('overlay');ol.innerHTML='';const emojis=['🌟','✨','⭐','💫','🎉'];for(let i=0;i<12;i++){const p=document.createElement('div');p.className='particle';p.textContent=emojis[Math.floor(Math.random()*emojis.length)];p.style.left=Math.random()*100+'%';p.style.top=Math.random()*100+'%';p.style.setProperty('--dx',(Math.random()-0.5)*200+'px');p.style.setProperty('--dy',(Math.random()-0.5)*200+'px');ol.appendChild(p)}setTimeout(()=>{ol.innerHTML=''},1200)}
+
+const screens={start:document.getElementById('startScreen'),game:document.getElementById('gameScreen'),result:document.getElementById('resultScreen')};
+function showScreen(name){Object.values(screens).forEach(s=>s.classList.remove('active'));screens[name].classList.add('active')}
+
+const classroomItems=[
+  {emoji:'📚',name:'책'},{emoji:'✏️',name:'연필'},{emoji:'🖍️',name:'크레파스'},
+  {emoji:'✂️',name:'가위'},{emoji:'📏',name:'자'},{emoji:'🎒',name:'가방'},
+  {emoji:'🖌️',name:'붓'},{emoji:'📐',name:'삼각자'},{emoji:'🪑',name:'의자'},
+  {emoji:'🚪',name:'문'},{emoji:'🕐',name:'시계'},{emoji:'📎',name:'클립'},
+  {emoji:'🗑️',name:'휴지통'},{emoji:'🧹',name:'빗자루'},{emoji:'📌',name:'핀'},
+  {emoji:'🖊️',name:'펜'},{emoji:'📓',name:'공책'},{emoji:'🎨',name:'팔레트'}
+];
+
+const TOTAL_Q=8;
+let questions=[],curQ=0,scoreCount=0,inputLocked=false;
+
+function generateQuestions(){
+  const targets=shuffle([...classroomItems]).slice(0,TOTAL_Q);
+  const qs=[];
+  for(let i=0;i<TOTAL_Q;i++){
+    const target=targets[i];
+    const itemCount=12+Math.min(i,4); // 12 to 16
+    const others=shuffle(classroomItems.filter(it=>it.emoji!==target.emoji)).slice(0,itemCount-1);
+    const allItems=[...others,target];
+    // Generate non-overlapping positions
+    const positions=generatePositions(allItems.length);
+    const placed=allItems.map((item,j)=>({...item,x:positions[j].x,y:positions[j].y,isTarget:item.emoji===target.emoji}));
+    qs.push({target,items:shuffle(placed)});
+  }
+  return qs;
+}
+
+function generatePositions(count){
+  const positions=[];
+  const cellSize=60;
+  const padding=20;
+  // Get container dimensions (estimate)
+  const containerW=440;
+  const containerH=340;
+  const cols=Math.floor((containerW-padding*2)/cellSize);
+  const rows=Math.floor((containerH-padding*2)/cellSize);
+  // Create grid slots and shuffle
+  const slots=[];
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      slots.push({
+        x:padding+c*cellSize+Math.random()*10-5,
+        y:padding+r*cellSize+Math.random()*10-5
+      });
+    }
+  }
+  shuffle(slots);
+  return slots.slice(0,count);
+}
+
+function renderQuestion(){
+  inputLocked=false;
+  const q=questions[curQ];
+  document.getElementById('qNum').textContent=curQ+1;
+  document.getElementById('score').textContent=scoreCount;
+  document.getElementById('progressBar').style.width=((curQ)/TOTAL_Q*100)+'%';
+  document.getElementById('targetBanner').textContent=q.target.emoji+' '+q.target.name+'을 찾아요!';
+
+  const classroom=document.getElementById('classroom');
+  // Remove old items but keep bg
+  classroom.querySelectorAll('.classroom-item').forEach(el=>el.remove());
+
+  q.items.forEach((item,i)=>{
+    const div=document.createElement('div');
+    div.className='classroom-item';
+    div.textContent=item.emoji;
+    div.style.left=item.x+'px';
+    div.style.top=item.y+'px';
+    div.addEventListener('click',()=>handleClick(div,item));
+    classroom.appendChild(div);
+  });
+}
+
+function handleClick(el,item){
+  if(inputLocked)return;
+  const q=questions[curQ];
+
+  if(item.isTarget){
+    inputLocked=true;
+    scoreCount++;
+    playCorrect();
+    el.classList.add('found');
+    spawnParticles();
+    const allItems=document.querySelectorAll('.classroom-item');
+    allItems.forEach(it=>it.style.pointerEvents='none');
+    setTimeout(()=>{curQ++;if(curQ<TOTAL_Q){renderQuestion()}else{endGame()}},900);
+  }else{
+    playWrong();
+    el.classList.add('wrong-click');
+    setTimeout(()=>{el.classList.remove('wrong-click')},350);
+  }
+}
+
+function reportReward(stars){
+  try{
+    const data=JSON.parse(localStorage.getItem('kbr.rewards')||'null')||{totalStars:0,totalGames:0,badges:[],history:[],streak:0,lastDate:null};
+    data.totalStars+=stars;data.totalGames+=1;
+    const today=new Date().toISOString().slice(0,10);
+    data.history.unshift({gameId:'classroom_search',area:'관찰력',stars,date:today,timestamp:Date.now()});
+    if(data.history.length>100)data.history=data.history.slice(0,100);
+    if(data.lastDate!==today){if(data.lastDate){const diff=Math.floor((new Date(today)-new Date(data.lastDate))/86400000);data.streak=diff===1?data.streak+1:1}else{data.streak=1}data.lastDate=today}
+    localStorage.setItem('kbr.rewards',JSON.stringify(data));
+  }catch(e){}
+}
+
+function endGame(){
+  playWin();
+  const stars=scoreCount>=7?3:(scoreCount>=5?2:1);
+  reportReward(stars);
+
+  document.getElementById('resultStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+  document.getElementById('resultScore').textContent=scoreCount+' / '+TOTAL_Q+' 문제 맞았어요!';
+
+  let emoji,msg;
+  if(scoreCount===TOTAL_Q){emoji='🏆';msg='완벽해요! 관찰 천재! 👑'}
+  else if(scoreCount>=6){emoji='🎉';msg='정말 잘했어요! 최고예요! 🌟'}
+  else if(scoreCount>=4){emoji='😊';msg='잘했어요! 한 번 더 해볼까요?'}
+  else if(scoreCount>=3){emoji='🙂';msg='조금 더 연습하면 잘할 수 있어요!'}
+  else{emoji='💪';msg='다시 한번 도전해봐요! 파이팅!'}
+
+  document.getElementById('resultEmoji').textContent=emoji;
+  document.getElementById('resultMsg').textContent=msg;
+  showScreen('result');
+}
+
+function startGame(){
+  questions=generateQuestions();curQ=0;scoreCount=0;inputLocked=false;
+  showScreen('game');renderQuestion();
+}
+
+document.getElementById('btnStart').addEventListener('click',()=>{getAudioCtx();startGame()});
+document.getElementById('btnRestart').addEventListener('click',()=>{startGame()});
+</script>
+</body>
+</html>

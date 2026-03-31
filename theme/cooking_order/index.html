@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta http-equiv="X-Content-Type-Options" content="nosniff"><meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>요리 순서 맞추기 🍰</title>
+  <style>
+    :root {
+      --accent:#FF6B35; --accent-h:#e85a25; --mint:#4ECDC4; --mint-h:#38b8ae;
+      --bg:#FFF8F0; --card-bg:#FFFFFF; --text:#333333;
+      --shadow:0 4px 16px rgba(0,0,0,.12); --shadow-lg:0 8px 32px rgba(0,0,0,.18);
+      --radius-sm:12px; --radius-md:20px; --radius-lg:24px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      font-family:'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+      background:var(--bg);color:var(--text);min-height:100vh;
+      display:flex;flex-direction:column;align-items:center;
+      padding:16px 12px 40px;user-select:none;-webkit-user-select:none;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .header{text-align:center;margin-bottom:14px;}
+    .header h1{font-size:clamp(1.4rem,5vw,2rem);font-weight:800;color:var(--accent);}
+    .header .subtitle{font-size:clamp(.8rem,2.5vw,.95rem);color:#888;margin-top:4px;}
+
+    .screen{width:100%;max-width:500px;display:none;flex-direction:column;align-items:center;gap:14px;}
+    .screen.active{display:flex;animation:fadeIn .3s ease;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+    .btn{
+      padding:14px 32px;border:none;border-radius:var(--radius-sm);font-family:inherit;
+      font-size:1.05rem;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s;
+      box-shadow:var(--shadow);color:#fff;
+    }
+    .btn:active{transform:scale(.95);}
+    .btn-accent{background:linear-gradient(135deg,var(--accent),#ff8f5e);}
+    .btn-mint{background:linear-gradient(135deg,var(--mint),#6ee0d8);}
+
+    .start-emoji{font-size:4rem;animation:bounce 1s infinite;}
+    @keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+    .start-title{font-size:clamp(1.1rem,3.5vw,1.4rem);font-weight:700;text-align:center;}
+    .start-desc{font-size:.9rem;color:#777;text-align:center;line-height:1.5;}
+
+    /* Game top */
+    .game-top{
+      width:100%;display:flex;justify-content:space-between;align-items:center;
+      background:var(--card-bg);border-radius:14px;padding:10px 16px;box-shadow:var(--shadow);
+    }
+    .game-top-left{font-size:.85rem;font-weight:700;color:var(--accent);}
+    .game-top-right{font-size:.8rem;color:#888;}
+
+    .progress-wrap{width:100%;height:8px;background:#e8e8e8;border-radius:4px;overflow:hidden;}
+    .progress-fill{height:100%;background:linear-gradient(90deg,var(--mint),var(--accent));border-radius:4px;transition:width .3s ease;width:0%;}
+
+    /* Recipe title */
+    .recipe-title{
+      font-size:1.3rem;font-weight:800;text-align:center;
+      background:var(--card-bg);border-radius:var(--radius-sm);
+      padding:14px 20px;box-shadow:var(--shadow);width:100%;
+    }
+    .recipe-emoji{font-size:2.5rem;display:block;margin-bottom:6px;}
+
+    /* Steps area */
+    .steps-area{width:100%;display:flex;flex-direction:column;gap:10px;}
+    .step-card{
+      display:flex;align-items:center;gap:12px;padding:14px 18px;
+      background:var(--card-bg);border-radius:var(--radius-sm);box-shadow:var(--shadow);
+      cursor:pointer;transition:all .2s;border:3px solid transparent;
+      font-size:1rem;font-weight:600;
+    }
+    .step-card:active{transform:scale(.97);}
+    .step-card .step-emoji{font-size:2rem;flex-shrink:0;}
+    .step-card .step-num{
+      width:28px;height:28px;border-radius:50%;background:#e0e0e0;
+      display:flex;align-items:center;justify-content:center;
+      font-size:.8rem;font-weight:800;color:#999;flex-shrink:0;
+    }
+    .step-card.done{
+      border-color:var(--mint);background:#E8FFF8;opacity:.7;pointer-events:none;
+    }
+    .step-card.done .step-num{background:var(--mint);color:#fff;}
+    .step-card.wrong{animation:shake .4s ease;}
+    @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+
+    /* Completed area */
+    .completed-label{font-size:.85rem;color:#888;font-weight:600;text-align:center;}
+
+    /* Correct overlay */
+    .correct-overlay{
+      position:fixed;top:0;left:0;width:100%;height:100%;
+      display:none;align-items:center;justify-content:center;
+      background:rgba(78,205,196,.15);z-index:100;
+    }
+    .correct-overlay.show{display:flex;}
+    .correct-overlay .co-emoji{font-size:5rem;animation:popIn .3s ease;}
+    @keyframes popIn{from{transform:scale(0);}to{transform:scale(1);}}
+
+    /* Wrong msg */
+    .wrong-msg{
+      position:fixed;bottom:20%;left:50%;transform:translateX(-50%);
+      background:#FF6B6B;color:#fff;padding:10px 24px;border-radius:var(--radius-sm);
+      font-weight:700;font-size:.95rem;display:none;z-index:100;
+      animation:fadeIn .3s ease;
+    }
+    .wrong-msg.show{display:block;}
+
+    /* Result */
+    .result-emoji{font-size:5rem;}
+    .result-score{font-size:1.1rem;font-weight:700;text-align:center;color:var(--accent);}
+    .result-stars{font-size:2.5rem;text-align:center;}
+    .result-msg{font-size:1rem;color:#777;text-align:center;}
+
+    .particle{
+      position:fixed;width:8px;height:8px;border-radius:50%;pointer-events:none;
+      animation:particleFly .8s ease-out forwards;z-index:999;
+    }
+    @keyframes particleFly{
+      0%{opacity:1;transform:translate(0,0) scale(1);}
+      100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0);}
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>요리 순서 맞추기 🍰</h1>
+    <div class="subtitle">요리 순서를 맞춰봐요!</div>
+  </div>
+
+  <div class="screen active" id="screen-start">
+    <div class="start-emoji">👨‍🍳</div>
+    <div class="start-title">요리 순서를 맞춰볼까요?</div>
+    <div class="start-desc">요리 단계를 순서대로 눌러봐요!<br>1번부터 차례대로 골라요 🥄</div>
+    <button class="btn btn-accent" onclick="startGame()">시작하기 🍳</button>
+  </div>
+
+  <div class="screen" id="screen-game">
+    <div class="game-top">
+      <div class="game-top-left" id="round-label">1 / 8</div>
+      <div class="game-top-right" id="score-label">⭐ 0</div>
+    </div>
+    <div class="progress-wrap"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="recipe-title" id="recipe-title">
+      <span class="recipe-emoji" id="recipe-emoji">🎂</span>
+      <span id="recipe-name">케이크 만들기</span>
+    </div>
+    <div class="completed-label" id="completed-label">순서대로 눌러봐요! 👇</div>
+    <div class="steps-area" id="steps-area"></div>
+  </div>
+
+  <div class="correct-overlay" id="correct-overlay">
+    <div class="co-emoji">🎉</div>
+  </div>
+
+  <div class="wrong-msg" id="wrong-msg">다시 생각해봐요! 🤔</div>
+
+  <div class="screen" id="screen-result">
+    <div class="result-emoji" id="result-emoji">🏆</div>
+    <div class="result-score" id="result-score">8 / 8 레시피 완성!</div>
+    <div class="result-stars" id="result-stars">⭐⭐⭐</div>
+    <div class="result-msg" id="result-msg">요리 천재!</div>
+    <button class="btn btn-accent" onclick="startGame()">다시 하기 🔄</button>
+  </div>
+
+<script>
+const AudioSys=(()=>{let ctx=null;function getCtx(){if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();return ctx;}function beep(freq,type,start,dur,vol=.4){const c=getCtx(),osc=c.createOscillator(),gain=c.createGain();osc.connect(gain);gain.connect(c.destination);osc.type=type;osc.frequency.setValueAtTime(freq,c.currentTime+start);gain.gain.setValueAtTime(vol,c.currentTime+start);gain.gain.exponentialRampToValueAtTime(.001,c.currentTime+start+dur);osc.start(c.currentTime+start);osc.stop(c.currentTime+start+dur+.05);}return{playCorrect(){beep(523,'sine',0,.12,.5);beep(659,'sine',.12,.12,.5);beep(784,'sine',.24,.22,.5);},playWrong(){beep(300,'square',0,.10,.3);beep(220,'square',.12,.15,.3);},playWin(){[523,659,784,880,1046].forEach((f,i)=>beep(f,'sine',i*.12,.18,.4));},};})();
+
+function reportReward(stars){
+  try{
+    const data=JSON.parse(localStorage.getItem('kbr.rewards')||'null')||{totalStars:0,totalGames:0,badges:[],history:[],streak:0,lastDate:null};
+    data.totalStars+=stars;data.totalGames+=1;
+    const today=new Date().toISOString().slice(0,10);
+    data.history.unshift({gameId:'cooking_order',area:'사고력',stars,date:today,timestamp:Date.now()});
+    if(data.history.length>100)data.history=data.history.slice(0,100);
+    if(data.lastDate!==today){if(data.lastDate){const diff=Math.floor((new Date(today)-new Date(data.lastDate))/86400000);data.streak=diff===1?data.streak+1:1;}else{data.streak=1;}data.lastDate=today;}
+    localStorage.setItem('kbr.rewards',JSON.stringify(data));
+  }catch(e){}
+}
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+const RECIPES=[
+  {name:'케이크 만들기',emoji:'🎂',steps:[
+    {text:'밀가루 넣기',emoji:'🌾'},{text:'계란 깨기',emoji:'🥚'},
+    {text:'반죽 젓기',emoji:'🥄'},{text:'오븐에 굽기',emoji:'🔥'}
+  ]},
+  {name:'샌드위치 만들기',emoji:'🥪',steps:[
+    {text:'빵 놓기',emoji:'🍞'},{text:'야채 올리기',emoji:'🥬'},
+    {text:'치즈 올리기',emoji:'🧀'},{text:'빵 덮기',emoji:'🍞'}
+  ]},
+  {name:'쿠키 만들기',emoji:'🍪',steps:[
+    {text:'반죽 만들기',emoji:'🥣'},{text:'모양 찍기',emoji:'⭐'},
+    {text:'오븐에 굽기',emoji:'🔥'},{text:'접시에 담기',emoji:'🍽️'}
+  ]},
+  {name:'주스 만들기',emoji:'🧃',steps:[
+    {text:'과일 자르기',emoji:'🔪'},{text:'믹서기에 넣기',emoji:'🫙'},
+    {text:'갈기',emoji:'🌀'},{text:'컵에 따르기',emoji:'🥤'}
+  ]},
+  {name:'피자 만들기',emoji:'🍕',steps:[
+    {text:'반죽 펴기',emoji:'🫓'},{text:'소스 바르기',emoji:'🥫'},
+    {text:'토핑 올리기',emoji:'🧀'},{text:'오븐에 굽기',emoji:'🔥'}
+  ]},
+  {name:'김밥 만들기',emoji:'🍙',steps:[
+    {text:'밥 펴기',emoji:'🍚'},{text:'재료 놓기',emoji:'🥕'},
+    {text:'돌돌 말기',emoji:'🌀'},{text:'잘라서 접시에',emoji:'🔪'}
+  ]},
+  {name:'샐러드 만들기',emoji:'🥗',steps:[
+    {text:'야채 씻기',emoji:'💧'},{text:'야채 자르기',emoji:'🔪'},
+    {text:'그릇에 담기',emoji:'🥗'},{text:'드레싱 뿌리기',emoji:'🫗'}
+  ]},
+  {name:'핫초코 만들기',emoji:'☕',steps:[
+    {text:'우유 데우기',emoji:'🥛'},{text:'초코 넣기',emoji:'🍫'},
+    {text:'젓기',emoji:'🥄'},{text:'마시멜로 올리기',emoji:'☁️'}
+  ]},
+];
+
+const TOTAL_Q=8;
+let curQ=0, score=0, nextStep=0, recipeOrder=[], currentRecipe=null;
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame(){
+  curQ=0;score=0;
+  recipeOrder=shuffle([...Array(RECIPES.length).keys()]).slice(0,TOTAL_Q);
+  showScreen('screen-game');
+  loadRound();
+}
+
+function loadRound(){
+  nextStep=0;
+  currentRecipe=RECIPES[recipeOrder[curQ]];
+  document.getElementById('round-label').textContent=(curQ+1)+' / '+TOTAL_Q;
+  document.getElementById('score-label').textContent='⭐ '+score;
+  document.getElementById('progress-fill').style.width=(curQ/TOTAL_Q*100)+'%';
+  document.getElementById('recipe-emoji').textContent=currentRecipe.emoji;
+  document.getElementById('recipe-name').textContent=currentRecipe.name;
+  document.getElementById('completed-label').textContent='순서대로 눌러봐요! 👇';
+
+  const area=document.getElementById('steps-area');
+  area.innerHTML='';
+  const shuffled=shuffle(currentRecipe.steps.map((s,i)=>({...s,idx:i})));
+  shuffled.forEach(step=>{
+    const card=document.createElement('div');
+    card.className='step-card';
+    card.dataset.idx=step.idx;
+    card.innerHTML=`<div class="step-num">&nbsp;</div><div class="step-emoji">${step.emoji}</div><div>${step.text}</div>`;
+    card.onclick=()=>handleStepClick(card,step.idx);
+    area.appendChild(card);
+  });
+}
+
+function handleStepClick(card,idx){
+  if(card.classList.contains('done'))return;
+  if(idx===nextStep){
+    AudioSys.playCorrect();
+    card.classList.add('done');
+    card.querySelector('.step-num').textContent=nextStep+1;
+    nextStep++;
+    spawnParticles(card);
+
+    if(nextStep>=currentRecipe.steps.length){
+      score++;
+      showCorrectOverlay();
+      setTimeout(()=>{
+        curQ++;
+        if(curQ<TOTAL_Q){loadRound();}
+        else{endGame();}
+      },1000);
+    }
+  }else{
+    AudioSys.playWrong();
+    card.classList.add('wrong');
+    showWrongMsg();
+    setTimeout(()=>card.classList.remove('wrong'),400);
+  }
+}
+
+function showCorrectOverlay(){
+  const o=document.getElementById('correct-overlay');
+  o.classList.add('show');
+  setTimeout(()=>o.classList.remove('show'),800);
+}
+
+function showWrongMsg(){
+  const m=document.getElementById('wrong-msg');
+  m.classList.add('show');
+  setTimeout(()=>m.classList.remove('show'),1200);
+}
+
+function endGame(){
+  AudioSys.playWin();
+  const stars=score>=7?3:(score>=5?2:1);
+  reportReward(stars);
+
+  document.getElementById('result-stars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+  document.getElementById('result-score').textContent=score+' / '+TOTAL_Q+' 레시피 완성!';
+
+  let emoji,msg;
+  if(score===TOTAL_Q){emoji='🏆';msg='완벽해요! 요리 천재! 👑';}
+  else if(score>=6){emoji='😊';msg='잘했어요! 훌륭한 요리사!';}
+  else if(score>=4){emoji='👍';msg='좋아요! 조금만 더 연습해요!';}
+  else{emoji='💪';msg='괜찮아요! 다시 해봐요!';}
+
+  document.getElementById('result-emoji').textContent=emoji;
+  document.getElementById('result-msg').textContent=msg;
+  document.getElementById('progress-fill').style.width='100%';
+  showScreen('screen-result');
+}
+
+function spawnParticles(el){
+  const rect=el.getBoundingClientRect();
+  const x=rect.left+rect.width/2;
+  const y=rect.top+rect.height/2;
+  const colors=['#FF6B35','#4ECDC4','#FFD166','#FF4757','#2F86FF'];
+  for(let i=0;i<10;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    p.style.left=x+'px';p.style.top=y+'px';
+    p.style.background=colors[Math.floor(Math.random()*colors.length)];
+    const angle=Math.random()*Math.PI*2;
+    const dist=30+Math.random()*60;
+    p.style.setProperty('--dx',Math.cos(angle)*dist+'px');
+    p.style.setProperty('--dy',Math.sin(angle)*dist+'px');
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),850);
+  }
+}
+</script>
+</body>
+</html>

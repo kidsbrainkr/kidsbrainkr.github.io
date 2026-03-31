@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta http-equiv="X-Content-Type-Options" content="nosniff"><meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>공룡 이름 맞추기 🦖</title>
+  <style>
+    :root {
+      --accent:#FF6B35; --accent-h:#e85a25; --mint:#4ECDC4; --mint-h:#38b8ae;
+      --bg:#FFF8F0; --card-bg:#FFFFFF; --text:#333333;
+      --shadow:0 4px 16px rgba(0,0,0,.12); --shadow-lg:0 8px 32px rgba(0,0,0,.18);
+      --radius-sm:12px; --radius-md:20px; --radius-lg:24px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      font-family:'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+      background:var(--bg);color:var(--text);
+      min-height:100vh;display:flex;flex-direction:column;align-items:center;
+      padding:16px 12px 40px;user-select:none;-webkit-user-select:none;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .header{text-align:center;margin-bottom:14px;}
+    .header h1{font-size:clamp(1.4rem,5vw,2rem);font-weight:800;color:var(--accent);}
+    .header .subtitle{font-size:clamp(.8rem,2.5vw,.95rem);color:#888;margin-top:4px;}
+
+    .screen{width:100%;max-width:500px;display:none;flex-direction:column;align-items:center;gap:14px;}
+    .screen.active{display:flex;animation:fadeIn .3s ease;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+    .start-card{
+      background:var(--card-bg);border-radius:var(--radius-lg);padding:30px 24px;
+      text-align:center;box-shadow:var(--shadow-lg);width:100%;
+    }
+    .start-card .big-emoji{font-size:4rem;margin-bottom:10px;}
+    .start-card .title{font-size:1.3rem;font-weight:700;margin-bottom:8px;}
+    .start-card .desc{font-size:.9rem;color:#777;line-height:1.5;margin-bottom:18px;}
+
+    .btn-primary{
+      display:inline-block;padding:14px 36px;border:none;border-radius:var(--radius-md);
+      font-family:inherit;font-size:1.05rem;font-weight:700;color:#fff;
+      background:linear-gradient(135deg,var(--accent),var(--accent-h));
+      cursor:pointer;box-shadow:var(--shadow);transition:transform .15s;
+    }
+    .btn-primary:hover{transform:translateY(-2px);}
+    .btn-primary:active{transform:scale(.97);}
+
+    .game-top{
+      width:100%;display:flex;justify-content:space-between;align-items:center;
+      background:var(--card-bg);border-radius:14px;padding:10px 16px;box-shadow:var(--shadow);
+    }
+    .game-top-left{font-size:.85rem;font-weight:700;color:var(--accent);}
+    .game-top-right{font-size:.8rem;color:#888;}
+
+    .progress-wrap{width:100%;height:8px;background:#e8e8e8;border-radius:4px;overflow:hidden;}
+    .progress-fill{height:100%;background:linear-gradient(90deg,var(--mint),var(--accent));border-radius:4px;transition:width .3s ease;width:0%;}
+
+    .question-card{
+      background:var(--card-bg);border-radius:var(--radius-lg);padding:24px 20px;
+      text-align:center;box-shadow:var(--shadow-lg);width:100%;
+    }
+    .dino-emoji{font-size:5rem;margin-bottom:10px;display:block;}
+    .dino-hint{
+      font-size:1.1rem;font-weight:600;color:var(--mint);
+      background:#E0F7F0;padding:10px 16px;border-radius:var(--radius-sm);
+      margin-top:8px;
+    }
+
+    .choices{display:flex;flex-direction:column;gap:12px;width:100%;}
+    .choice-btn{
+      display:flex;align-items:center;gap:12px;padding:16px 20px;
+      border:3px solid #eee;border-radius:var(--radius-md);
+      background:var(--card-bg);font-family:inherit;font-size:1.05rem;font-weight:700;
+      cursor:pointer;transition:all .2s;box-shadow:var(--shadow);
+    }
+    .choice-btn:hover{border-color:var(--accent);transform:translateY(-2px);}
+    .choice-btn:active{transform:scale(.97);}
+    .choice-btn.correct{border-color:#38b8ae;background:#D4EDDA;animation:correctPulse .5s;}
+    .choice-btn.wrong{border-color:#e74c3c;background:#FDECEA;animation:wrongShake .4s;}
+    @keyframes correctPulse{0%{transform:scale(1);}50%{transform:scale(1.04);}100%{transform:scale(1);}}
+    @keyframes wrongShake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+
+    .fact-box{
+      background:linear-gradient(135deg,#FFF3E0,#E0F7F0);
+      border-radius:var(--radius-sm);padding:12px 16px;width:100%;
+      font-size:.85rem;color:#555;line-height:1.5;text-align:center;
+      display:none;
+    }
+    .fact-box.show{display:block;animation:fadeIn .3s ease;}
+
+    .correct-overlay{
+      position:fixed;top:0;left:0;width:100%;height:100%;
+      display:none;align-items:center;justify-content:center;z-index:100;
+      background:rgba(0,0,0,.3);
+    }
+    .correct-overlay.show{display:flex;animation:fadeIn .3s ease;}
+    .correct-box{
+      background:var(--card-bg);border-radius:var(--radius-lg);padding:30px 40px;
+      text-align:center;box-shadow:var(--shadow-lg);
+    }
+    .correct-box .emoji{font-size:3rem;}
+    .correct-box .msg{font-size:1.2rem;font-weight:700;color:var(--accent);margin-top:8px;}
+
+    .particle-container{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99;}
+    .particle{
+      position:absolute;width:10px;height:10px;border-radius:50%;
+      animation:particleFall 1s ease-out forwards;
+    }
+    @keyframes particleFall{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(120px) scale(0);}}
+
+    .result-card{
+      background:var(--card-bg);border-radius:var(--radius-lg);padding:30px 24px;
+      text-align:center;box-shadow:var(--shadow-lg);width:100%;
+    }
+    .result-card .result-emoji{font-size:3.5rem;}
+    .result-card .result-title{font-size:1.4rem;font-weight:800;color:var(--accent);margin:10px 0;}
+    .result-card .result-detail{font-size:.9rem;color:#888;margin-bottom:6px;}
+    .stars-display{font-size:2.5rem;margin:10px 0;}
+    .star{display:inline-block;opacity:.25;}
+    .star.earned{opacity:1;animation:starPop .4s cubic-bezier(.34,1.56,.64,1);}
+    @keyframes starPop{0%{transform:scale(0);}100%{transform:scale(1);}}
+
+    @media(max-width:480px){.dino-emoji{font-size:4rem;}}
+    @media(max-width:360px){body{padding:10px 8px 30px;}.dino-emoji{font-size:3.5rem;}}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>공룡 이름 맞추기 🦖</h1>
+    <div class="subtitle">공룡의 특징을 보고 이름을 맞춰보세요!</div>
+  </div>
+
+  <div class="screen active" id="startScreen">
+    <div class="start-card">
+      <div class="big-emoji">🦖🦕</div>
+      <div class="title">공룡 박사가 되어보세요!</div>
+      <div class="desc">공룡의 모습과 특징을 보고<br>이름을 맞춰보는 퀴즈예요.</div>
+      <button class="btn-primary" onclick="startGame()">🎮 시작하기</button>
+    </div>
+  </div>
+
+  <div class="screen" id="gameScreen">
+    <div class="game-top">
+      <div class="game-top-left">문제 <span id="qNum">1</span>/10</div>
+      <div class="game-top-right">맞힌 수: <span id="correctCount">0</span></div>
+    </div>
+    <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="question-card">
+      <span class="dino-emoji" id="dinoEmoji"></span>
+      <div class="dino-hint" id="dinoHint"></div>
+    </div>
+    <div class="choices" id="choices"></div>
+    <div class="fact-box" id="factBox"></div>
+  </div>
+
+  <div class="screen" id="resultScreen">
+    <div class="result-card">
+      <div class="result-emoji">🏆</div>
+      <div class="result-title">퀴즈 완료!</div>
+      <div class="result-detail" id="resultDetail"></div>
+      <div class="stars-display" id="starsDisplay"></div>
+      <button class="btn-primary" onclick="resetGame()" style="margin-top:16px;">🔄 다시 하기</button>
+    </div>
+  </div>
+
+  <div class="correct-overlay" id="correctOverlay">
+    <div class="correct-box"><div class="emoji">🎉</div><div class="msg">정답이에요!</div></div>
+  </div>
+  <div class="particle-container" id="particleContainer"></div>
+
+  <script>
+    const AudioSys=(()=>{
+      let ctx=null;
+      function getCtx(){if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();return ctx;}
+      function beep(freq,type,start,dur,vol=.4){
+        const c=getCtx(),osc=c.createOscillator(),gain=c.createGain();
+        osc.connect(gain);gain.connect(c.destination);
+        osc.type=type;osc.frequency.setValueAtTime(freq,c.currentTime+start);
+        gain.gain.setValueAtTime(vol,c.currentTime+start);
+        gain.gain.exponentialRampToValueAtTime(.001,c.currentTime+start+dur);
+        osc.start(c.currentTime+start);osc.stop(c.currentTime+start+dur+.05);
+      }
+      return{
+        playCorrect(){beep(523,'sine',0,.12,.5);beep(659,'sine',.12,.12,.5);beep(784,'sine',.24,.22,.5);},
+        playWrong(){beep(300,'square',0,.10,.3);beep(220,'square',.12,.15,.3);},
+        playWin(){[523,659,784,880,1046].forEach((f,i)=>beep(f,'sine',i*.12,.18,.4));},
+      };
+    })();
+
+    function reportReward(stars){
+      try{
+        const data=JSON.parse(localStorage.getItem('kbr.rewards')||'null')||{totalStars:0,totalGames:0,badges:[],history:[],streak:0,lastDate:null};
+        data.totalStars+=stars;data.totalGames+=1;
+        const today=new Date().toISOString().slice(0,10);
+        data.history.unshift({gameId:'dino_name',area:'지식',stars,date:today,timestamp:Date.now()});
+        if(data.history.length>100)data.history=data.history.slice(0,100);
+        if(data.lastDate!==today){if(data.lastDate){const d=Math.floor((new Date(today)-new Date(data.lastDate))/86400000);data.streak=d===1?data.streak+1:1;}else{data.streak=1;}data.lastDate=today;}
+        localStorage.setItem('kbr.rewards',JSON.stringify(data));
+      }catch(e){}
+    }
+
+    function shuffle(arr){
+      const a=[...arr];
+      for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+      return a;
+    }
+
+    function showParticles(){
+      const container=document.getElementById('particleContainer');
+      const colors=['#FF6B35','#4ECDC4','#FFD86F','#FF8E53','#84FAB0'];
+      for(let i=0;i<20;i++){
+        const p=document.createElement('div');
+        p.className='particle';
+        p.style.left=Math.random()*100+'%';
+        p.style.top=(Math.random()*40+20)+'%';
+        p.style.background=colors[Math.floor(Math.random()*colors.length)];
+        p.style.width=p.style.height=(Math.random()*8+6)+'px';
+        p.style.animationDelay=Math.random()*.3+'s';
+        container.appendChild(p);
+      }
+      setTimeout(()=>container.innerHTML='',1500);
+    }
+
+    const dinos=[
+      {emoji:'🦕',name:'브라키오사우루스',hint:'목이 아주 길어요',fact:'브라키오사우루스는 키가 13미터나 되었어요! 나무 꼭대기의 잎을 먹었답니다.'},
+      {emoji:'🦖',name:'티라노사우루스',hint:'이빨이 아주 날카로워요',fact:'티라노사우루스의 이빨은 바나나만큼 컸어요! 가장 무서운 육식공룡이었답니다.'},
+      {emoji:'🐊',name:'스테고사우루스',hint:'등에 뾰족한 판이 있어요',fact:'스테고사우루스의 등 판은 체온을 조절하는 데 도움을 줬어요!'},
+      {emoji:'🦎',name:'트리케라톱스',hint:'머리에 뿔이 세 개예요',fact:'트리케라톱스는 뿔 세 개로 적에게서 자신을 보호했어요!'},
+      {emoji:'🐉',name:'프테라노돈',hint:'하늘을 날아다녀요',fact:'프테라노돈의 날개를 펼치면 7미터나 되었어요! 하늘의 왕이었답니다.'},
+      {emoji:'🦴',name:'안킬로사우루스',hint:'꼬리에 망치가 있어요',fact:'안킬로사우루스는 온 몸이 갑옷처럼 단단했고, 꼬리 끝에 큰 뼈 망치가 있었어요!'},
+      {emoji:'🥚',name:'오비랩터',hint:'알을 돌봐요',fact:'오비랩터는 알을 품어서 아기 공룡을 돌보는 좋은 부모였어요!'},
+      {emoji:'🌊',name:'플레시오사우루스',hint:'바다에서 살아요',fact:'플레시오사우루스는 바다에서 살았고, 긴 목으로 물고기를 잡아먹었어요!'},
+    ];
+
+    let questions=[], currentQ=0, correctTotal=0, answered=false;
+    const TOTAL_Q=10;
+
+    function showScreen(id){
+      document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function startGame(){
+      // Build 10 questions from pool
+      questions=[];
+      const pool=shuffle(dinos);
+      for(let i=0;i<TOTAL_Q;i++){
+        questions.push(pool[i%pool.length]);
+      }
+      questions=shuffle(questions);
+      currentQ=0;correctTotal=0;
+      showQuestion();
+      showScreen('gameScreen');
+    }
+
+    function showQuestion(){
+      answered=false;
+      const q=questions[currentQ];
+      document.getElementById('qNum').textContent=currentQ+1;
+      document.getElementById('correctCount').textContent=correctTotal;
+      document.getElementById('progressFill').style.width=((currentQ)/TOTAL_Q*100)+'%';
+      document.getElementById('dinoEmoji').textContent=q.emoji;
+      document.getElementById('dinoHint').textContent='💡 '+q.hint;
+      document.getElementById('factBox').classList.remove('show');
+
+      // Build 3 choices: correct + 2 wrong
+      const wrong=shuffle(dinos.filter(d=>d.name!==q.name)).slice(0,2);
+      const choices=shuffle([q,...wrong]);
+
+      const choicesEl=document.getElementById('choices');
+      choicesEl.innerHTML='';
+      choices.forEach(c=>{
+        const btn=document.createElement('button');
+        btn.className='choice-btn';
+        btn.innerHTML=`<span style="font-size:1.5rem">${c.emoji}</span> ${c.name}`;
+        btn.onclick=()=>answer(btn,c.name===q.name,q);
+        choicesEl.appendChild(btn);
+      });
+    }
+
+    function answer(btn,isCorrect,q){
+      if(answered)return;
+      answered=true;
+      const btns=document.querySelectorAll('.choice-btn');
+
+      if(isCorrect){
+        btn.classList.add('correct');
+        correctTotal++;
+        AudioSys.playCorrect();
+        showParticles();
+        document.getElementById('correctCount').textContent=correctTotal;
+      }else{
+        btn.classList.add('wrong');
+        AudioSys.playWrong();
+        btns.forEach(b=>{
+          if(b.textContent.includes(q.name))b.classList.add('correct');
+        });
+      }
+
+      // Show fact
+      const factBox=document.getElementById('factBox');
+      factBox.textContent='📚 '+q.fact;
+      factBox.classList.add('show');
+
+      setTimeout(()=>{
+        currentQ++;
+        if(currentQ>=TOTAL_Q){
+          showResult();
+        }else{
+          showQuestion();
+        }
+      },2200);
+    }
+
+    function showResult(){
+      AudioSys.playWin();showParticles();
+      let stars=1;
+      if(correctTotal>=9)stars=3;
+      else if(correctTotal>=7)stars=2;
+
+      document.getElementById('resultDetail').textContent=`10문제 중 ${correctTotal}개 맞혔어요!`;
+      const sd=document.getElementById('starsDisplay');
+      sd.innerHTML='';
+      for(let i=0;i<3;i++){
+        const s=document.createElement('span');
+        s.className='star'+(i<stars?' earned':'');
+        s.textContent='⭐';
+        s.style.animationDelay=i*.15+'s';
+        sd.appendChild(s);
+      }
+      reportReward(stars);
+      showScreen('resultScreen');
+    }
+
+    function resetGame(){showScreen('startScreen');}
+  </script>
+</body>
+</html>

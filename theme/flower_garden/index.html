@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta http-equiv="X-Content-Type-Options" content="nosniff"><meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>꽃밭 꾸미기 🌸</title>
+  <style>
+    :root {
+      --accent:#FF6B35; --accent-h:#e85a25; --mint:#4ECDC4; --mint-h:#38b8ae;
+      --bg:#FFF8F0; --card-bg:#FFFFFF; --text:#333333;
+      --shadow:0 4px 16px rgba(0,0,0,.12); --shadow-lg:0 8px 32px rgba(0,0,0,.18);
+      --radius-sm:12px; --radius-md:20px; --radius-lg:24px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      font-family:'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+      background:var(--bg);color:var(--text);min-height:100vh;
+      display:flex;flex-direction:column;align-items:center;
+      padding:16px 12px 40px;user-select:none;-webkit-user-select:none;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .header{text-align:center;margin-bottom:14px;}
+    .header h1{font-size:clamp(1.4rem,5vw,2rem);font-weight:800;color:var(--accent);}
+    .header .subtitle{font-size:clamp(.8rem,2.5vw,.95rem);color:#888;margin-top:4px;}
+
+    .screen{width:100%;max-width:500px;display:none;flex-direction:column;align-items:center;gap:14px;}
+    .screen.active{display:flex;animation:fadeIn .3s ease;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+    .btn{
+      padding:14px 32px;border:none;border-radius:var(--radius-sm);font-family:inherit;
+      font-size:1.05rem;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s;
+      box-shadow:var(--shadow);color:#fff;
+    }
+    .btn:active{transform:scale(.95);}
+    .btn-accent{background:linear-gradient(135deg,var(--accent),#ff8f5e);}
+    .btn-mint{background:linear-gradient(135deg,var(--mint),#6ee0d8);}
+
+    .start-emoji{font-size:4rem;animation:bounce 1s infinite;}
+    @keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+    .start-title{font-size:clamp(1.1rem,3.5vw,1.4rem);font-weight:700;text-align:center;}
+    .start-desc{font-size:.9rem;color:#777;text-align:center;line-height:1.5;}
+
+    /* Mission bar */
+    .mission-bar{
+      width:100%;background:var(--card-bg);border-radius:var(--radius-sm);
+      padding:12px 16px;box-shadow:var(--shadow);text-align:center;
+    }
+    .mission-label{font-size:.75rem;color:#888;font-weight:600;}
+    .mission-text{font-size:1.1rem;font-weight:800;color:var(--accent);margin-top:4px;}
+    .mission-progress{font-size:.8rem;color:var(--mint);font-weight:700;margin-top:4px;}
+
+    .progress-wrap{width:100%;height:8px;background:#e8e8e8;border-radius:4px;overflow:hidden;}
+    .progress-fill{height:100%;background:linear-gradient(90deg,var(--mint),var(--accent));border-radius:4px;transition:width .3s ease;width:0%;}
+
+    /* Garden grid */
+    .garden-container{
+      width:100%;max-width:360px;position:relative;
+      background:linear-gradient(180deg,#87CEEB 0%,#87CEEB 30%,#8FBC8F 30%,#6B8E23 100%);
+      border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow-lg);
+    }
+    .garden-grid{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+    }
+    .garden-plot{
+      aspect-ratio:1;background:linear-gradient(135deg,#8B6914,#A0522D);
+      border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;
+      font-size:2rem;cursor:pointer;transition:all .2s;
+      border:2px solid #6B4226;position:relative;
+    }
+    .garden-plot:hover{transform:scale(1.05);}
+    .garden-plot:active{transform:scale(.95);}
+    .garden-plot.planted{background:linear-gradient(135deg,#228B22,#32CD32);border-color:#1a6b1a;}
+    .garden-plot.planted .plot-flower{animation:growIn .4s ease;}
+    @keyframes growIn{from{transform:scale(0);}to{transform:scale(1);}}
+
+    /* Butterfly */
+    .butterfly{
+      position:absolute;font-size:1.5rem;z-index:10;pointer-events:none;
+      animation:flyAcross 8s linear infinite;
+    }
+    @keyframes flyAcross{
+      0%{left:-10%;top:20%;transform:scaleX(1);}
+      45%{left:90%;top:10%;transform:scaleX(1);}
+      50%{left:95%;top:15%;transform:scaleX(-1);}
+      95%{left:5%;top:25%;transform:scaleX(-1);}
+      100%{left:-10%;top:20%;transform:scaleX(1);}
+    }
+
+    /* Flower palette */
+    .palette{
+      width:100%;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;
+      background:var(--card-bg);border-radius:var(--radius-sm);
+      padding:12px;box-shadow:var(--shadow);
+    }
+    .palette-flower{
+      width:50px;height:50px;display:flex;align-items:center;justify-content:center;
+      font-size:2rem;border-radius:var(--radius-sm);cursor:pointer;
+      transition:all .2s;border:3px solid transparent;background:#FFF8F0;
+    }
+    .palette-flower:active{transform:scale(.9);}
+    .palette-flower.selected{border-color:var(--accent);background:#FFF0E8;transform:scale(1.1);}
+
+    .action-row{display:flex;gap:10px;width:100%;justify-content:center;flex-wrap:wrap;}
+
+    /* Correct overlay */
+    .correct-overlay{
+      position:fixed;top:0;left:0;width:100%;height:100%;
+      display:none;align-items:center;justify-content:center;
+      background:rgba(78,205,196,.15);z-index:100;flex-direction:column;gap:10px;
+    }
+    .correct-overlay.show{display:flex;}
+    .correct-overlay .co-emoji{font-size:4rem;animation:popIn .3s ease;}
+    .correct-overlay .co-text{font-size:1.2rem;font-weight:800;color:var(--mint);}
+    @keyframes popIn{from{transform:scale(0);}to{transform:scale(1);}}
+
+    /* Result */
+    .result-emoji{font-size:5rem;}
+    .result-score{font-size:1.1rem;font-weight:700;text-align:center;color:var(--accent);}
+    .result-stars{font-size:2.5rem;text-align:center;}
+    .result-msg{font-size:1rem;color:#777;text-align:center;}
+
+    .particle{
+      position:fixed;width:8px;height:8px;border-radius:50%;pointer-events:none;
+      animation:particleFly .8s ease-out forwards;z-index:999;
+    }
+    @keyframes particleFly{
+      0%{opacity:1;transform:translate(0,0) scale(1);}
+      100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0);}
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>꽃밭 꾸미기 🌸</h1>
+    <div class="subtitle">예쁜 꽃밭을 만들어봐요!</div>
+  </div>
+
+  <div class="screen active" id="screen-start">
+    <div class="start-emoji">🌷</div>
+    <div class="start-title">꽃밭을 꾸며볼까요?</div>
+    <div class="start-desc">미션을 완성하면서<br>예쁜 꽃밭을 만들어봐요! 🌻</div>
+    <button class="btn btn-accent" onclick="startGame()">시작하기 🌱</button>
+  </div>
+
+  <div class="screen" id="screen-game">
+    <div class="mission-bar">
+      <div class="mission-label">🎯 미션 <span id="mission-num">1</span> / 5</div>
+      <div class="mission-text" id="mission-text">빨간 꽃 3개를 심어요</div>
+      <div class="mission-progress" id="mission-progress"></div>
+    </div>
+    <div class="progress-wrap"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="garden-container">
+      <div class="butterfly">🦋</div>
+      <div class="garden-grid" id="garden-grid"></div>
+    </div>
+    <div class="palette" id="palette"></div>
+    <div class="action-row">
+      <button class="btn btn-mint" onclick="clearGarden()">다시 심기 🔄</button>
+    </div>
+  </div>
+
+  <div class="correct-overlay" id="correct-overlay">
+    <div class="co-emoji">🎉</div>
+    <div class="co-text" id="co-text">미션 완성!</div>
+  </div>
+
+  <div class="screen" id="screen-result">
+    <div class="result-emoji" id="result-emoji">🏆</div>
+    <div class="result-score" id="result-score">5 / 5 미션 완성!</div>
+    <div class="result-stars" id="result-stars">⭐⭐⭐</div>
+    <div class="result-msg" id="result-msg">꽃밭 달인!</div>
+    <button class="btn btn-accent" onclick="startGame()">다시 하기 🔄</button>
+  </div>
+
+<script>
+const AudioSys=(()=>{let ctx=null;function getCtx(){if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();return ctx;}function beep(freq,type,start,dur,vol=.4){const c=getCtx(),osc=c.createOscillator(),gain=c.createGain();osc.connect(gain);gain.connect(c.destination);osc.type=type;osc.frequency.setValueAtTime(freq,c.currentTime+start);gain.gain.setValueAtTime(vol,c.currentTime+start);gain.gain.exponentialRampToValueAtTime(.001,c.currentTime+start+dur);osc.start(c.currentTime+start);osc.stop(c.currentTime+start+dur+.05);}return{playCorrect(){beep(523,'sine',0,.12,.5);beep(659,'sine',.12,.12,.5);beep(784,'sine',.24,.22,.5);},playWrong(){beep(300,'square',0,.10,.3);beep(220,'square',.12,.15,.3);},playWin(){[523,659,784,880,1046].forEach((f,i)=>beep(f,'sine',i*.12,.18,.4));},};})();
+
+function reportReward(stars){
+  try{
+    const data=JSON.parse(localStorage.getItem('kbr.rewards')||'null')||{totalStars:0,totalGames:0,badges:[],history:[],streak:0,lastDate:null};
+    data.totalStars+=stars;data.totalGames+=1;
+    const today=new Date().toISOString().slice(0,10);
+    data.history.unshift({gameId:'flower_garden',area:'창의력',stars,date:today,timestamp:Date.now()});
+    if(data.history.length>100)data.history=data.history.slice(0,100);
+    if(data.lastDate!==today){if(data.lastDate){const diff=Math.floor((new Date(today)-new Date(data.lastDate))/86400000);data.streak=diff===1?data.streak+1:1;}else{data.streak=1;}data.lastDate=today;}
+    localStorage.setItem('kbr.rewards',JSON.stringify(data));
+  }catch(e){}
+}
+
+const FLOWERS=['🌸','🌺','🌻','🌹','🌷','💐','🌼','🪻'];
+const RED_FLOWERS=new Set(['🌹','🌺']);
+
+const MISSIONS=[
+  {text:'빨간 꽃 3개를 심어요 🌹',check:g=>{let c=0;g.forEach(f=>{if(RED_FLOWERS.has(f))c++;});return c>=3;},hint:'빨간 꽃: 🌹🌺'},
+  {text:'한 줄을 모두 꽃으로 채워요',check:g=>{for(let r=0;r<4;r++){let full=true;for(let c=0;c<4;c++){if(!g[r*4+c])full=false;}if(full)return true;}return false;},hint:'가로 한 줄을 채워봐요!'},
+  {text:'같은 꽃 4개를 심어요',check:g=>{const cnt={};g.forEach(f=>{if(f)cnt[f]=(cnt[f]||0)+1;});return Object.values(cnt).some(v=>v>=4);},hint:'같은 종류를 4개!'},
+  {text:'무지개 꽃밭을 만들어요 🌈',check:g=>{const types=new Set();g.forEach(f=>{if(f)types.add(f);});return types.size>=4;},hint:'4가지 이상 다른 꽃!'},
+  {text:'꽃밭을 가득 채워요! 🌸',check:g=>{return g.every(f=>f!==null);},hint:'16칸 모두 채워요!'},
+];
+
+let garden=Array(16).fill(null);
+let selectedFlower=FLOWERS[0];
+let currentMission=0;
+let missionsCompleted=0;
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame(){
+  garden=Array(16).fill(null);
+  selectedFlower=FLOWERS[0];
+  currentMission=0;
+  missionsCompleted=0;
+  showScreen('screen-game');
+  renderPalette();
+  renderGarden();
+  updateMission();
+}
+
+function renderPalette(){
+  const pal=document.getElementById('palette');
+  pal.innerHTML='';
+  FLOWERS.forEach(f=>{
+    const el=document.createElement('div');
+    el.className='palette-flower'+(selectedFlower===f?' selected':'');
+    el.textContent=f;
+    el.onclick=()=>{selectedFlower=f;renderPalette();};
+    pal.appendChild(el);
+  });
+}
+
+function renderGarden(){
+  const grid=document.getElementById('garden-grid');
+  grid.innerHTML='';
+  garden.forEach((f,i)=>{
+    const plot=document.createElement('div');
+    plot.className='garden-plot'+(f?' planted':'');
+    if(f){
+      const flower=document.createElement('span');
+      flower.className='plot-flower';
+      flower.textContent=f;
+      plot.appendChild(flower);
+    }
+    plot.onclick=()=>plantFlower(i);
+    grid.appendChild(plot);
+  });
+}
+
+function plantFlower(idx){
+  if(currentMission>=MISSIONS.length)return;
+  garden[idx]=selectedFlower;
+  AudioSys.playCorrect();
+  renderGarden();
+  spawnParticlesAt(event);
+  checkMission();
+}
+
+function checkMission(){
+  if(currentMission>=MISSIONS.length)return;
+  const mission=MISSIONS[currentMission];
+  if(mission.check(garden)){
+    missionsCompleted++;
+    AudioSys.playCorrect();
+    showCorrectOverlay(currentMission<MISSIONS.length-1?'미션 완성! 다음 미션 🎯':'모든 미션 완성! 🎉');
+    currentMission++;
+    document.getElementById('progress-fill').style.width=(currentMission/MISSIONS.length*100)+'%';
+    if(currentMission>=MISSIONS.length){
+      setTimeout(()=>endGame(),1200);
+    }else{
+      setTimeout(()=>updateMission(),1000);
+    }
+  }
+}
+
+function updateMission(){
+  if(currentMission>=MISSIONS.length)return;
+  document.getElementById('mission-num').textContent=currentMission+1;
+  document.getElementById('mission-text').textContent=MISSIONS[currentMission].text;
+  document.getElementById('mission-progress').textContent=MISSIONS[currentMission].hint;
+}
+
+function clearGarden(){
+  garden=Array(16).fill(null);
+  renderGarden();
+}
+
+function showCorrectOverlay(text){
+  const o=document.getElementById('correct-overlay');
+  document.getElementById('co-text').textContent=text;
+  o.classList.add('show');
+  setTimeout(()=>o.classList.remove('show'),1000);
+}
+
+function endGame(){
+  AudioSys.playWin();
+  const stars=missionsCompleted>=5?3:(missionsCompleted>=3?2:1);
+  reportReward(stars);
+
+  document.getElementById('result-stars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+  document.getElementById('result-score').textContent=missionsCompleted+' / 5 미션 완성!';
+
+  let emoji,msg;
+  if(missionsCompleted===5){emoji='🏆';msg='완벽해요! 꽃밭 달인! 🌸👑';}
+  else if(missionsCompleted>=3){emoji='😊';msg='잘했어요! 예쁜 꽃밭이에요!';}
+  else{emoji='💪';msg='괜찮아요! 다시 해봐요!';}
+
+  document.getElementById('result-emoji').textContent=emoji;
+  document.getElementById('result-msg').textContent=msg;
+  showScreen('screen-result');
+
+  for(let i=0;i<20;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    p.style.left=Math.random()*window.innerWidth+'px';
+    p.style.top=Math.random()*window.innerHeight*.5+'px';
+    const colors=['#FF6B35','#4ECDC4','#FFD166','#FF4757','#2F86FF'];
+    p.style.background=colors[Math.floor(Math.random()*colors.length)];
+    const angle=Math.random()*Math.PI*2;
+    const dist=30+Math.random()*80;
+    p.style.setProperty('--dx',Math.cos(angle)*dist+'px');
+    p.style.setProperty('--dy',Math.sin(angle)*dist+'px');
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),850);
+  }
+}
+
+function spawnParticlesAt(e){
+  const x=e.clientX||e.touches?.[0]?.clientX||window.innerWidth/2;
+  const y=e.clientY||e.touches?.[0]?.clientY||window.innerHeight/2;
+  const colors=['#FF6B35','#4ECDC4','#FFD166','#FF4757','#2F86FF'];
+  for(let i=0;i<6;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    p.style.left=x+'px';p.style.top=y+'px';
+    p.style.background=colors[Math.floor(Math.random()*colors.length)];
+    const angle=Math.random()*Math.PI*2;
+    const dist=20+Math.random()*50;
+    p.style.setProperty('--dx',Math.cos(angle)*dist+'px');
+    p.style.setProperty('--dy',Math.sin(angle)*dist+'px');
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),850);
+  }
+}
+</script>
+</body>
+</html>

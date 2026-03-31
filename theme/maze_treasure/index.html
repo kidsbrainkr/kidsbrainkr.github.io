@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🗺️ 보물찾기 미로</title>
+<style>
+:root {
+  --accent:#FF6B35; --accent-h:#e85a25;
+  --mint:#4ECDC4; --mint-h:#38b8ae;
+  --bg:#FFF8F0; --card-bg:#FFFFFF; --text:#333333;
+  --shadow:0 4px 16px rgba(0,0,0,.12);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.18);
+  --radius-sm:12px; --radius-md:20px; --radius-lg:24px;
+  --font:'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:var(--bg);
+  background-image:
+    radial-gradient(circle at 20% 20%,rgba(255,107,53,.06) 0%,transparent 50%),
+    radial-gradient(circle at 80% 80%,rgba(78,205,196,.06) 0%,transparent 50%);
+  color:var(--text);font-family:var(--font);
+  min-height:100vh;display:flex;justify-content:center;
+  padding:20px 16px 40px;
+  -webkit-user-select:none;user-select:none;
+}
+.screen{display:none;width:100%;max-width:520px;margin:0 auto;}
+.screen.active{display:block;animation:fadeIn .4s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+.game-header{text-align:center;padding:28px 0 20px;}
+.game-header h1{font-size:2.2rem;color:var(--accent);text-shadow:2px 3px 6px rgba(255,107,53,.2);}
+.subtitle{color:#888;font-size:1rem;margin-top:6px;}
+
+.btn{
+  display:block;width:100%;padding:18px;border:none;border-radius:var(--radius-md);
+  font-size:1.3rem;font-weight:800;cursor:pointer;transition:all .18s;
+  box-shadow:var(--shadow);margin-bottom:14px;
+}
+.btn:active{transform:scale(.96);}
+.btn-accent{background:linear-gradient(135deg,var(--accent),var(--accent-h));color:#fff;}
+.btn-mint{background:linear-gradient(135deg,var(--mint),var(--mint-h));color:#fff;}
+.btn-outline{background:#fff;color:var(--accent);border:3px solid var(--accent);}
+
+/* Difficulty cards */
+.diff-cards{display:flex;flex-direction:column;gap:12px;margin-top:16px;}
+.diff-card{
+  background:var(--card-bg);border-radius:var(--radius-lg);box-shadow:var(--shadow);
+  padding:20px;text-align:center;cursor:pointer;transition:all .2s;
+}
+.diff-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);}
+.diff-card:active{transform:scale(.97);}
+.diff-emoji{font-size:2.4rem;margin-bottom:4px;}
+.diff-title{font-size:1.2rem;font-weight:800;}
+.diff-desc{font-size:.85rem;color:#888;margin-top:2px;}
+
+/* Status bar */
+.status-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--card-bg);border-radius:var(--radius-sm);box-shadow:var(--shadow);
+  padding:10px 16px;margin-bottom:10px;font-size:.95rem;font-weight:700;
+}
+.status-item{display:flex;align-items:center;gap:4px;}
+
+/* Maze container */
+.maze-wrap{
+  background:var(--card-bg);border-radius:var(--radius-lg);box-shadow:var(--shadow);
+  padding:8px;margin-bottom:12px;display:flex;justify-content:center;align-items:center;
+  overflow:hidden;
+}
+.maze{
+  display:grid;
+  margin:0 auto;
+}
+.maze-cell{
+  display:flex;justify-content:center;align-items:center;
+  background:#fffaf5;
+  font-size:1rem;
+  position:relative;
+  transition:background .2s;
+}
+.maze-cell.wall-top{border-top:3px solid #5c4a3a;}
+.maze-cell.wall-bottom{border-bottom:3px solid #5c4a3a;}
+.maze-cell.wall-left{border-left:3px solid #5c4a3a;}
+.maze-cell.wall-right{border-right:3px solid #5c4a3a;}
+.maze-cell.player-cell{
+  background:rgba(255,107,53,.15);
+  box-shadow:inset 0 0 12px rgba(255,107,53,.3);
+  z-index:2;
+}
+.maze-cell .emoji{
+  transition:all .2s ease;
+  font-size:inherit;
+  line-height:1;
+}
+
+/* Sparkle animation */
+@keyframes sparkle{
+  0%{transform:scale(1);opacity:1;}
+  50%{transform:scale(1.8);opacity:.6;}
+  100%{transform:scale(0);opacity:0;}
+}
+.sparkle-effect{animation:sparkle .5s ease forwards;}
+
+/* Controls */
+.controls{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  margin-bottom:16px;
+}
+.ctrl-row{display:flex;gap:6px;}
+.ctrl-btn{
+  width:64px;height:64px;border:none;border-radius:var(--radius-sm);
+  background:var(--card-bg);box-shadow:var(--shadow);
+  font-size:1.8rem;cursor:pointer;transition:all .15s;
+  display:flex;justify-content:center;align-items:center;
+}
+.ctrl-btn:hover{background:var(--accent);color:#fff;}
+.ctrl-btn:active{transform:scale(.9);}
+.ctrl-spacer{width:64px;height:64px;}
+
+/* Progress dots */
+.maze-progress{
+  display:flex;justify-content:center;gap:8px;margin-bottom:12px;
+}
+.maze-dot{
+  width:12px;height:12px;border-radius:50%;background:#ddd;transition:all .3s;
+}
+.maze-dot.done{background:var(--mint);}
+.maze-dot.current{background:var(--accent);transform:scale(1.3);}
+
+/* Result screen */
+.result-card{
+  background:var(--card-bg);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);
+  padding:32px 24px;text-align:center;margin-bottom:20px;
+}
+.result-emoji{font-size:4rem;margin-bottom:12px;}
+.result-title{font-size:1.8rem;font-weight:900;margin-bottom:8px;}
+.result-sub{font-size:1.1rem;color:#888;margin-bottom:4px;}
+.star-row{font-size:2.2rem;margin:16px 0;}
+
+/* Confetti */
+.confetti-container{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden;}
+.confetti{
+  position:absolute;width:10px;height:10px;border-radius:2px;
+  animation:confettiFall 2.5s ease-in forwards;
+}
+@keyframes confettiFall{
+  0%{transform:translateY(-10px) rotate(0deg);opacity:1;}
+  100%{transform:translateY(100vh) rotate(720deg);opacity:0;}
+}
+
+.home-btn{
+  position:fixed;top:12px;left:12px;
+  background:var(--card-bg);border:none;border-radius:50%;
+  width:40px;height:40px;font-size:1.2rem;
+  box-shadow:var(--shadow);cursor:pointer;z-index:50;
+}
+</style>
+</head>
+<body>
+
+<button class="home-btn" onclick="showScreen('screen-start')">🏠</button>
+
+<!-- Start Screen -->
+<div id="screen-start" class="screen active">
+  <div class="game-header">
+    <h1>🗺️ 보물찾기 미로</h1>
+    <div class="subtitle">미로를 탐험하고 보물을 찾아요!</div>
+  </div>
+  <div style="background:var(--card-bg);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:20px;margin-bottom:16px;">
+    <div style="font-weight:800;font-size:1.1rem;margin-bottom:8px;">📖 규칙</div>
+    <div style="font-size:.9rem;color:#666;line-height:1.6;">
+      🧒 나를 움직여서 💎 보물을 찾아요!<br>
+      ⭐ 별도 모아보세요!<br>
+      벽은 지나갈 수 없어요! 길을 잘 찾아봐요! 🤔
+    </div>
+  </div>
+  <div style="font-weight:800;font-size:1.1rem;text-align:center;margin-bottom:8px;">난이도를 골라요!</div>
+  <div class="diff-cards">
+    <div class="diff-card" onclick="startSession(5)">
+      <div class="diff-emoji">🌟</div>
+      <div class="diff-title">쉬움</div>
+      <div class="diff-desc">5x5 미로</div>
+    </div>
+    <div class="diff-card" onclick="startSession(7)">
+      <div class="diff-emoji">⭐</div>
+      <div class="diff-title">보통</div>
+      <div class="diff-desc">7x7 미로</div>
+    </div>
+    <div class="diff-card" onclick="startSession(9)">
+      <div class="diff-emoji">🌠</div>
+      <div class="diff-title">어려움</div>
+      <div class="diff-desc">9x9 미로</div>
+    </div>
+  </div>
+</div>
+
+<!-- Game Screen -->
+<div id="screen-game" class="screen">
+  <div class="maze-progress" id="maze-progress"></div>
+  <div class="status-bar">
+    <div class="status-item">👣 <span id="move-count">0</span> 걸음</div>
+    <div class="status-item">⭐ <span id="star-count">0</span></div>
+    <div class="status-item">미로 <span id="maze-num">1</span>/3</div>
+  </div>
+  <div class="maze-wrap">
+    <div id="maze" class="maze"></div>
+  </div>
+  <div class="controls" id="controls">
+    <div class="ctrl-row">
+      <div class="ctrl-spacer"></div>
+      <button class="ctrl-btn" onclick="movePlayer(0,-1)">⬆️</button>
+      <div class="ctrl-spacer"></div>
+    </div>
+    <div class="ctrl-row">
+      <button class="ctrl-btn" onclick="movePlayer(-1,0)">⬅️</button>
+      <button class="ctrl-btn" onclick="movePlayer(0,1)">⬇️</button>
+      <button class="ctrl-btn" onclick="movePlayer(1,0)">➡️</button>
+    </div>
+  </div>
+</div>
+
+<!-- Result Screen -->
+<div id="screen-result" class="screen">
+  <div class="result-card">
+    <div id="result-emoji" class="result-emoji">🎉</div>
+    <div id="result-title" class="result-title">보물을 찾았어요!</div>
+    <div id="result-sub" class="result-sub"></div>
+    <div id="star-row" class="star-row"></div>
+  </div>
+  <button class="btn btn-accent" onclick="startSession(currentSize)">🔄 다시 하기</button>
+  <button class="btn btn-outline" onclick="showScreen('screen-start')">🏠 처음으로</button>
+</div>
+
+<div id="confetti-container" class="confetti-container"></div>
+
+<script>
+/* ===== Audio System ===== */
+const AudioSys = (() => {
+  let ctx = null;
+  function getCtx() { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); return ctx; }
+  function beep(freq, type, start, dur, vol=.4) {
+    const c=getCtx(), osc=c.createOscillator(), gain=c.createGain();
+    osc.connect(gain); gain.connect(c.destination);
+    osc.type=type; osc.frequency.setValueAtTime(freq,c.currentTime+start);
+    gain.gain.setValueAtTime(vol,c.currentTime+start);
+    gain.gain.exponentialRampToValueAtTime(.001,c.currentTime+start+dur);
+    osc.start(c.currentTime+start); osc.stop(c.currentTime+start+dur+.05);
+  }
+  return {
+    playCorrect() { beep(523,'sine',0,.12,.5); beep(659,'sine',.12,.12,.5); beep(784,'sine',.24,.22,.5); },
+    playWrong() { beep(300,'square',0,.10,.3); beep(220,'square',.12,.15,.3); },
+    playWin() { [523,659,784,880,1046].forEach((f,i)=>beep(f,'sine',i*.12,.18,.4)); },
+    playPlace() { beep(440,'sine',0,.08,.3); },
+  };
+})();
+
+/* ===== Reward Reporting ===== */
+function reportReward(stars) {
+  try {
+    const data = JSON.parse(localStorage.getItem('kbr.rewards')||'null') || { totalStars:0, totalGames:0, badges:[], history:[], streak:0, lastDate:null };
+    data.totalStars+=stars; data.totalGames+=1;
+    const today=new Date().toISOString().slice(0,10);
+    data.history.unshift({gameId:'maze_treasure',area:'사고력',stars,date:today,timestamp:Date.now()});
+    if(data.history.length>100) data.history=data.history.slice(0,100);
+    if(data.lastDate!==today){ if(data.lastDate){const d=Math.floor((new Date(today)-new Date(data.lastDate))/86400000);data.streak=d===1?data.streak+1:1;}else{data.streak=1;} data.lastDate=today; }
+    localStorage.setItem('kbr.rewards',JSON.stringify(data));
+  } catch{}
+}
+
+/* ===== Helpers ===== */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ===== Maze Generation (Recursive Backtracker) ===== */
+function generateMaze(rows, cols) {
+  // Each cell: { top:true, right:true, bottom:true, left:true, visited:false }
+  const grid = [];
+  for (let r = 0; r < rows; r++) {
+    grid[r] = [];
+    for (let c = 0; c < cols; c++) {
+      grid[r][c] = { top:true, right:true, bottom:true, left:true, visited:false };
+    }
+  }
+
+  const stack = [];
+  const startR = 0, startC = 0;
+  grid[startR][startC].visited = true;
+  stack.push([startR, startC]);
+
+  while (stack.length > 0) {
+    const [cr, cc] = stack[stack.length - 1];
+    const neighbors = [];
+    // top
+    if (cr > 0 && !grid[cr-1][cc].visited) neighbors.push([cr-1, cc, 'top', 'bottom']);
+    // bottom
+    if (cr < rows-1 && !grid[cr+1][cc].visited) neighbors.push([cr+1, cc, 'bottom', 'top']);
+    // left
+    if (cc > 0 && !grid[cr][cc-1].visited) neighbors.push([cr, cc-1, 'left', 'right']);
+    // right
+    if (cc < cols-1 && !grid[cr][cc+1].visited) neighbors.push([cr, cc+1, 'right', 'left']);
+
+    if (neighbors.length === 0) {
+      stack.pop();
+    } else {
+      const [nr, nc, wall, oppWall] = neighbors[Math.floor(Math.random() * neighbors.length)];
+      grid[cr][cc][wall] = false;
+      grid[nr][nc][oppWall] = false;
+      grid[nr][nc].visited = true;
+      stack.push([nr, nc]);
+    }
+  }
+
+  return grid;
+}
+
+/* ===== Game State ===== */
+let currentSize = 5;
+let mazeGrid = null;
+let playerR = 0, playerC = 0;
+let totalMoves = 0;
+let totalStarsCollected = 0;
+let currentMazeIndex = 0; // 0,1,2
+const TOTAL_MAZES = 3;
+let starPositions = []; // [{r,c}]
+let treasureR = 0, treasureC = 0;
+let locked = false;
+
+function startSession(size) {
+  currentSize = size;
+  totalMoves = 0;
+  totalStarsCollected = 0;
+  currentMazeIndex = 0;
+  startMaze();
+}
+
+function startMaze() {
+  const size = currentSize;
+  mazeGrid = generateMaze(size, size);
+  playerR = 0;
+  playerC = 0;
+  treasureR = size - 1;
+  treasureC = size - 1;
+  locked = false;
+
+  // Place 1-3 bonus stars in random empty cells (not start/end)
+  starPositions = [];
+  const numStars = Math.min(3, Math.max(1, Math.floor(size / 3)));
+  const candidates = [];
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if ((r === 0 && c === 0) || (r === treasureR && c === treasureC)) continue;
+      candidates.push({r, c});
+    }
+  }
+  // Shuffle and pick
+  for (let i = candidates.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+  starPositions = candidates.slice(0, numStars);
+
+  renderMaze();
+  updateStatus();
+  updateProgress();
+  showScreen('screen-game');
+}
+
+function getCellSize() {
+  if (currentSize <= 5) return 50;
+  if (currentSize <= 7) return 38;
+  return 30;
+}
+
+function renderMaze() {
+  const size = currentSize;
+  const cellSize = getCellSize();
+  const mazeEl = document.getElementById('maze');
+  mazeEl.style.gridTemplateColumns = `repeat(${size}, ${cellSize}px)`;
+  mazeEl.style.gridTemplateRows = `repeat(${size}, ${cellSize}px)`;
+  mazeEl.innerHTML = '';
+
+  const fontSize = cellSize <= 30 ? '0.9rem' : cellSize <= 38 ? '1.1rem' : '1.4rem';
+
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'maze-cell';
+      cell.style.fontSize = fontSize;
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+
+      const g = mazeGrid[r][c];
+      if (g.top) cell.classList.add('wall-top');
+      if (g.bottom) cell.classList.add('wall-bottom');
+      if (g.left) cell.classList.add('wall-left');
+      if (g.right) cell.classList.add('wall-right');
+
+      // Content
+      if (r === playerR && c === playerC) {
+        cell.classList.add('player-cell');
+        cell.innerHTML = '<span class="emoji">🧒</span>';
+      } else if (r === treasureR && c === treasureC) {
+        cell.innerHTML = '<span class="emoji">💎</span>';
+      } else if (starPositions.some(s => s.r === r && s.c === c)) {
+        cell.innerHTML = '<span class="emoji">⭐</span>';
+      }
+
+      mazeEl.appendChild(cell);
+    }
+  }
+}
+
+function updateStatus() {
+  document.getElementById('move-count').textContent = totalMoves;
+  document.getElementById('star-count').textContent = totalStarsCollected;
+  document.getElementById('maze-num').textContent = currentMazeIndex + 1;
+}
+
+function updateProgress() {
+  const el = document.getElementById('maze-progress');
+  el.innerHTML = '';
+  for (let i = 0; i < TOTAL_MAZES; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'maze-dot';
+    if (i < currentMazeIndex) dot.classList.add('done');
+    if (i === currentMazeIndex) dot.classList.add('current');
+    el.appendChild(dot);
+  }
+}
+
+function movePlayer(dc, dr) {
+  if (locked) return;
+  const size = currentSize;
+  const nr = playerR + dr;
+  const nc = playerC + dc;
+
+  // Bounds check
+  if (nr < 0 || nr >= size || nc < 0 || nc >= size) {
+    AudioSys.playWrong();
+    return;
+  }
+
+  // Wall check
+  const currentCell = mazeGrid[playerR][playerC];
+  if (dr === -1 && currentCell.top) { AudioSys.playWrong(); return; }
+  if (dr === 1 && currentCell.bottom) { AudioSys.playWrong(); return; }
+  if (dc === -1 && currentCell.left) { AudioSys.playWrong(); return; }
+  if (dc === 1 && currentCell.right) { AudioSys.playWrong(); return; }
+
+  // Move
+  playerR = nr;
+  playerC = nc;
+  totalMoves++;
+  AudioSys.playPlace();
+
+  // Check star collection
+  const starIdx = starPositions.findIndex(s => s.r === nr && s.c === nc);
+  if (starIdx !== -1) {
+    starPositions.splice(starIdx, 1);
+    totalStarsCollected++;
+    AudioSys.playCorrect();
+  }
+
+  // Check treasure
+  if (nr === treasureR && nc === treasureC) {
+    locked = true;
+    renderMaze();
+    updateStatus();
+    AudioSys.playWin();
+    setTimeout(() => {
+      currentMazeIndex++;
+      if (currentMazeIndex < TOTAL_MAZES) {
+        startMaze();
+      } else {
+        endSession();
+      }
+    }, 800);
+    return;
+  }
+
+  renderMaze();
+  updateStatus();
+}
+
+function endSession() {
+  // Calculate stars based on efficiency
+  const size = currentSize;
+  const optimalMoves = size * size * TOTAL_MAZES; // rough baseline
+  let stars;
+  if (totalMoves <= optimalMoves * 0.6) {
+    stars = 3;
+  } else if (totalMoves <= optimalMoves) {
+    stars = 2;
+  } else {
+    stars = 1;
+  }
+  // Bonus from collected stars
+  stars = Math.min(3, stars + (totalStarsCollected >= 5 ? 1 : 0));
+
+  document.getElementById('result-emoji').textContent = '🎉';
+  document.getElementById('result-title').textContent = '보물을 모두 찾았어요!';
+  document.getElementById('result-sub').textContent = `${totalMoves}걸음, ⭐${totalStarsCollected}개 수집!`;
+  document.getElementById('star-row').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+
+  reportReward(stars);
+  showScreen('screen-result');
+  spawnConfetti();
+}
+
+/* ===== Swipe Support ===== */
+let touchStartX = 0, touchStartY = 0;
+document.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, {passive:true});
+document.addEventListener('touchend', e => {
+  if (!document.getElementById('screen-game').classList.contains('active')) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  const absDx = Math.abs(dx), absDy = Math.abs(dy);
+  if (Math.max(absDx, absDy) < 30) return; // too short
+  if (absDx > absDy) {
+    movePlayer(dx > 0 ? 1 : -1, 0);
+  } else {
+    movePlayer(0, dy > 0 ? 1 : -1);
+  }
+}, {passive:true});
+
+/* ===== Keyboard Support ===== */
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('screen-game').classList.contains('active')) return;
+  switch(e.key) {
+    case 'ArrowUp': e.preventDefault(); movePlayer(0, -1); break;
+    case 'ArrowDown': e.preventDefault(); movePlayer(0, 1); break;
+    case 'ArrowLeft': e.preventDefault(); movePlayer(-1, 0); break;
+    case 'ArrowRight': e.preventDefault(); movePlayer(1, 0); break;
+  }
+});
+
+/* ===== Confetti ===== */
+function spawnConfetti() {
+  const container = document.getElementById('confetti-container');
+  container.innerHTML = '';
+  const colors = ['#FF6B35','#4ECDC4','#FF4757','#3742fa','#FFC312','#A3CB38','#9B59B6'];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.left = Math.random() * 100 + '%';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.animationDelay = Math.random() * 1.5 + 's';
+    el.style.width = (6 + Math.random() * 8) + 'px';
+    el.style.height = (6 + Math.random() * 8) + 'px';
+    container.appendChild(el);
+  }
+  setTimeout(() => { container.innerHTML = ''; }, 4000);
+}
+</script>
+</body>
+</html>

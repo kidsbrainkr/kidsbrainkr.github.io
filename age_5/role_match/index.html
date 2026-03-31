@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta http-equiv="X-Content-Type-Options" content="nosniff"><meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>반 친구 역할 맞추기 🎭</title>
+  <style>
+    :root { --accent:#FF6B35; --accent-h:#e85a25; --mint:#4ECDC4; --mint-h:#38b8ae; --bg:#FFF8F0; --card-bg:#FFFFFF; --text:#333333; --shadow:0 4px 16px rgba(0,0,0,.12); --shadow-lg:0 8px 32px rgba(0,0,0,.18); --radius-sm:12px; --radius-md:20px; --radius-lg:24px; }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    html, body { height:100%; background:var(--bg); font-family:'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif; overflow:hidden; user-select:none; -webkit-tap-highlight-color:transparent; }
+
+    .screen { display:none; flex-direction:column; align-items:center; justify-content:center; height:100%; width:100%; position:fixed; inset:0; }
+    .screen.active { display:flex; animation:fadeIn 0.4s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+
+    /* Start */
+    #start-screen { background:linear-gradient(135deg,#FFF8F0,#FFE5D9); gap:20px; padding:24px; }
+    #start-screen .title-emoji { font-size:clamp(4rem,14vw,7rem); }
+    #start-screen h1 { font-size:clamp(1.6rem,5vw,2.4rem); font-weight:900; color:var(--accent); text-align:center; }
+    #start-screen p { font-size:clamp(1rem,3vw,1.3rem); color:#666; text-align:center; max-width:320px; line-height:1.5; }
+    .btn-start { padding:18px 52px; border:none; border-radius:50px; font-size:clamp(1.2rem,4vw,1.5rem); font-weight:900; background:var(--accent); color:#fff; cursor:pointer; box-shadow:0 6px 20px rgba(255,107,53,0.4); transition:transform 0.15s; }
+    .btn-start:active { transform:scale(0.93); }
+
+    /* Game */
+    #game-screen { background:var(--bg); padding:16px; gap:10px; justify-content:flex-start; padding-top:20px; }
+
+    .progress-area { width:100%; max-width:500px; display:flex; align-items:center; gap:8px; }
+    .progress-label { font-size:0.9rem; font-weight:700; color:#888; white-space:nowrap; }
+    .progress-track { flex:1; height:10px; background:#E0D8D0; border-radius:99px; overflow:hidden; }
+    .progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),#FFB347); border-radius:99px; transition:width 0.5s ease; width:0%; }
+
+    /* Role display */
+    .role-area { width:100%; max-width:500px; background:var(--card-bg); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:28px 20px; text-align:center; margin-top:8px; }
+    .role-emoji { font-size:clamp(4rem,14vw,6rem); display:block; margin-bottom:10px; animation:roleEnter 0.5s ease; }
+    @keyframes roleEnter { from{transform:scale(0.5) rotate(-10deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+    .role-name { font-size:clamp(1.4rem,4.5vw,2rem); font-weight:900; color:var(--accent); }
+    .role-hint { font-size:clamp(0.9rem,2.8vw,1.1rem); color:#999; margin-top:8px; font-weight:600; }
+
+    /* Choices */
+    .choices-area { width:100%; max-width:500px; display:flex; flex-direction:column; gap:12px; margin-top:14px; flex:1; justify-content:center; }
+    .choice-btn { width:100%; padding:18px 20px; border:3px solid #E0D8D0; border-radius:var(--radius-md); background:var(--card-bg); font-size:clamp(1rem,3.2vw,1.3rem); font-weight:700; color:var(--text); cursor:pointer; text-align:center; box-shadow:var(--shadow); transition:transform 0.15s, border-color 0.2s, background 0.2s; line-height:1.4; }
+    .choice-btn:active { transform:scale(0.96); }
+    .choice-btn.correct { border-color:#2ECC71; background:#E8F8E8; animation:btnPop 0.5s ease; }
+    .choice-btn.wrong { border-color:#E74C3C; background:#FDE8E8; animation:btnShake 0.4s ease; }
+    @keyframes btnPop { 0%{transform:scale(1)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
+    @keyframes btnShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+
+    /* Feedback overlay */
+    .feedback-overlay { position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; }
+    .feedback-overlay.active { display:flex; }
+    .feedback-overlay .fb-bg { position:absolute; inset:0; background:rgba(0,0,0,0.3); }
+    .feedback-overlay .fb-box { position:relative; z-index:1; background:#fff; border-radius:28px; padding:36px 40px; text-align:center; box-shadow:var(--shadow-lg); animation:overlayPop 0.4s cubic-bezier(.17,.67,.36,1.3); }
+    @keyframes overlayPop { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
+    .fb-emoji { font-size:clamp(3rem,10vw,5rem); }
+    .fb-text { font-size:clamp(1.2rem,4vw,1.6rem); font-weight:800; margin-top:12px; }
+    .fb-text.correct-text { color:#2ECC71; }
+    .fb-text.wrong-text { color:#E74C3C; }
+
+    /* Particles */
+    .particle { position:fixed; z-index:200; pointer-events:none; font-size:1.5rem; animation:particleFly 1s ease-out forwards; }
+    @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--px),var(--py)) scale(0.3)} }
+
+    /* Result */
+    #result-screen { background:linear-gradient(135deg,#FFF8F0,#FFE5D9); gap:22px; padding:24px; }
+    #result-screen .result-emoji { font-size:clamp(4rem,14vw,7rem); animation:spin 1.2s ease-in-out; }
+    @keyframes spin { 0%{transform:rotate(0) scale(0.5)} 60%{transform:rotate(380deg) scale(1.1)} 100%{transform:rotate(360deg) scale(1)} }
+    #result-screen h1 { font-size:clamp(1.6rem,5vw,2.4rem); font-weight:900; color:var(--accent); text-align:center; }
+    .result-score { font-size:clamp(1.1rem,3.5vw,1.5rem); font-weight:700; color:#555; }
+    .stars-row { display:flex; gap:8px; font-size:clamp(2rem,8vw,3.5rem); }
+    .star-item { animation:starPop 0.4s ease both; }
+    .star-item:nth-child(1){animation-delay:0.2s} .star-item:nth-child(2){animation-delay:0.45s} .star-item:nth-child(3){animation-delay:0.7s}
+    @keyframes starPop { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+    .btn-restart { padding:18px 52px; border:none; border-radius:50px; font-size:clamp(1.2rem,4vw,1.5rem); font-weight:900; background:var(--accent); color:#fff; cursor:pointer; box-shadow:0 6px 20px rgba(255,107,53,0.4); transition:transform 0.15s; }
+    .btn-restart:active { transform:scale(0.93); }
+  </style>
+</head>
+<body>
+
+<div id="start-screen" class="screen active">
+  <div class="title-emoji">🎭</div>
+  <h1>반 친구 역할 맞추기</h1>
+  <p>교실에서 각 도우미가 하는 일을 맞춰봐요!</p>
+  <button class="btn-start" id="btn-start">시작하기 🚀</button>
+</div>
+
+<div id="game-screen" class="screen">
+  <div class="progress-area">
+    <span class="progress-label" id="progress-label">1 / 10</span>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <span class="progress-label" id="score-label">⭐ 0</span>
+  </div>
+  <div class="role-area">
+    <span class="role-emoji" id="role-emoji"></span>
+    <div class="role-name" id="role-name"></div>
+    <div class="role-hint">이 도우미는 무슨 일을 할까요?</div>
+  </div>
+  <div class="choices-area" id="choices-area"></div>
+</div>
+
+<div class="feedback-overlay" id="feedback-overlay">
+  <div class="fb-bg"></div>
+  <div class="fb-box">
+    <div class="fb-emoji" id="fb-emoji"></div>
+    <div class="fb-text" id="fb-text"></div>
+  </div>
+</div>
+
+<div id="result-screen" class="screen">
+  <div class="result-emoji">🏆</div>
+  <h1>역할 박사가 되었어요!</h1>
+  <div class="stars-row" id="stars-row"></div>
+  <div class="result-score" id="result-score"></div>
+  <button class="btn-restart" id="btn-restart">다시 하기 🔄</button>
+</div>
+
+<script>
+/* ===== 반 친구 역할 맞추기 게임 ===== */
+
+// ─── Audio System ─────────────────────────────────────────
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+function ensureAudio() { if(!audioCtx) audioCtx = new AudioCtx(); if(audioCtx.state==='suspended') audioCtx.resume(); }
+function playTones(freqs, dur=0.15, mode='seq', type='sine') {
+  if(!audioCtx) return;
+  const now = audioCtx.currentTime;
+  freqs.forEach((f,i) => {
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.type = type; osc.frequency.value = f;
+    const start = mode==='seq' ? now + i*dur : now;
+    gain.gain.setValueAtTime(0.28, start);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + dur*0.95);
+    osc.start(start); osc.stop(start + dur);
+  });
+}
+function playCorrect() { ensureAudio(); playTones([523,659,784], 0.13, 'seq', 'sine'); }
+function playWrong() { ensureAudio(); playTones([300,220], 0.18, 'seq', 'sawtooth'); }
+function playWin() { ensureAudio(); playTones([523,659,784,1047,1319], 0.15, 'seq', 'sine'); }
+
+// ─── Reward System ────────────────────────────────────────
+function reportReward(stars) {
+  try {
+    const data = JSON.parse(localStorage.getItem('kbr.rewards')||'null') || { totalStars:0, totalGames:0, badges:[], history:[], streak:0, lastDate:null };
+    data.totalStars += stars; data.totalGames += 1;
+    const today = new Date().toISOString().slice(0,10);
+    data.history.unshift({ gameId:'role_match', area:'사고력', stars, date:today, timestamp:Date.now() });
+    if(data.history.length > 100) data.history = data.history.slice(0,100);
+    if(data.lastDate !== today) {
+      if(data.lastDate) { const diff = Math.floor((new Date(today)-new Date(data.lastDate))/86400000); data.streak = diff===1 ? data.streak+1 : 1; }
+      else { data.streak = 1; }
+      data.lastDate = today;
+    }
+    localStorage.setItem('kbr.rewards', JSON.stringify(data));
+  } catch(e) {}
+}
+
+// ─── Particles ────────────────────────────────────────────
+function spawnParticles(x, y) {
+  const emojis = ['⭐','🌟','✨','💛','🎉'];
+  for(let i=0; i<8; i++) {
+    const el = document.createElement('div');
+    el.className = 'particle';
+    el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.left = x+'px'; el.style.top = y+'px';
+    el.style.setProperty('--px', (Math.random()*160-80)+'px');
+    el.style.setProperty('--py', (Math.random()*-120-40)+'px');
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+}
+
+// ─── Game Data ────────────────────────────────────────────
+const ROLES = [
+  { emoji:'🧹', name:'청소 도우미', desc:'교실을 깨끗하게 해요' },
+  { emoji:'📚', name:'책 도우미', desc:'책을 정리해요' },
+  { emoji:'🌱', name:'식물 도우미', desc:'화분에 물을 줘요' },
+  { emoji:'🍽️', name:'급식 도우미', desc:'밥을 나눠줘요' },
+  { emoji:'🎨', name:'미술 도우미', desc:'물감을 준비해요' },
+  { emoji:'⚽', name:'체육 도우미', desc:'공을 가져와요' },
+  { emoji:'🐟', name:'동물 도우미', desc:'물고기 밥을 줘요' },
+  { emoji:'📋', name:'출석 도우미', desc:'친구 이름을 불러요' },
+  { emoji:'🧊', name:'정리 도우미', desc:'사물함을 정리해요' },
+  { emoji:'🎵', name:'음악 도우미', desc:'악기를 나눠줘요' },
+];
+
+const TOTAL_Q = 10;
+let currentQ = 0;
+let score = 0;
+let busy = false;
+let shuffledRoles = [];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for(let i=a.length-1; i>0; i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ─── Get wrong descriptions ──────────────────────────────
+function getWrongDescs(correctDesc, count) {
+  const others = ROLES.map(r => r.desc).filter(d => d !== correctDesc);
+  return shuffle(others).slice(0, count);
+}
+
+// ─── Start Game ───────────────────────────────────────────
+function startGame() {
+  ensureAudio();
+  currentQ = 0; score = 0;
+  shuffledRoles = shuffle(ROLES).slice(0, TOTAL_Q);
+  showScreen('game-screen');
+  showQuestion();
+}
+
+// ─── Show Question ────────────────────────────────────────
+function showQuestion() {
+  if(currentQ >= TOTAL_Q) { endGame(); return; }
+  busy = false;
+  const role = shuffledRoles[currentQ];
+
+  document.getElementById('progress-label').textContent = `${currentQ+1} / ${TOTAL_Q}`;
+  document.getElementById('progress-fill').style.width = `${(currentQ/TOTAL_Q)*100}%`;
+  document.getElementById('score-label').textContent = `⭐ ${score}`;
+
+  // Re-trigger role emoji animation
+  const emojiEl = document.getElementById('role-emoji');
+  emojiEl.style.animation = 'none';
+  emojiEl.offsetHeight; // reflow
+  emojiEl.style.animation = '';
+  emojiEl.textContent = role.emoji;
+
+  document.getElementById('role-name').textContent = role.name;
+
+  const wrongDescs = getWrongDescs(role.desc, 2);
+  const choices = shuffle([
+    { text: role.desc, isCorrect: true },
+    { text: wrongDescs[0], isCorrect: false },
+    { text: wrongDescs[1], isCorrect: false },
+  ]);
+
+  const area = document.getElementById('choices-area');
+  area.innerHTML = '';
+  choices.forEach(ch => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = ch.text;
+    btn.addEventListener('click', () => onChoice(ch.isCorrect, btn));
+    area.appendChild(btn);
+  });
+}
+
+// ─── Handle Choice ────────────────────────────────────────
+function onChoice(isCorrect, btnEl) {
+  if(busy) return;
+  busy = true;
+  const role = shuffledRoles[currentQ];
+
+  if(isCorrect) {
+    score += 10;
+    playCorrect();
+    btnEl.classList.add('correct');
+
+    const rect = btnEl.getBoundingClientRect();
+    spawnParticles(rect.left + rect.width/2, rect.top + rect.height/2);
+
+    const overlay = document.getElementById('feedback-overlay');
+    document.getElementById('fb-emoji').textContent = '👏';
+    const fbText = document.getElementById('fb-text');
+    fbText.textContent = `맞아요! ${role.emoji} ${role.desc}`;
+    fbText.className = 'fb-text correct-text';
+    overlay.classList.add('active');
+
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      currentQ++;
+      showQuestion();
+    }, 1300);
+  } else {
+    playWrong();
+    btnEl.classList.add('wrong');
+
+    const overlay = document.getElementById('feedback-overlay');
+    document.getElementById('fb-emoji').textContent = '🤔';
+    const fbText = document.getElementById('fb-text');
+    fbText.textContent = '다시 생각해봐요!';
+    fbText.className = 'fb-text wrong-text';
+    overlay.classList.add('active');
+
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      btnEl.classList.remove('wrong');
+      busy = false;
+    }, 1000);
+  }
+}
+
+// ─── End Game ─────────────────────────────────────────────
+function endGame() {
+  playWin();
+  const stars = score >= 90 ? 3 : score >= 60 ? 2 : 1;
+  reportReward(stars);
+
+  document.getElementById('progress-fill').style.width = '100%';
+  document.getElementById('result-score').textContent = `${score} / ${TOTAL_Q * 10} 점`;
+
+  const row = document.getElementById('stars-row');
+  row.innerHTML = '';
+  for(let i=0; i<3; i++) {
+    const s = document.createElement('span');
+    s.className = 'star-item';
+    s.textContent = i < stars ? '⭐' : '☆';
+    row.appendChild(s);
+  }
+  showScreen('result-screen');
+}
+
+// ─── Event Listeners ──────────────────────────────────────
+document.getElementById('btn-start').addEventListener('click', startGame);
+document.getElementById('btn-restart').addEventListener('click', startGame);
+</script>
+</body>
+</html>
