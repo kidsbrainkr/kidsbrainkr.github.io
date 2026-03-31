@@ -1094,63 +1094,170 @@ const FileIO = (() => {
 // =====================================================================
 // AUDIO (Web Audio API — 파일 없이 합성)
 // =====================================================================
-// 외부 오디오 파일 없이 Web Audio API 오실레이터로 효과음·BGM을 합성한다.
+// ─── 오디오 시스템 — 룩어헤드 스케줄러 + 3성부 BGM + ADSR 효과음 ───
 const AudioSys = (() => {
   let ctx = null, masterGain = null;
   let bgmEnabled = true, sfxEnabled = true;
-  let bgmTimer = null, bgmIdx = 0;
-  // BGM 멜로디 — 음표 주파수 배열 (0은 쉼표)
-  const BGM = [523.25,659.25,783.99,659.25, 523.25,587.33,698.46,587.33,
-               523.25,659.25,783.99,1046.5, 783.99,659.25,523.25,0];
-  const NOTE_MS = 380; // 음표 한 박자 길이(ms)
 
-  // AudioContext 초기화 — suspended 상태이면 resume
+  // BGM 스케줄러 상태
+  let schedulerTimer = null;
+  let nextNoteTime  = 0;
+  let noteIndex     = 0;
+  const SCHEDULE_AHEAD = 0.15;   // 150ms 앞까지 미리 예약
+  const TICK_MS        = 50;     // 50ms마다 스케줄러 실행
+
+  // 템포
+  const BPM  = 124;
+  const BEAT = 60 / BPM;         // 한 박자(초)
+
+  // ── 음계 상수 (Hz) ──
+  const G2=98, A2=110, C3=130.81, D3=146.83, E3=164.81, F3=174.61, G3=196;
+  const C4=261.63, D4=293.66, E4=329.63, F4=349.23, G4=392, A4=440, B4=493.88;
+  const C5=523.25, D5=587.33, E5=659.25, F5=698.46, G5=783.99, A5=880;
+
+  // ── BGM 악보 ── [멜로디Hz, 화음Hz, 베이스Hz, 박자수]
+  // C장조 3성부: 멜로디(사인파 2중) + 화음(3도 위) + 베이스(삼각파 플럭)
+  const SONG = [
+    // ╔═ 프레이즈 A — 밝은 상행 ═╗
+    [C5,E5,C3,  0.5], [C5,E5,C3,  0.5], [D5,F5,G2,  0.5], [E5,G5,A2,  0.5],
+    [E5,G5,A2,  0.5], [D5,F5,G2,  0.5], [C5,E5,C3,  1.0],
+    [G4,B4,G2,  0.5], [A4,C5,F3,  0.5], [C5,E5,C3,  0.5], [D5,F5,G2,  0.5],
+    [E5,G5,A2,  1.0], [C5,E5,C3,  1.0],
+    // ╔═ 프레이즈 B — 경쾌한 음계 ═╗
+    [E5,G5,C3,  0.25],[D5,F5,G2,  0.25],[C5,E5,C3,  0.25],[B4,D5,G2,  0.25],
+    [A4,C5,F3,  0.5], [G4,B4,G2,  0.5],
+    [A4,C5,F3,  0.25],[C5,E5,C3,  0.25],[E5,G5,C3,  0.5],
+    [D5,F5,G2,  0.5], [C5,E5,C3,  1.0],
+    // ╔═ 프레이즈 C — 따뜻한 하행 ═╗
+    [G5,B4,G2,  0.5], [E5,G4,C3,  0.5], [D5,F4,G2,  0.5], [C5,E4,C3,  0.5],
+    [A4,C4,A2,  0.5], [G4,B3,G2,  0.5], [C5,E4,C3,  1.0],
+    // ╔═ 프레이즈 D — 마무리 종지 ═╗
+    [G4,B4,G2,  0.5], [G4,B4,G2,  0.5], [A4,C5,F3,  0.5], [G4,B4,G2,  0.5],
+    [E4,G4,C3,  0.5], [G4,B4,G2,  0.5], [C5,E5,C3,  1.5],
+    // 루프 이음 쉼표
+    [0, 0, 0,   0.5],
+  ];
+
+  // ── AudioContext 초기화 ──
   function ensure() {
     if (!ctx) {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
-      masterGain = ctx.createGain(); masterGain.gain.value = 0.35;
-      masterGain.connect(ctx.destination);
+      // DynamicsCompressor — 전체 다이나믹 정리
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -20;
+      comp.ratio.value     = 4;
+      comp.attack.value    = 0.003;
+      comp.release.value   = 0.25;
+      comp.connect(ctx.destination);
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0.28;
+      masterGain.connect(comp);
     }
     if (ctx.state === 'suspended') ctx.resume();
   }
-  // 단일 음 재생 — freq(Hz), dur(초), gain, 파형 타입, delay(초) 지정 가능
-  function tone(freq, dur, gain=.45, type='sine', delay=0) {
+
+  // ── 단순 효과음용 tone() ──
+  function tone(freq, dur, gain=.42, type='sine', delay=0) {
     if (!ctx) return;
     const o = ctx.createOscillator(), g = ctx.createGain();
     o.connect(g); g.connect(masterGain);
     o.type = type; o.frequency.value = freq;
     const t = ctx.currentTime + delay;
-    g.gain.setValueAtTime(gain, t);
-    // 음이 끝나갈 때 자연스럽게 fade-out
-    g.gain.exponentialRampToValueAtTime(.001, t+dur);
-    o.start(t); o.stop(t+dur+.02);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(gain, t + 0.018);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.start(t); o.stop(t + dur + 0.04);
   }
-  // BGM 한 스텝 재생 — setInterval로 반복 호출됨
-  function noteStep() {
+
+  // ── BGM 노트 1개 예약 (멜로디·화음·베이스 3성부) ──
+  function scheduleNote(mel, har, bas, dur, t) {
+    if (!ctx) return;
+    // 멜로디: 사인파 2대 미세 디튠 → 두께감
+    if (mel > 0) {
+      [mel, mel * 1.004].forEach(f => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        o.connect(g); g.connect(masterGain);
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.13, t + 0.022);
+        g.gain.setValueAtTime(0.11, t + 0.07);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur * 0.93);
+        o.start(t); o.stop(t + dur);
+      });
+    }
+    // 화음: 3도 위, 소프트 사인
+    if (har > 0) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = har;
+      o.connect(g); g.connect(masterGain);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.06, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur * 0.88);
+      o.start(t); o.stop(t + dur);
+    }
+    // 베이스: 삼각파 짧은 플럭
+    if (bas > 0) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'triangle'; o.frequency.value = bas;
+      o.connect(g); g.connect(masterGain);
+      const bd = Math.min(dur * 0.55, 0.32);
+      g.gain.setValueAtTime(0.16, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + bd);
+      o.start(t); o.stop(t + bd + 0.02);
+    }
+  }
+
+  // ── 룩어헤드 스케줄러 ──
+  function scheduler() {
     if (!bgmEnabled || !ctx) return;
-    const f = BGM[bgmIdx++ % BGM.length]; if (!f) return; // 0이면 쉼표 — 건너뜀
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.connect(g); g.connect(masterGain);
-    o.type = 'triangle'; o.frequency.value = f;
-    const t = ctx.currentTime;
-    g.gain.setValueAtTime(.12, t);
-    g.gain.exponentialRampToValueAtTime(.001, t+NOTE_MS/1000*.9);
-    o.start(t); o.stop(t+NOTE_MS/1000);
+    while (nextNoteTime < ctx.currentTime + SCHEDULE_AHEAD) {
+      const [m, h, b, beats] = SONG[noteIndex % SONG.length];
+      scheduleNote(m, h, b, beats * BEAT, nextNoteTime);
+      nextNoteTime += beats * BEAT;
+      noteIndex++;
+    }
   }
+
   return {
-    // AudioContext 활성화 (첫 사용자 인터랙션 이후 호출)
-    init() { ensure(); },
-    // 카드 뒤집기 효과음 — 두 음을 연속 재생해 경쾌한 느낌
-    playFlip()  { if (!sfxEnabled||!ctx) return; tone(900,.06,.25,'square'); tone(650,.06,.18,'square',.05); },
-    // 매칭 성공 효과음 — 3음 상행 화음
-    playMatch() { if (!sfxEnabled||!ctx) return; tone(523.25,.12,.4,'sine'); tone(659.25,.12,.4,'sine',.11); tone(783.99,.22,.45,'sine',.22); },
-    // 게임 클리어 효과음 — 4음 팡파레 후 마지막 음 길게 유지
-    playWin()   { if (!sfxEnabled||!ctx) return; [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f,.22,.5,'sine',i*.16)); tone(1046.5,.5,.6,'sine',.64); },
-    // BGM 시작 — 이전 타이머 정리 후 첫 음을 즉시 재생하고 setInterval로 순환
-    startBGM()  { if (!bgmEnabled||!ctx) return; this.stopBGM(); noteStep(); bgmTimer=setInterval(noteStep,NOTE_MS); },
-    stopBGM()   { if (bgmTimer){clearInterval(bgmTimer);bgmTimer=null;} },
-    setBGM(v)   { bgmEnabled=v; if(!v)this.stopBGM(); },
-    setSFX(v)   { sfxEnabled=v; },
+    init()      { ensure(); },
+    // 카드 뒤집기 — 경쾌한 2음 클릭
+    playFlip()  {
+      if (!sfxEnabled || !ctx) return;
+      tone(880, .055, .20, 'square');
+      tone(660, .055, .14, 'square', .05);
+    },
+    // 매칭 성공 — 밝은 3화음 상행
+    playMatch() {
+      if (!sfxEnabled || !ctx) return;
+      tone(523.25, .13, .38, 'sine');
+      tone(659.25, .13, .35, 'sine', .11);
+      tone(783.99, .22, .40, 'sine', .22);
+      // 화음 동시 레이어
+      tone(659.25, .28, .18, 'sine', .01);
+    },
+    // 게임 클리어 — 팡파레 + 여운
+    playWin() {
+      if (!sfxEnabled || !ctx) return;
+      [[523.25,0],[659.25,.14],[783.99,.28],[1046.5,.42]].forEach(([f,d]) => {
+        tone(f, .22, .48, 'sine', d);
+        tone(f*1.5, .16, .18, 'sine', d+.02); // 5도 화음
+      });
+      tone(1046.5, .55, .55, 'sine', .58);
+    },
+    // BGM 시작
+    startBGM() {
+      if (!bgmEnabled || !ctx) return;
+      this.stopBGM();
+      noteIndex    = 0;
+      nextNoteTime = ctx.currentTime + 0.06;
+      scheduler();
+      schedulerTimer = setInterval(scheduler, TICK_MS);
+    },
+    stopBGM() {
+      if (schedulerTimer) { clearInterval(schedulerTimer); schedulerTimer = null; }
+    },
+    setBGM(v) { bgmEnabled = v; if (!v) this.stopBGM(); },
+    setSFX(v) { sfxEnabled = v; },
   };
 })();
 
