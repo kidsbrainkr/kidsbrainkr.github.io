@@ -698,10 +698,41 @@
       }
     }
 
+    /* ===== 보상 보고 (메인 허브 연동) ===== */
+    function reportReward(stars) {
+      try {
+        const data = JSON.parse(localStorage.getItem('kbr.rewards') || 'null') || {
+          totalStars: 0, totalGames: 0, badges: [], history: [], streak: 0, lastDate: null
+        };
+        data.totalStars += stars;
+        data.totalGames += 1;
+        const today = new Date().toISOString().slice(0, 10);
+        data.history.unshift({
+          gameId: 'shadow_matching',
+          area: '관찰력',
+          stars: stars,
+          date: today,
+          timestamp: Date.now()
+        });
+        if (data.history.length > 100) data.history = data.history.slice(0, 100);
+        if (data.lastDate !== today) {
+          if (data.lastDate) {
+            const diff = Math.floor((new Date(today) - new Date(data.lastDate)) / 86400000);
+            data.streak = diff === 1 ? data.streak + 1 : 1;
+          } else {
+            data.streak = 1;
+          }
+          data.lastDate = today;
+        }
+        localStorage.setItem('kbr.rewards', JSON.stringify(data));
+      } catch {}
+    }
+
     /* =============================================
        결과 화면 표시
     ============================================= */
     function showResult() {
+      reportReward(3);
       /* 진행 바 100% 채우기 */
       document.getElementById('progress-bar').style.width = '100%';
       document.getElementById('progress-text').textContent = '10 / 10';

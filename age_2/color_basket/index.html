@@ -770,10 +770,41 @@ function hideCorrectOverlay() {
   if (existing) existing.remove();
 }
 
+/* ===== 보상 보고 (메인 허브 연동) ===== */
+function reportReward(stars) {
+  try {
+    const data = JSON.parse(localStorage.getItem('kbr.rewards') || 'null') || {
+      totalStars: 0, totalGames: 0, badges: [], history: [], streak: 0, lastDate: null
+    };
+    data.totalStars += stars;
+    data.totalGames += 1;
+    const today = new Date().toISOString().slice(0, 10);
+    data.history.unshift({
+      gameId: 'color_basket',
+      area: '사고력',
+      stars: stars,
+      date: today,
+      timestamp: Date.now()
+    });
+    if (data.history.length > 100) data.history = data.history.slice(0, 100);
+    if (data.lastDate !== today) {
+      if (data.lastDate) {
+        const diff = Math.floor((new Date(today) - new Date(data.lastDate)) / 86400000);
+        data.streak = diff === 1 ? data.streak + 1 : 1;
+      } else {
+        data.streak = 1;
+      }
+      data.lastDate = today;
+    }
+    localStorage.setItem('kbr.rewards', JSON.stringify(data));
+  } catch {}
+}
+
 /* =====================================================================
    결과 화면 표시
    ===================================================================== */
 function showResultScreen() {
+  reportReward(3);
   /* 별 5개 차례로 등장 */
   const starsEl = document.getElementById('result-stars');
   starsEl.innerHTML = '';

@@ -278,20 +278,23 @@
         linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,252,247,0.98));
       border-radius: var(--card-radius);
       box-shadow: var(--card-shadow);
-      padding: 22px 20px 20px;
+      padding: 22px 20px 18px;
       text-decoration: none;
       color: inherit;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+      transition: transform 0.22s cubic-bezier(.4,0,.2,1), box-shadow 0.22s;
       position: relative;
       overflow: hidden;
       border: 1px solid rgba(255,255,255,0.8);
     }
     .game-card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--card-shadow-hover);
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 12px 36px rgba(91,79,207,0.22);
+    }
+    .game-card:active {
+      transform: translateY(-2px) scale(0.98);
     }
     .game-card .card-icon {
       font-size: 2.4rem;
@@ -304,6 +307,10 @@
       border-radius: 18px;
       background: rgba(255,255,255,0.82);
       box-shadow: inset 0 0 0 1px rgba(255,255,255,0.9), 0 8px 18px rgba(0,0,0,0.06);
+      transition: transform 0.22s;
+    }
+    .game-card:hover .card-icon {
+      transform: scale(1.1) rotate(-5deg);
     }
     .game-card .card-name {
       font-size: 1.05rem;
@@ -315,27 +322,48 @@
       color: #666;
       line-height: 1.55;
     }
+    .game-card .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
     .game-card .card-tag {
       font-size: 0.72rem;
       font-weight: 700;
       padding: 3px 10px;
       border-radius: 20px;
       display: inline-block;
-      margin-top: 4px;
       width: fit-content;
+    }
+    .game-card .card-difficulty {
+      font-size: 0.68rem;
+      color: #bbb;
+      letter-spacing: 1px;
+    }
+    .game-card .card-played {
+      font-size: 0.65rem;
+      color: #aaa;
+      margin-left: auto;
     }
     /* 새 게임 뱃지 */
     .game-card .new-badge {
       position: absolute;
       top: 14px;
       right: 14px;
-      background: #FF3B30;
+      background: linear-gradient(135deg, #FF3B30, #FF6B6B);
       color: #fff;
       font-size: 0.65rem;
       font-weight: 800;
-      padding: 2px 8px;
+      padding: 3px 10px;
       border-radius: 20px;
       letter-spacing: 0.5px;
+      animation: newPulse 2s ease-in-out infinite;
+    }
+    @keyframes newPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(255,59,48,0); }
     }
     /* 색상 줄 */
     .game-card::before {
@@ -382,6 +410,352 @@
       margin: 28px 0;
     }
 
+    /* ─── 마스코트 캐릭터 ─── */
+    .mascot-container {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      margin: -28px auto 0;
+      z-index: 10;
+    }
+    .mascot {
+      width: 80px;
+      height: 80px;
+      position: relative;
+      animation: mascotBounce 2s ease-in-out infinite;
+      cursor: pointer;
+      filter: drop-shadow(0 6px 12px rgba(91,79,207,0.2));
+    }
+    .mascot svg { width: 100%; height: 100%; }
+    @keyframes mascotBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    .mascot-speech {
+      position: absolute;
+      top: -10px;
+      left: calc(50% + 44px);
+      background: #fff;
+      border-radius: 14px;
+      padding: 8px 14px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #5B4FCF;
+      box-shadow: 0 4px 16px rgba(91,79,207,0.12);
+      white-space: nowrap;
+      animation: speechIn 0.3s ease-out;
+      z-index: 11;
+    }
+    .mascot-speech::before {
+      content: '';
+      position: absolute;
+      left: -8px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 6px solid transparent;
+      border-right-color: #fff;
+    }
+    @keyframes speechIn {
+      from { opacity: 0; transform: translateX(-8px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @media (max-width: 480px) {
+      .mascot { width: 64px; height: 64px; }
+      .mascot-speech { font-size: 0.7rem; padding: 6px 10px; left: calc(50% + 36px); }
+    }
+
+    /* ─── 보상 대시보드 ─── */
+    .reward-dashboard {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px 16px 0;
+    }
+    .reward-stats {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .reward-stat {
+      flex: 1;
+      min-width: 120px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,252,247,0.98));
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(91,79,207,0.08);
+      border: 1px solid rgba(255,255,255,0.8);
+      transition: transform 0.18s;
+    }
+    .reward-stat:hover { transform: translateY(-2px); }
+    .reward-stat .stat-icon { font-size: 1.8rem; }
+    .reward-stat .stat-value {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #5B4FCF;
+      margin: 4px 0 2px;
+    }
+    .reward-stat .stat-label {
+      font-size: 0.75rem;
+      color: #888;
+      font-weight: 600;
+    }
+
+    /* 최근 플레이 */
+    .recent-section {
+      margin-top: 16px;
+      margin-bottom: 8px;
+    }
+    .recent-header {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: #555;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .recent-list {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-width: none;
+    }
+    .recent-list::-webkit-scrollbar { display: none; }
+    .recent-item {
+      flex: 0 0 auto;
+      background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,245,255,0.98));
+      border-radius: 14px;
+      padding: 12px 16px;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 3px 12px rgba(91,79,207,0.08);
+      border: 1px solid rgba(91,79,207,0.06);
+      transition: transform 0.18s, box-shadow 0.18s;
+      min-width: 180px;
+    }
+    .recent-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(91,79,207,0.14);
+    }
+    .recent-item .ri-icon { font-size: 1.6rem; }
+    .recent-item .ri-info { display: flex; flex-direction: column; gap: 2px; }
+    .recent-item .ri-name { font-size: 0.82rem; font-weight: 700; color: #333; }
+    .recent-item .ri-stars { font-size: 0.75rem; }
+    .recent-item .ri-time { font-size: 0.68rem; color: #aaa; }
+
+    /* 뱃지 컬렉션 */
+    .badge-section { margin-top: 16px; }
+    .badge-grid {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .badge-item {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, #f8f5ff, #ede8ff);
+      box-shadow: 0 3px 10px rgba(91,79,207,0.1);
+      border: 1px solid rgba(91,79,207,0.08);
+      position: relative;
+      transition: transform 0.2s;
+    }
+    .badge-item:hover { transform: scale(1.1); }
+    .badge-item.locked {
+      filter: grayscale(1) opacity(0.35);
+    }
+    .badge-item .badge-check {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      font-size: 0.65rem;
+      background: #43A047;
+      color: #fff;
+      width: 16px;
+      height: 16px;
+      border-radius: 99px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .badge-tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: #fff;
+      font-size: 0.68rem;
+      padding: 4px 10px;
+      border-radius: 8px;
+      white-space: nowrap;
+      z-index: 10;
+    }
+    .badge-item:hover .badge-tooltip { display: block; }
+
+    /* 마일스톤 축하 오버레이 */
+    .milestone-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+    .milestone-overlay.show { display: flex; }
+    .milestone-card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 40px 36px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      animation: milestoneIn 0.4s cubic-bezier(.4,0,.2,1);
+      max-width: 340px;
+    }
+    .milestone-card .mc-icon { font-size: 4rem; margin-bottom: 12px; }
+    .milestone-card .mc-title { font-size: 1.3rem; font-weight: 900; color: #5B4FCF; margin-bottom: 8px; }
+    .milestone-card .mc-desc { font-size: 0.88rem; color: #666; margin-bottom: 20px; line-height: 1.5; }
+    .milestone-card .mc-btn {
+      background: linear-gradient(135deg, #6558d9, #786cf0);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 12px 32px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      cursor: pointer;
+      font-family: var(--font);
+    }
+    @keyframes milestoneIn {
+      from { transform: scale(0.7); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* ─── 학부모 대시보드 ─── */
+    .parent-toggle {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      background: linear-gradient(135deg, #6558d9, #786cf0);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      width: 48px;
+      height: 48px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(91,79,207,0.3);
+      z-index: 100;
+      transition: transform 0.2s;
+      font-family: var(--font);
+    }
+    .parent-toggle:hover { transform: scale(1.1); }
+
+    .parent-panel {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 9998;
+      justify-content: center;
+      align-items: flex-end;
+    }
+    .parent-panel.show { display: flex; }
+    .parent-sheet {
+      background: #fff;
+      border-radius: 24px 24px 0 0;
+      width: 100%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 28px 24px 40px;
+      animation: sheetUp 0.3s ease-out;
+    }
+    @keyframes sheetUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .parent-sheet h3 {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #333;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .parent-sheet .close-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: #999;
+    }
+    .parent-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .ps-card {
+      background: #f8f5ff;
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+    }
+    .ps-card .ps-val { font-size: 1.4rem; font-weight: 900; color: #5B4FCF; }
+    .ps-card .ps-label { font-size: 0.72rem; color: #888; margin-top: 4px; }
+    .activity-log { margin-top: 8px; }
+    .activity-log h4 { font-size: 0.9rem; font-weight: 800; color: #555; margin-bottom: 10px; }
+    .log-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 0.82rem;
+    }
+    .log-item .log-icon { font-size: 1.3rem; }
+    .log-item .log-info { flex: 1; }
+    .log-item .log-name { font-weight: 700; color: #333; }
+    .log-item .log-detail { font-size: 0.72rem; color: #999; margin-top: 2px; }
+    .log-item .log-stars { font-size: 0.75rem; }
+    .area-chart { margin-top: 16px; }
+    .area-chart h4 { font-size: 0.9rem; font-weight: 800; color: #555; margin-bottom: 10px; }
+    .area-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .area-bar-label { font-size: 0.78rem; font-weight: 700; color: #555; min-width: 60px; }
+    .area-bar-track {
+      flex: 1;
+      height: 12px;
+      background: #f0ecff;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .area-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #8f8dff, #b388ff);
+      transition: width 0.5s ease;
+    }
+    .area-bar-count { font-size: 0.72rem; color: #999; min-width: 30px; text-align: right; }
+
     /* ─── 반응형 ─── */
     @media (max-width: 480px) {
       header { padding: 32px 16px 26px; }
@@ -393,6 +767,12 @@
       .game-card .card-icon { font-size: 2rem; width: 50px; height: 50px; border-radius: 16px; }
       .game-card .card-name { font-size: 0.92rem; }
       .game-card .card-desc { font-size: 0.76rem; }
+      .reward-stats { gap: 8px; }
+      .reward-stat { min-width: 90px; padding: 12px 8px; }
+      .reward-stat .stat-icon { font-size: 1.4rem; }
+      .reward-stat .stat-value { font-size: 1.2rem; }
+      .recent-item { min-width: 150px; padding: 10px 12px; }
+      .badge-item { width: 44px; height: 44px; font-size: 1.2rem; }
     }
 
     @media (max-width: 340px) {
@@ -431,6 +811,79 @@
   </div>
 </div>
 
+<!-- 마스코트 -->
+<div class="mascot-container">
+  <div class="mascot" id="mascot" title="안녕! 나는 뇌또리!">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <!-- 몸통 -->
+      <ellipse cx="50" cy="58" rx="30" ry="32" fill="#B39DDB"/>
+      <!-- 얼굴 -->
+      <circle cx="50" cy="44" r="28" fill="#E1BEE7"/>
+      <!-- 뇌 모양 머리 -->
+      <path d="M30 32 Q25 18 38 16 Q42 8 52 10 Q62 6 66 16 Q78 18 72 32" fill="#CE93D8" stroke="#AB47BC" stroke-width="1.5"/>
+      <path d="M38 16 Q45 20 52 10" fill="none" stroke="#AB47BC" stroke-width="1" opacity="0.5"/>
+      <path d="M52 10 Q58 18 66 16" fill="none" stroke="#AB47BC" stroke-width="1" opacity="0.5"/>
+      <!-- 눈 -->
+      <circle cx="40" cy="42" r="5" fill="#fff"/>
+      <circle cx="60" cy="42" r="5" fill="#fff"/>
+      <circle cx="41" cy="42" r="2.8" fill="#333"/>
+      <circle cx="61" cy="42" r="2.8" fill="#333"/>
+      <!-- 눈 반짝 -->
+      <circle cx="42.5" cy="40.5" r="1.2" fill="#fff"/>
+      <circle cx="62.5" cy="40.5" r="1.2" fill="#fff"/>
+      <!-- 볼 -->
+      <ellipse cx="33" cy="50" rx="5" ry="3" fill="#F48FB1" opacity="0.5"/>
+      <ellipse cx="67" cy="50" rx="5" ry="3" fill="#F48FB1" opacity="0.5"/>
+      <!-- 입 -->
+      <path d="M44 54 Q50 60 56 54" fill="none" stroke="#7B1FA2" stroke-width="1.8" stroke-linecap="round"/>
+      <!-- 팔 -->
+      <ellipse cx="24" cy="62" rx="7" ry="5" fill="#B39DDB" transform="rotate(-20 24 62)"/>
+      <ellipse cx="76" cy="62" rx="7" ry="5" fill="#B39DDB" transform="rotate(20 76 62)"/>
+      <!-- 별 장식 -->
+      <text x="74" y="26" font-size="10" transform="rotate(15 74 26)">⭐</text>
+    </svg>
+  </div>
+  <div class="mascot-speech" id="mascotSpeech">안녕! 오늘도 같이 놀자!</div>
+</div>
+
+<!-- 보상 대시보드 -->
+<div class="reward-dashboard" id="rewardDashboard">
+  <div class="reward-stats">
+    <div class="reward-stat">
+      <div class="stat-icon">⭐</div>
+      <div class="stat-value" id="totalStars">0</div>
+      <div class="stat-label">모은 별</div>
+    </div>
+    <div class="reward-stat">
+      <div class="stat-icon">🎮</div>
+      <div class="stat-value" id="todayCount">0</div>
+      <div class="stat-label">오늘 한 게임</div>
+    </div>
+    <div class="reward-stat">
+      <div class="stat-icon">🔥</div>
+      <div class="stat-value" id="streakCount">0</div>
+      <div class="stat-label">연속 출석</div>
+    </div>
+    <div class="reward-stat">
+      <div class="stat-icon">🏅</div>
+      <div class="stat-value" id="badgeCount">0</div>
+      <div class="stat-label">획득 뱃지</div>
+    </div>
+  </div>
+
+  <!-- 최근 플레이 -->
+  <div class="recent-section" id="recentSection" style="display:none;">
+    <div class="recent-header">🕹️ 최근에 한 게임</div>
+    <div class="recent-list" id="recentList"></div>
+  </div>
+
+  <!-- 뱃지 컬렉션 -->
+  <div class="badge-section">
+    <div class="recent-header">🏆 뱃지 컬렉션</div>
+    <div class="badge-grid" id="badgeGrid"></div>
+  </div>
+</div>
+
 <div class="content">
   <!-- 게임 카드가 동적으로 생성될 영역 -->
   <div id="gameContainer" class="game-grid">
@@ -438,7 +891,31 @@
   </div>
 </div>
 
+<!-- 마일스톤 축하 오버레이 -->
+<div class="milestone-overlay" id="milestoneOverlay">
+  <div class="milestone-card">
+    <div class="mc-icon" id="mcIcon">🎉</div>
+    <div class="mc-title" id="mcTitle">축하해요!</div>
+    <div class="mc-desc" id="mcDesc"></div>
+    <button class="mc-btn" onclick="closeMilestone()">좋아요!</button>
+  </div>
+</div>
+
+<!-- 학부모 대시보드 토글 버튼 -->
+<button class="parent-toggle" id="parentToggle" title="학부모/선생님 리포트">📊</button>
+
+<!-- 학부모 대시보드 패널 -->
+<div class="parent-panel" id="parentPanel">
+  <div class="parent-sheet">
+    <h3>📊 활동 리포트 <button class="close-btn" id="parentClose">&times;</button></h3>
+    <div class="parent-summary" id="parentSummary"></div>
+    <div class="area-chart" id="areaChart"></div>
+    <div class="activity-log" id="activityLog"></div>
+  </div>
+</div>
+
 <audio id="bgmAudio" loop preload="auto"></audio>
+<script src="./data/sounds.js"></script>
 
 <script>
   /**
@@ -561,6 +1038,16 @@
                        game.age.includes(5) ? 'age5' : 
                        game.area === '루틴' ? 'routine' : 'mixed';
 
+      // 난이도 (연령 기반)
+      const diffStars = game.age.includes(2) ? '★☆☆' :
+                        game.age.includes(3) ? '★★☆' :
+                        game.age.includes(5) ? '★★★' :
+                        game.age.includes(4) ? '★★☆' : '★★☆';
+
+      // 플레이 횟수 (보상 데이터에서 가져오기)
+      const rData = getRewardData();
+      const playCount = rData.history.filter(h => h.gameId === game.id).length;
+
       const card = document.createElement('a');
       card.className = `game-card ${ageClass}`;
       card.href = game.path;
@@ -569,12 +1056,17 @@
         <div class="card-icon">${game.icon}</div>
         <div class="card-name">${game.title}</div>
         <div class="card-desc">${game.desc}</div>
-        <div class="card-tag">${game.tag}</div>
+        <div class="card-meta">
+          <div class="card-tag">${game.tag}</div>
+          <div class="card-difficulty">${diffStars}</div>
+          ${playCount > 0 ? `<div class="card-played">🎮 ${playCount}회</div>` : ''}
+        </div>
         <div class="teacher-tip">💡 ${game.tip}</div>
       `;
       
-      // 카드 위에 마우스를 올리면 BGM이 준비되도록 설정 (사용자 인터랙션 대응)
+      // 카드 클릭 시 사운드 + BGM 준비
       card.addEventListener('mouseenter', startMainBgm, { passive: true });
+      card.addEventListener('click', () => { try { kbrSound.click(); } catch {} }, { passive: true });
       gameContainer.appendChild(card);
     });
   }
@@ -690,8 +1182,296 @@
     });
   });
 
+  // ─── 마스코트 대사 ───
+  const MASCOT_GREETINGS = [
+    '안녕! 오늘도 같이 놀자!', '오늘은 어떤 게임 할까?',
+    '와! 또 왔구나! 반가워!', '두뇌가 쑥쑥 자라고 있어!',
+    '오늘도 열심히 놀아보자!', '같이 재미있는 거 하자!',
+    '뇌또리랑 놀면 똑똑해져!', '어떤 게임이 좋을까?'
+  ];
+  const MASCOT_REWARD_MSGS = [
+    '와! 별을 {n}개나 모았어!', '대단해! 벌써 {n}개!',
+    '{n}개의 별이 반짝반짝!'
+  ];
+
+  function updateMascotSpeech() {
+    const data = getRewardData();
+    const speech = document.getElementById('mascotSpeech');
+    const todayCount = getTodayCount(data);
+
+    if (todayCount > 0 && data.totalStars > 0) {
+      const msgs = MASCOT_REWARD_MSGS;
+      speech.textContent = msgs[Math.floor(Math.random() * msgs.length)].replace('{n}', data.totalStars);
+    } else {
+      speech.textContent = MASCOT_GREETINGS[Math.floor(Math.random() * MASCOT_GREETINGS.length)];
+    }
+  }
+
+  document.getElementById('mascot').addEventListener('click', () => {
+    const speech = document.getElementById('mascotSpeech');
+    speech.textContent = MASCOT_GREETINGS[Math.floor(Math.random() * MASCOT_GREETINGS.length)];
+    speech.style.animation = 'none';
+    speech.offsetHeight;
+    speech.style.animation = 'speechIn 0.3s ease-out';
+  });
+
+  // ─── 보상 시스템 ───
+
+  const BADGE_DEFS = [
+    { id: 'first_game',   icon: '🌟', name: '첫 도전!',       desc: '첫 번째 게임을 완료했어요',      condition: s => s.totalGames >= 1 },
+    { id: 'five_games',   icon: '🎯', name: '다섯 고개',      desc: '게임을 5번 완료했어요',          condition: s => s.totalGames >= 5 },
+    { id: 'ten_games',    icon: '🏆', name: '열 번의 도전',    desc: '게임을 10번 완료했어요',         condition: s => s.totalGames >= 10 },
+    { id: 'twenty_games', icon: '👑', name: '스무 번 영웅',    desc: '게임을 20번 완료했어요',         condition: s => s.totalGames >= 20 },
+    { id: 'fifty_games',  icon: '💎', name: '반짝반짝 보석',   desc: '게임을 50번 완료했어요',         condition: s => s.totalGames >= 50 },
+    { id: 'star_10',      icon: '⭐', name: '별 10개',         desc: '별을 10개 모았어요',            condition: s => s.totalStars >= 10 },
+    { id: 'star_50',      icon: '🌠', name: '별 50개',         desc: '별을 50개 모았어요',            condition: s => s.totalStars >= 50 },
+    { id: 'star_100',     icon: '🌌', name: '별 100개',        desc: '별을 100개 모았어요',           condition: s => s.totalStars >= 100 },
+    { id: 'streak_3',     icon: '🔥', name: '3일 연속!',       desc: '3일 연속 놀러 왔어요',          condition: s => s.streak >= 3 },
+    { id: 'streak_7',     icon: '🌈', name: '일주일 연속!',    desc: '7일 연속 놀러 왔어요',          condition: s => s.streak >= 7 },
+    { id: 'all_areas',    icon: '🧩', name: '골고루 박사',     desc: '모든 영역 게임을 해봤어요',      condition: s => s.areasPlayed && s.areasPlayed.size >= 4 },
+    { id: 'today_3',      icon: '💪', name: '오늘의 챔피언',   desc: '하루에 게임 3개를 완료했어요',    condition: s => s.todayCount >= 3 },
+  ];
+
+  function getRewardData() {
+    try {
+      return JSON.parse(localStorage.getItem('kbr.rewards') || 'null') || {
+        totalStars: 0, totalGames: 0, badges: [],
+        history: [], streak: 0, lastDate: null
+      };
+    } catch { return { totalStars: 0, totalGames: 0, badges: [], history: [], streak: 0, lastDate: null }; }
+  }
+
+  function saveRewardData(data) {
+    try { localStorage.setItem('kbr.rewards', JSON.stringify(data)); } catch {}
+  }
+
+  function updateStreak(data) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (data.lastDate === today) return;
+
+    if (data.lastDate) {
+      const last = new Date(data.lastDate);
+      const now = new Date(today);
+      const diff = Math.floor((now - last) / 86400000);
+      data.streak = diff === 1 ? data.streak + 1 : 1;
+    } else {
+      data.streak = 1;
+    }
+    data.lastDate = today;
+    saveRewardData(data);
+  }
+
+  function getTodayCount(data) {
+    const today = new Date().toISOString().slice(0, 10);
+    return data.history.filter(h => h.date === today).length;
+  }
+
+  function getAreasPlayed(data) {
+    return new Set(data.history.map(h => h.area).filter(Boolean));
+  }
+
+  function renderRewardDashboard() {
+    const data = getRewardData();
+    updateStreak(data);
+    const todayCount = getTodayCount(data);
+
+    document.getElementById('totalStars').textContent = data.totalStars;
+    document.getElementById('todayCount').textContent = todayCount;
+    document.getElementById('streakCount').textContent = data.streak;
+
+    // 최근 플레이
+    const recentSection = document.getElementById('recentSection');
+    const recentList = document.getElementById('recentList');
+    if (data.history.length > 0) {
+      recentSection.style.display = 'block';
+      recentList.innerHTML = '';
+      const recent = data.history.slice(0, 8);
+      recent.forEach(h => {
+        const game = gameData.find(g => g.id === h.gameId);
+        if (!game) return;
+        const stars = '⭐'.repeat(h.stars || 1) + '☆'.repeat(3 - (h.stars || 1));
+        const timeAgo = getTimeAgo(h.timestamp);
+        const a = document.createElement('a');
+        a.className = 'recent-item';
+        a.href = game.path;
+        a.innerHTML = `
+          <span class="ri-icon">${game.icon}</span>
+          <span class="ri-info">
+            <span class="ri-name">${game.title}</span>
+            <span class="ri-stars">${stars}</span>
+            <span class="ri-time">${timeAgo}</span>
+          </span>`;
+        recentList.appendChild(a);
+      });
+    } else {
+      recentSection.style.display = 'none';
+    }
+
+    // 뱃지
+    const badgeGrid = document.getElementById('badgeGrid');
+    badgeGrid.innerHTML = '';
+    const stats = {
+      totalStars: data.totalStars,
+      totalGames: data.totalGames,
+      streak: data.streak,
+      todayCount,
+      areasPlayed: getAreasPlayed(data)
+    };
+    let earnedCount = 0;
+
+    BADGE_DEFS.forEach(bd => {
+      const earned = data.badges.includes(bd.id);
+      if (earned) earnedCount++;
+      const div = document.createElement('div');
+      div.className = `badge-item${earned ? '' : ' locked'}`;
+      div.innerHTML = `
+        ${bd.icon}
+        ${earned ? '<span class="badge-check">✓</span>' : ''}
+        <span class="badge-tooltip">${earned ? bd.name : '???'}</span>`;
+      badgeGrid.appendChild(div);
+    });
+    document.getElementById('badgeCount').textContent = earnedCount;
+
+    // 새로운 뱃지 획득 체크
+    checkNewBadges(data, stats);
+  }
+
+  function checkNewBadges(data, stats) {
+    const newBadges = [];
+    BADGE_DEFS.forEach(bd => {
+      if (!data.badges.includes(bd.id) && bd.condition(stats)) {
+        data.badges.push(bd.id);
+        newBadges.push(bd);
+      }
+    });
+    if (newBadges.length > 0) {
+      saveRewardData(data);
+      showMilestone(newBadges[0]);
+    }
+  }
+
+  function showMilestone(badge) {
+    document.getElementById('mcIcon').textContent = badge.icon;
+    document.getElementById('mcTitle').textContent = '뱃지 획득! ' + badge.name;
+    document.getElementById('mcDesc').textContent = badge.desc;
+    document.getElementById('milestoneOverlay').classList.add('show');
+  }
+
+  function closeMilestone() {
+    document.getElementById('milestoneOverlay').classList.remove('show');
+    renderRewardDashboard();
+  }
+
+  function getTimeAgo(ts) {
+    const diff = Date.now() - ts;
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return '방금 전';
+    if (min < 60) return min + '분 전';
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return hr + '시간 전';
+    const day = Math.floor(hr / 24);
+    return day + '일 전';
+  }
+
+  // ─── 학부모 대시보드 ───
+  const parentToggle = document.getElementById('parentToggle');
+  const parentPanel = document.getElementById('parentPanel');
+  const parentClose = document.getElementById('parentClose');
+
+  parentToggle.addEventListener('click', () => {
+    renderParentDashboard();
+    parentPanel.classList.add('show');
+  });
+  parentClose.addEventListener('click', () => parentPanel.classList.remove('show'));
+  parentPanel.addEventListener('click', (e) => {
+    if (e.target === parentPanel) parentPanel.classList.remove('show');
+  });
+
+  function renderParentDashboard() {
+    const data = getRewardData();
+    const todayCount = getTodayCount(data);
+    const today = new Date().toISOString().slice(0, 10);
+
+    // 이번 주 플레이 수
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const weekStr = weekAgo.toISOString().slice(0, 10);
+    const weekCount = data.history.filter(h => h.date >= weekStr).length;
+
+    // 평균 별점
+    const avgStars = data.history.length > 0
+      ? (data.history.reduce((s, h) => s + (h.stars || 0), 0) / data.history.length).toFixed(1)
+      : '0';
+
+    // 가장 많이 한 게임
+    const gameCounts = {};
+    data.history.forEach(h => { gameCounts[h.gameId] = (gameCounts[h.gameId] || 0) + 1; });
+    const topGameId = Object.keys(gameCounts).sort((a, b) => gameCounts[b] - gameCounts[a])[0];
+    const topGame = topGameId ? (gameData.find(g => g.id === topGameId) || {}) : {};
+
+    // 요약 카드
+    document.getElementById('parentSummary').innerHTML = `
+      <div class="ps-card"><div class="ps-val">${data.totalGames}</div><div class="ps-label">총 플레이 횟수</div></div>
+      <div class="ps-card"><div class="ps-val">${data.totalStars}</div><div class="ps-label">총 획득 별</div></div>
+      <div class="ps-card"><div class="ps-val">${todayCount}</div><div class="ps-label">오늘 플레이</div></div>
+      <div class="ps-card"><div class="ps-val">${weekCount}</div><div class="ps-label">이번 주 플레이</div></div>
+      <div class="ps-card"><div class="ps-val">${avgStars}</div><div class="ps-label">평균 별점</div></div>
+      <div class="ps-card"><div class="ps-val">${data.streak}일</div><div class="ps-label">연속 출석</div></div>
+      <div class="ps-card"><div class="ps-val">${topGame.title || '-'}</div><div class="ps-label">가장 좋아하는 게임</div></div>
+      <div class="ps-card"><div class="ps-val">${data.badges.length}/${BADGE_DEFS.length}</div><div class="ps-label">뱃지 달성</div></div>
+    `;
+
+    // 영역별 차트
+    const areaCounts = {};
+    data.history.forEach(h => {
+      if (h.area) areaCounts[h.area] = (areaCounts[h.area] || 0) + 1;
+    });
+    const maxArea = Math.max(...Object.values(areaCounts), 1);
+    const areaLabels = { '기억력': '🧠', '관찰력': '👁️', '사고력': '💡', '루틴': '⏰' };
+
+    let areaHTML = '<h4>영역별 활동 분포</h4>';
+    ['기억력', '관찰력', '사고력', '루틴'].forEach(area => {
+      const count = areaCounts[area] || 0;
+      const pct = Math.round((count / maxArea) * 100);
+      areaHTML += `
+        <div class="area-bar-row">
+          <span class="area-bar-label">${areaLabels[area] || ''} ${area}</span>
+          <div class="area-bar-track"><div class="area-bar-fill" style="width:${pct}%"></div></div>
+          <span class="area-bar-count">${count}회</span>
+        </div>`;
+    });
+    document.getElementById('areaChart').innerHTML = areaHTML;
+
+    // 최근 활동 로그
+    const logContainer = document.getElementById('activityLog');
+    if (data.history.length === 0) {
+      logContainer.innerHTML = '<h4>최근 활동</h4><p style="color:#aaa;font-size:0.85rem;">아직 플레이 기록이 없어요.</p>';
+      return;
+    }
+
+    let logHTML = '<h4>최근 활동 (최근 20개)</h4>';
+    data.history.slice(0, 20).forEach(h => {
+      const game = gameData.find(g => g.id === h.gameId);
+      if (!game) return;
+      const stars = '⭐'.repeat(h.stars || 1);
+      const dateStr = h.date === today ? '오늘' : h.date;
+      logHTML += `
+        <div class="log-item">
+          <span class="log-icon">${game.icon}</span>
+          <span class="log-info">
+            <div class="log-name">${game.title}</div>
+            <div class="log-detail">${dateStr} · ${game.area}</div>
+          </span>
+          <span class="log-stars">${stars}</span>
+        </div>`;
+    });
+    logContainer.innerHTML = logHTML;
+  }
+
   // 초기 로드 시 실행
   init();
+  renderRewardDashboard();
+  updateMascotSpeech();
   loadMainBgm();
   syncMusicButton();
 </script>
