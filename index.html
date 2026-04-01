@@ -28,6 +28,7 @@
       --age4: #1E88E5;
       --age5: #8E24AA;
       --mixed: #F4511E;
+      --theme: #6D4C41;
       --routine: #00897B;
     }
 
@@ -207,10 +208,18 @@
 
     /* ─── 검색 및 서브 필터 ─── */
     .filter-section {
-      background: rgba(255, 255, 255, 0.6);
-      padding: 20px 16px 10px;
-      backdrop-filter: blur(8px);
+      background: rgba(255, 255, 255, 0.85);
+      padding: 14px 16px 10px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(91,79,207,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      transition: box-shadow 0.3s;
+    }
+    .filter-section.scrolled {
+      box-shadow: 0 4px 20px rgba(91,79,207,0.12);
     }
     .search-container {
       max-width: 600px;
@@ -266,33 +275,61 @@
       background: #F0EDFF;
     }
 
-    /* ─── 선생님 팁 스타일 ─── */
+    /* ─── 선생님 팁 스타일 (접기/펼치기) ─── */
     .teacher-tip {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px dashed #EEE;
-      font-size: 0.76rem;
+      margin-top: 8px;
+      font-size: 0.74rem;
       color: #667866;
       line-height: 1.4;
       font-style: italic;
       background: #F9FFF9;
-      padding: 8px;
+      padding: 0;
       border-radius: 8px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+    }
+    .game-card:hover .teacher-tip,
+    .game-card:focus-within .teacher-tip,
+    .teacher-tip.open {
+      max-height: 80px;
+      padding: 8px;
+    }
+    .tip-toggle {
+      font-size: 0.7rem;
+      color: #aaa;
+      cursor: pointer;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.2s;
+    }
+    .tip-toggle:hover { color: #5B4FCF; }
+    @media (hover: none) {
+      .teacher-tip { max-height: none; padding: 8px; }
+      .tip-toggle { display: none; }
     }
 
-    /* ─── 기존 탭바 디자인 수정 ─── */
+    /* ─── 탭바 ─── */
     .tab-bar {
-      justify-content: center;
-      padding-bottom: 16px;
+      display: flex;
+      gap: 8px;
+      padding: 10px 16px 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      max-width: 900px;
+      margin: 0 auto;
     }
     .tab-bar::-webkit-scrollbar { display: none; }
 
     .tab-btn {
       flex: 0 0 auto;
-      padding: 10px 18px;
+      padding: 8px 16px;
       border: none;
-      border-radius: 16px;
-      font-size: 0.88rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
       font-weight: 700;
       font-family: var(--font);
       cursor: pointer;
@@ -302,12 +339,20 @@
       white-space: nowrap;
     }
     .tab-btn.active {
-      background: var(--header-bg);
-      color: var(--tab-text-active);
-      box-shadow: 0 10px 20px rgba(91,79,207,0.18);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
     }
-    .tab-btn:hover {
+    .tab-btn[data-tab="all"].active { background: var(--header-bg); }
+    .tab-btn[data-tab="age2"].active { background: var(--age2); }
+    .tab-btn[data-tab="age3"].active { background: var(--age3); }
+    .tab-btn[data-tab="age4"].active { background: var(--age4); }
+    .tab-btn[data-tab="age5"].active { background: var(--age5); }
+    .tab-btn[data-tab="theme"].active { background: var(--theme); }
+    .tab-btn[data-tab="mixed"].active { background: var(--mixed); }
+    .tab-btn[data-tab="routine"].active { background: var(--routine); }
+    .tab-btn:hover:not(.active) {
       transform: translateY(-1px);
+      background: #D0CBF0;
     }
 
     /* ─── 콘텐츠 영역 ─── */
@@ -477,8 +522,54 @@
     .age5::before { background: var(--age5); }
     .mixed .card-tag { background: #FBE9E7; color: var(--mixed); }
     .mixed::before { background: var(--mixed); }
+    .theme .card-tag { background: #EFEBE9; color: var(--theme); }
+    .theme::before { background: var(--theme); }
     .routine .card-tag { background: #E0F2F1; color: var(--routine); }
     .routine::before { background: var(--routine); }
+
+    /* ─── 볼륨 슬라이더 ─── */
+    .volume-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      margin-top: 8px;
+      animation: fadeUp 0.6s ease-out 0.75s both;
+      position: relative;
+      z-index: 1;
+    }
+    .volume-row label {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.8);
+      font-weight: 600;
+    }
+    .volume-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100px;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.3);
+      outline: none;
+    }
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      cursor: pointer;
+    }
+    .volume-slider::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      cursor: pointer;
+      border: none;
+    }
 
     /* ─── 루틴 섹션 설명 박스 ─── */
     .routine-info {
@@ -868,8 +959,33 @@
       .badge-item { width: 44px; height: 44px; font-size: 1.2rem; }
     }
 
+    /* ─── 태블릿 (481~768px) ─── */
+    @media (min-width: 481px) and (max-width: 768px) {
+      .game-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+      .content { padding: 24px 20px 52px; }
+      .reward-stats { flex-wrap: nowrap; }
+    }
+
     @media (max-width: 340px) {
       .game-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─── 게임 수 카운트 뱃지 ─── */
+    .tab-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      background: rgba(255,255,255,0.3);
+      border-radius: 99px;
+      padding: 0 5px;
+      margin-left: 4px;
+    }
+    .tab-btn.active .tab-count {
+      background: rgba(255,255,255,0.35);
     }
   </style>
 </head>
@@ -941,20 +1057,42 @@
     <button class="hero-music-style" data-style="rainbow" type="button">밝은 무지개</button>
     <button class="hero-music-style" data-style="dreamy" type="button">포근한 별빛</button>
   </div>
+  <div class="volume-row">
+    <label>🔈</label>
+    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50">
+    <label>🔊</label>
+  </div>
 </header>
 
 <!-- 검색 및 상세 필터 -->
-<div class="filter-section">
+<div class="filter-section" id="filterSection">
+  <!-- 연령별 탭 -->
+  <div class="tab-bar" id="tabBar">
+    <button class="tab-btn active" data-tab="all">전체</button>
+    <button class="tab-btn" data-tab="age2">2세</button>
+    <button class="tab-btn" data-tab="age3">3세</button>
+    <button class="tab-btn" data-tab="age4">4세</button>
+    <button class="tab-btn" data-tab="age5">5세</button>
+    <button class="tab-btn" data-tab="theme">테마</button>
+    <button class="tab-btn" data-tab="mixed">혼합</button>
+    <button class="tab-btn" data-tab="routine">루틴</button>
+  </div>
   <div class="search-container">
-    <input type="text" id="gameSearch" placeholder="찾고 싶은 게임을 검색하세요 (예: 색깔, 기억)">
+    <input type="text" id="gameSearch" placeholder="게임 검색 (예: 색깔, 공룡, 기억)">
     <span class="search-icon">🔍</span>
   </div>
   <div class="sub-filter-bar" id="areaFilter">
-    <button class="sub-filter-btn active" data-area="all">전체 영역</button>
+    <button class="sub-filter-btn active" data-area="all">전체</button>
     <button class="sub-filter-btn" data-area="기억력">🧠 기억력</button>
     <button class="sub-filter-btn" data-area="관찰력">👁️ 관찰력</button>
     <button class="sub-filter-btn" data-area="사고력">💡 사고력</button>
-    <button class="sub-filter-btn" data-area="루틴">⏰ 생활루틴</button>
+    <button class="sub-filter-btn" data-area="청각">👂 청각</button>
+    <button class="sub-filter-btn" data-area="언어">📝 언어</button>
+    <button class="sub-filter-btn" data-area="창의력">🎨 창의력</button>
+    <button class="sub-filter-btn" data-area="순발력">⚡ 순발력</button>
+    <button class="sub-filter-btn" data-area="전략">♟️ 전략</button>
+    <button class="sub-filter-btn" data-area="지식">📚 지식</button>
+    <button class="sub-filter-btn" data-area="루틴">⏰ 루틴</button>
   </div>
 </div>
 
@@ -1083,14 +1221,46 @@
   const tabs = document.querySelectorAll('.tab-btn');
   const areaBtns = document.querySelectorAll('.sub-filter-btn');
   const searchInput = document.getElementById('gameSearch');
+  const filterSection = document.getElementById('filterSection');
+
+  // 스크롤 시 필터바 그림자
+  window.addEventListener('scroll', () => {
+    filterSection.classList.toggle('scrolled', window.scrollY > 200);
+  }, { passive: true });
+
+  // 탭별 게임 수 표시
+  function updateTabCounts() {
+    tabs.forEach(btn => {
+      const tab = btn.dataset.tab;
+      let count = 0;
+      if (tab === 'all') count = gameData.length;
+      else if (tab === 'age2') count = gameData.filter(g => g.age.includes(2)).length;
+      else if (tab === 'age3') count = gameData.filter(g => g.age.includes(3)).length;
+      else if (tab === 'age4') count = gameData.filter(g => g.age.includes(4)).length;
+      else if (tab === 'age5') count = gameData.filter(g => g.age.includes(5)).length;
+      else if (tab === 'theme') count = gameData.filter(g => g.isTheme).length;
+      else if (tab === 'mixed') count = gameData.filter(g => g.age.includes(0) && !g.isTheme && g.area !== '루틴').length;
+      else if (tab === 'routine') count = gameData.filter(g => g.area === '루틴').length;
+      const existing = btn.querySelector('.tab-count');
+      if (existing) existing.textContent = count;
+      else btn.insertAdjacentHTML('beforeend', `<span class="tab-count">${count}</span>`);
+    });
+  }
+
+  // 디바운스 유틸
+  function debounce(fn, ms) {
+    let timer;
+    return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
+  }
   
   const musicBtn = document.getElementById('musicBtn');
   const musicStyleButtons = document.querySelectorAll('.hero-music-style');
   const bgmAudio = document.getElementById('bgmAudio');
   
-  let bgmEnabled = localStorage.getItem('bgmEnabled') !== 'false'; // BGM 활성화 여부 (localStorage 유지)
-  let bgmStarted = false;    // BGM 재생 시작 여부 (중복 재생 방지)
-  let selectedMusicStyle = localStorage.getItem('bgmStyle') || 'calm'; // 현재 선택된 음악 스타일 (localStorage 유지)
+  let bgmEnabled = localStorage.getItem('bgmEnabled') !== 'false';
+  let bgmStarted = false;
+  let selectedMusicStyle = localStorage.getItem('bgmStyle') || 'calm';
+  let bgmVolume = parseFloat(localStorage.getItem('bgmVolume') || '0.5');
 
   // 배경음악 소스 경로 설정
   const bgmSources = {
@@ -1099,26 +1269,83 @@
     calm: './routine_tools/cleanup_timer/bgm-calm.mp3'
   };
 
+  // 볼륨 슬라이더
+  const volumeSlider = document.getElementById('volumeSlider');
+  volumeSlider.value = bgmVolume * 100;
+
+  volumeSlider.addEventListener('input', (e) => {
+    bgmVolume = e.target.value / 100;
+    bgmAudio.volume = bgmVolume;
+    localStorage.setItem('bgmVolume', bgmVolume);
+  });
+
+  // BGM 페이드 인/아웃
+  function fadeBgm(targetVol, duration, callback) {
+    const steps = 20;
+    const stepTime = duration / steps;
+    const startVol = bgmAudio.volume;
+    const diff = targetVol - startVol;
+    let step = 0;
+    const interval = setInterval(() => {
+      step++;
+      bgmAudio.volume = Math.max(0, Math.min(1, startVol + diff * (step / steps)));
+      if (step >= steps) {
+        clearInterval(interval);
+        if (callback) callback();
+      }
+    }, stepTime);
+  }
+
   /**
    * 게임 데이터 (games.json 인라인 — fetch 불필요, 로컬/서버 모두 동작)
    */
   const GAMES_DATA = [
+    // ─── 2세 (5개) ───
     { id:"color_finder", title:"색깔 찾기", age:[2], area:"관찰력", desc:"보여주는 색과 같은 색을 찾아요. 색 인식의 첫 걸음!", tag:"색 인식", path:"age_2/color_finder/index.html", icon:"🎨", tip:"아이들이 좋아하는 색깔부터 시작해 보세요.", isNew:false },
     { id:"same_picture", title:"같은 그림 고르기", age:[2], area:"관찰력", desc:"위에 보이는 그림과 똑같은 그림을 찾아요.", tag:"시각 변별", path:"age_2/same_picture/index.html", icon:"🖼️", tip:"그림의 이름을 함께 말하며 진행하면 언어 발달에도 좋아요.", isNew:false },
-    { id:"color_basket", title:"색깔 바구니 넣기", age:[2], area:"사고력", desc:"같은 색 바구니에 물건을 넣어요. 색 분류 + 손-눈 협응!", tag:"색 분류", path:"age_2/color_basket/index.html", icon:"🧺", tip:"바구니의 색을 크게 외치며 아이들의 참여를 유도해 보세요.", isNew:true },
+    { id:"color_basket", title:"색깔 바구니 넣기", age:[2], area:"사고력", desc:"같은 색 바구니에 물건을 넣어요. 색 분류 + 손-눈 협응!", tag:"색 분류", path:"age_2/color_basket/index.html", icon:"🧺", tip:"바구니의 색을 크게 외치며 아이들의 참여를 유도해 보세요.", isNew:false },
+    { id:"size_compare", title:"큰 것 작은 것 고르기", age:[2], area:"관찰력", desc:"큰 것과 작은 것을 비교해서 골라요. 크기 비교의 첫 걸음!", tag:"크기 비교", path:"age_2/size_compare/index.html", icon:"📏", tip:"\"어떤 게 더 클까?\" 질문을 함께 하며 비교 개념을 익혀요.", isNew:true },
+    { id:"sound_match", title:"같은 소리 찾기", age:[2], area:"청각", desc:"동물 소리를 듣고 어떤 동물인지 찾아요. 청각 인식 훈련!", tag:"청각 인식", path:"age_2/sound_match/index.html", icon:"🔊", tip:"소리를 들려주고 아이와 함께 동물 흉내를 내보세요.", isNew:true },
+    // ─── 3세 (6개) ───
     { id:"easy_matching", title:"쉬운 짝맞추기", age:[3], area:"기억력", desc:"4~5쌍의 카드를 뒤집어서 같은 그림을 찾아요.", tag:"기억력", path:"age_3/easy_matching/index.html", icon:"🃏", tip:"처음에는 카드를 모두 보여준 뒤 뒤집어서 시작하면 쉬워요.", isNew:false },
     { id:"shadow_matching", title:"그림자 맞추기", age:[3], area:"관찰력", desc:"물건과 그림자를 연결해요. 형태 인식 훈련!", tag:"형태 인식", path:"age_3/shadow_matching/index.html", icon:"🌑", tip:"실제 물건을 전등에 비춰 그림자를 만드는 활동과 연계해 보세요.", isNew:false },
-    { id:"home_matching", title:"짝이 되는 집 찾기", age:[3], area:"사고력", desc:"물고기는 바다, 새는 둥지! 동물과 맞는 집을 찾아요.", tag:"연관 개념", path:"age_3/home_matching/index.html", icon:"🏠", tip:"\"동물 친구들이 어디서 잠을 잘까요?\"라고 질문하며 시작해 보세요.", isNew:true },
+    { id:"home_matching", title:"짝이 되는 집 찾기", age:[3], area:"사고력", desc:"물고기는 바다, 새는 둥지! 동물과 맞는 집을 찾아요.", tag:"연관 개념", path:"age_3/home_matching/index.html", icon:"🏠", tip:"\"동물 친구들이 어디서 잠을 잘까요?\"라고 질문하며 시작해 보세요.", isNew:false },
+    { id:"shape_matching", title:"모양 짝맞추기", age:[3], area:"관찰력", desc:"같은 모양을 찾아요! 동그라미, 세모, 네모, 별을 구별해요.", tag:"형태 인식", path:"age_3/shape_matching/index.html", icon:"🔷", tip:"교실에서 같은 모양의 물건을 찾아보는 활동과 연계해 보세요.", isNew:true },
+    { id:"animal_food", title:"동물 먹이 연결하기", age:[3], area:"사고력", desc:"강아지는 뼈다귀, 토끼는 당근! 동물과 먹이를 연결해요.", tag:"연관 개념", path:"age_3/animal_food/index.html", icon:"🐶", tip:"동물원 견학 후 어떤 먹이를 먹었는지 이야기 나눠보세요.", isNew:true },
+    { id:"hidden_object", title:"숨은 물건 찾기", age:[3], area:"관찰력", desc:"여러 그림 중에서 숨어있는 물건을 찾아요!", tag:"시각 탐색", path:"age_3/hidden_object/index.html", icon:"🔍", tip:"\"어디 숨었을까?\" 하며 함께 찾아보면 더 재미있어요.", isNew:true },
+    // ─── 4세 (6개) ───
     { id:"position_memory", title:"위치 기억 게임", age:[4], area:"기억력", desc:"물건이 어디 있었는지 기억해서 맞춰요.", tag:"공간 기억", path:"age_4/position_memory/index.html", icon:"📍", tip:"손가락으로 위치를 짚어보게 하며 기억을 도와주세요.", isNew:false },
     { id:"sequence_memory", title:"순서 기억 게임", age:[4], area:"기억력", desc:"순서대로 나온 그림을 같은 순서로 눌러요.", tag:"작업 기억", path:"age_4/sequence_memory/index.html", icon:"🔢", tip:"리듬감 있게 순서를 외우는 '말놀이'로 접근해 보세요.", isNew:false },
-    { id:"opposite_game", title:"반대 규칙 게임", age:[4], area:"사고력", desc:"사과가 나오면 바나나를! 반대로 선택하는 게임이에요.", tag:"억제 조절", path:"age_4/opposite_game/index.html", icon:"🔄", tip:"아이들이 무의식적으로 누르려 할 때 \"잠깐!\" 하고 멈추는 재미를 주세요.", isNew:true },
+    { id:"opposite_game", title:"반대 규칙 게임", age:[4], area:"사고력", desc:"사과가 나오면 바나나를! 반대로 선택하는 게임이에요.", tag:"억제 조절", path:"age_4/opposite_game/index.html", icon:"🔄", tip:"아이들이 무의식적으로 누르려 할 때 \"잠깐!\" 하고 멈추는 재미를 주세요.", isNew:false },
+    { id:"pattern_complete", title:"패턴 완성 게임", age:[4], area:"사고력", desc:"반복되는 규칙을 찾아 빈칸을 채워요. 논리적 사고의 시작!", tag:"패턴 인식", path:"age_4/pattern_complete/index.html", icon:"🧩", tip:"\"다음에 뭐가 올까?\" 질문으로 규칙 찾기를 유도해 보세요.", isNew:true },
+    { id:"spot_difference", title:"다른 그림 찾기", age:[4], area:"관찰력", desc:"똑같은 그림 속에서 하나만 다른 것을 찾아요!", tag:"시각 변별", path:"age_4/spot_difference/index.html", icon:"👀", tip:"점점 많아지는 그림 속에서 집중력이 쑥쑥 자라요.", isNew:true },
+    { id:"classroom_search", title:"교실 물건 찾기", age:[4], area:"관찰력", desc:"교실에 흩어진 물건들 중에서 선생님이 말한 물건을 찾아요!", tag:"시각 탐색", path:"age_4/classroom_search/index.html", icon:"🏫", tip:"실제 교실에서도 물건 찾기 놀이를 해보세요.", isNew:true },
+    // ─── 5세 (7개) ───
     { id:"image_matching", title:"두뇌 쑥쑥 짝맞추기", age:[5], area:"기억력", desc:"기본 이모지·고급 이미지 전환 + 친구 얼굴 이름 매칭. 멀티플레이 지원!", tag:"기억력 · 집중력", path:"age_5/image_matching/index.html", icon:"🌈⭐", tip:"학기 초에 친구들의 이름을 익히는 활동으로 추천합니다.", isNew:false },
     { id:"seat_memory", title:"자리 기억 게임", age:[5], area:"기억력", desc:"친구나 캐릭터가 어디 앉았는지 기억해서 맞춰요.", tag:"공간 기억", path:"age_5/seat_memory/index.html", icon:"🪑", tip:"교실 안 실제 친구들의 자리를 떠올리며 이야기 나누어 보세요.", isNew:false },
     { id:"daily_routine_game", title:"하루 일과 순서 맞추기", age:[5], area:"사고력", desc:"어린이집 일과를 올바른 순서로 맞춰요.", tag:"순서 개념", path:"age_5/daily_routine/index.html", icon:"📅", tip:"일과 시간표를 보며 다음 활동을 예측해 보는 습관을 길러줍니다.", isNew:false },
-    { id:"rule_switching", title:"규칙 바꾸기 분류", age:[5], area:"사고력", desc:"색깔로 → 모양으로! 기준이 바뀌면 분류도 달라져요.", tag:"인지 유연성", path:"age_5/rule_switching/index.html", icon:"🔀", tip:"\"이번에는 대장님의 규칙이 바뀌었어요!\"라고 흥미를 유도하세요.", isNew:true },
+    { id:"rule_switching", title:"규칙 바꾸기 분류", age:[5], area:"사고력", desc:"색깔로 → 모양으로! 기준이 바뀌면 분류도 달라져요.", tag:"인지 유연성", path:"age_5/rule_switching/index.html", icon:"🔀", tip:"\"이번에는 대장님의 규칙이 바뀌었어요!\"라고 흥미를 유도하세요.", isNew:false },
+    { id:"classroom_rules", title:"교실 규칙 선택 게임", age:[5], area:"사고력", desc:"상황을 보고 올바른 행동을 선택해요. 교실 규칙을 배워요!", tag:"사회성", path:"age_5/classroom_rules/index.html", icon:"📋", tip:"아이들과 함께 우리 반 규칙을 이야기하며 진행해 보세요.", isNew:true },
+    { id:"initial_match", title:"이름과 초성 연결", age:[5], area:"언어", desc:"사과의 초성은 ㅅㄱ! 단어와 초성을 연결해요.", tag:"한글 학습", path:"age_5/initial_match/index.html", icon:"ㄱ", tip:"친구 이름의 초성도 함께 찾아보며 흥미를 높여보세요.", isNew:true },
+    { id:"role_match", title:"반 친구 역할 맞추기", age:[5], area:"사고력", desc:"청소 도우미는 뭘 할까? 역할과 하는 일을 연결해요.", tag:"역할 이해", path:"age_5/role_match/index.html", icon:"🌟", tip:"오늘의 도우미 활동과 연계하면 더 효과적이에요.", isNew:true },
+    // ─── 혼합 (5개) ───
     { id:"difficulty_matching", title:"난이도 선택 짝맞추기", age:[0], area:"기억력", desc:"카드 수와 공개 시간을 조정해서 어떤 연령에도 맞춰요.", tag:"난이도 조절", path:"mixed/difficulty_matching/index.html", icon:"🎯", tip:"아이들의 수준에 맞춰 카드 개수를 조금씩 늘려가 보세요.", isNew:false },
     { id:"friend_custom", title:"친구 맞춤 모드", age:[0], area:"기억력", desc:"쉬움: 얼굴-얼굴 / 어려움: 얼굴-이름. 연령에 맞게 선택!", tag:"맞춤 설정", path:"mixed/friend_custom/index.html", icon:"👫", tip:"우리 반 친구들의 사진을 활용해 더 친밀감을 높여보세요.", isNew:false },
-    { id:"rhythm_game", title:"리듬 따라하기", age:[0], area:"기억력", desc:"순서대로 빛나는 버튼을 같은 순서로 눌러요. 기억력 + 리듬!", tag:"작업 기억", path:"mixed/rhythm_game/index.html", icon:"🥁", tip:"박수를 치며 리듬을 먼저 익힌 뒤 게임을 시작하면 더 즐거워요.", isNew:true },
+    { id:"rhythm_game", title:"리듬 따라하기", age:[0], area:"기억력", desc:"순서대로 빛나는 버튼을 같은 순서로 눌러요. 기억력 + 리듬!", tag:"작업 기억", path:"mixed/rhythm_game/index.html", icon:"🥁", tip:"박수를 치며 리듬을 먼저 익힌 뒤 게임을 시작하면 더 즐거워요.", isNew:false },
+    { id:"sequence_stages", title:"순서 기억 (단계 선택)", age:[0], area:"기억력", desc:"빛나는 순서를 기억해서 따라 눌러요! 난이도를 선택할 수 있어요.", tag:"작업 기억", path:"mixed/sequence_stages/index.html", icon:"🎵", tip:"쉬운 단계부터 시작해서 점점 도전해 보세요.", isNew:true },
+    { id:"hidden_picture", title:"숨은 그림 찾기", age:[0], area:"관찰력", desc:"장면 속에 숨어있는 물건들을 모두 찾아요! 난이도 선택 가능!", tag:"시각 탐색", path:"mixed/hidden_picture/index.html", icon:"🔎", tip:"동물원, 바다, 우주 등 다양한 테마로 즐겨보세요.", isNew:true },
+    // ─── 테마 (10개) ───
+    { id:"dino_puzzle", title:"공룡 퍼즐 맞추기", age:[0], area:"사고력", desc:"공룡 그림을 조각조각! 퍼즐을 맞춰 공룡을 완성해요.", tag:"퍼즐", path:"theme/dino_puzzle/index.html", icon:"🦕", tip:"쉬운 2x2부터 시작해서 3x3에 도전해 보세요.", isNew:true, isTheme:true },
+    { id:"dino_name", title:"공룡 이름 맞추기", age:[0], area:"지식", desc:"힌트를 보고 어떤 공룡인지 맞춰요! 공룡 박사가 되어보자.", tag:"공룡 지식", path:"theme/dino_name/index.html", icon:"🦖", tip:"공룡 도감과 함께 보면 더 재미있어요.", isNew:true, isTheme:true },
+    { id:"car_race", title:"자동차 경주", age:[0], area:"순발력", desc:"빠르게 터치해서 자동차를 앞으로! 컴퓨터를 이겨보세요.", tag:"터치 레이싱", path:"theme/car_race/index.html", icon:"🏎️", tip:"손가락을 빠르게 움직여 보세요. 누가 더 빠를까?", isNew:true, isTheme:true },
+    { id:"vehicle_sound", title:"탈것 소리 맞추기", age:[0], area:"청각", desc:"부릉부릉, 칙칙폭폭! 소리를 듣고 어떤 탈것인지 맞춰요.", tag:"청각 인식", path:"theme/vehicle_sound/index.html", icon:"🚂", tip:"실제 탈것을 봤을 때 소리를 흉내 내보는 활동과 연계하세요.", isNew:true, isTheme:true },
+    { id:"character_dress", title:"캐릭터 꾸미기", age:[0], area:"창의력", desc:"얼굴, 눈, 머리, 모자를 골라서 나만의 캐릭터를 만들어요!", tag:"창의 놀이", path:"theme/character_dress/index.html", icon:"👸", tip:"완성된 캐릭터에 이름을 지어주면 더 재미있어요.", isNew:true, isTheme:true },
+    { id:"cooking_order", title:"요리 순서 맞추기", age:[0], area:"사고력", desc:"케이크, 피자, 김밥! 요리 순서를 올바르게 맞춰요.", tag:"순서 개념", path:"theme/cooking_order/index.html", icon:"🍰", tip:"실제 간식 만들기 활동 전에 순서를 먼저 맞춰보세요.", isNew:true, isTheme:true },
+    { id:"flower_garden", title:"꽃밭 꾸미기", age:[0], area:"창의력", desc:"예쁜 꽃을 심어서 나만의 정원을 만들어요! 미션도 있어요.", tag:"창의 놀이", path:"theme/flower_garden/index.html", icon:"🌸", tip:"바깥 놀이에서 꽃 이름을 찾아보는 활동과 연계하세요.", isNew:true, isTheme:true },
+    { id:"pet_care", title:"동물 돌보기", age:[0], area:"사고력", desc:"배고픈 강아지에겐 밥을, 더러운 고양이에겐 목욕을! 동물을 돌봐요.", tag:"돌봄 학습", path:"theme/pet_care/index.html", icon:"🐾", tip:"\"동물 친구가 뭘 원하는 걸까?\" 하며 공감 능력을 키워요.", isNew:true, isTheme:true },
+    { id:"territory", title:"땅따먹기", age:[0], area:"전략", desc:"번갈아 칸을 차지하고, 상대 땅을 뒤집어요! 누가 더 많이 차지할까?", tag:"전략 게임", path:"theme/territory/index.html", icon:"🏴", tip:"혼자서 컴퓨터와, 또는 친구와 둘이서 해보세요.", isNew:true, isTheme:true },
+    { id:"maze_treasure", title:"보물찾기 미로", age:[0], area:"사고력", desc:"미로를 탐험해서 보물을 찾아요! 별도 모아보세요.", tag:"길 찾기", path:"theme/maze_treasure/index.html", icon:"🗺️", tip:"쉬운 미로부터 시작해서 어려운 미로에 도전해 보세요.", isNew:true, isTheme:true },
+    // ─── 루틴 (4개) ───
     { id:"routine_hub", title:"생활 루틴 도구 모음", age:[0], area:"루틴", desc:"정리 시간, 손씻기, 하루 일과, 역할 보드를 한곳에서 바로 열 수 있습니다.", tag:"루틴 허브", path:"routine_tools/index.html", icon:"⏰", tip:"수업 시작 전 미리 띄워두면 편리하게 사용할 수 있습니다.", isNew:false },
     { id:"cleanup_timer", title:"정리 시간 타이머", age:[0], area:"루틴", desc:"무지개가 줄어드는 화면으로 정리 시간을 직관적으로 보여줍니다.", tag:"3/5/10/15분", path:"routine_tools/cleanup_timer/index.html", icon:"🌈", tip:"정리가 끝난 후 무지개가 완성되면 다 함께 박수를 쳐주세요.", isNew:false },
     { id:"daily_schedule", title:"하루 일과 순서판", age:[0], area:"루틴", desc:"지금, 다음, 그다음 활동을 큰 카드로 보여줘 아이들이 일과 흐름을 쉽게 이해합니다.", tag:"현재-다음-그다음", path:"routine_tools/daily_schedule/index.html", icon:"🗓️", tip:"활동 전환 시간에 아이들과 함께 다음 순서를 확인해 보세요.", isNew:false },
@@ -1131,6 +1358,7 @@
    */
   function init() {
     gameData = GAMES_DATA;
+    updateTabCounts();
     renderGames();
   }
 
@@ -1142,26 +1370,28 @@
     
     // 복합 필터 로직 적용
     const filtered = gameData.filter(game => {
-      // 1. 탭이 'all'이거나 검색어가 있으면 연령 필터 무시 (전체 표시)
-      //    탭 버튼이 HTML에 존재할 경우 해당 연령만 필터링
-      const tabMatch = (currentTab === 'all') ||
-                       (searchQuery.length > 0) ||
-                       (currentTab === 'age2' && game.age.includes(2)) ||
-                       (currentTab === 'age3' && game.age.includes(3)) ||
-                       (currentTab === 'age4' && game.age.includes(4)) ||
-                       (currentTab === 'age5' && game.age.includes(5)) ||
-                       (currentTab === 'mixed' && (game.age.includes(0) || game.age.length > 1)) ||
-                       (currentTab === 'routine' && game.area === '루틴');
-      
+      // 1. 탭 필터 (검색 중에도 탭 필터 유지)
+      let tabMatch = false;
+      if (currentTab === 'all') tabMatch = true;
+      else if (currentTab === 'age2') tabMatch = game.age.includes(2);
+      else if (currentTab === 'age3') tabMatch = game.age.includes(3);
+      else if (currentTab === 'age4') tabMatch = game.age.includes(4);
+      else if (currentTab === 'age5') tabMatch = game.age.includes(5);
+      else if (currentTab === 'theme') tabMatch = !!game.isTheme;
+      else if (currentTab === 'mixed') tabMatch = game.age.includes(0) && !game.isTheme && game.area !== '루틴';
+      else if (currentTab === 'routine') tabMatch = game.area === '루틴';
+
       // 2. 영역 필터 매칭
       const areaMatch = (currentArea === 'all') || (game.area === currentArea);
-      
-      // 3. 검색어 매칭 (제목, 설명, 태그, 영역 모두 검색 대상에 포함)
-      const searchMatch = game.title.includes(searchQuery) || 
-                          game.desc.includes(searchQuery) || 
-                          game.tag.includes(searchQuery) ||
-                          game.area.includes(searchQuery);
-      
+
+      // 3. 검색어 매칭 (대소문자 무시, 제목/설명/태그/영역 포함)
+      const q = searchQuery.toLowerCase();
+      const searchMatch = !q ||
+                          game.title.toLowerCase().includes(q) ||
+                          game.desc.toLowerCase().includes(q) ||
+                          game.tag.toLowerCase().includes(q) ||
+                          game.area.toLowerCase().includes(q);
+
       return tabMatch && areaMatch && searchMatch;
     });
 
@@ -1179,10 +1409,11 @@
     // 필터링된 데이터를 바탕으로 카드 생성
     filtered.forEach((game, idx) => {
       // 연령/영역에 따른 카드 상단 색상 테마 결정
-      const ageClass = game.age.includes(2) ? 'age2' : 
+      const ageClass = game.age.includes(2) ? 'age2' :
                        game.age.includes(3) ? 'age3' :
                        game.age.includes(4) ? 'age4' :
-                       game.age.includes(5) ? 'age5' : 
+                       game.age.includes(5) ? 'age5' :
+                       game.isTheme ? 'theme' :
                        game.area === '루틴' ? 'routine' : 'mixed';
 
       // 난이도 (연령 기반)
@@ -1208,7 +1439,8 @@
           <div class="card-difficulty">${diffStars}</div>
           ${playCount > 0 ? `<div class="card-played">🎮 ${playCount}회</div>` : ''}
         </div>
-        <div class="teacher-tip">💡 ${game.tip}</div>
+        <div class="tip-toggle" onclick="event.preventDefault();this.nextElementSibling.classList.toggle('open')">💡 선생님 팁</div>
+        <div class="teacher-tip">${game.tip}</div>
       `;
       
       // 순차 입장 애니메이션 딜레이
@@ -1222,13 +1454,15 @@
 
   // --- 이벤트 리스너 설정 ---
 
-  // 상단 연령 탭 클릭 이벤트
+  // 연령 탭 클릭 이벤트
   tabs.forEach(btn => {
     btn.addEventListener('click', () => {
       tabs.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentTab = btn.dataset.tab;
       renderGames();
+      // 콘텐츠 영역으로 부드럽게 스크롤
+      gameContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   });
 
@@ -1242,10 +1476,11 @@
     });
   });
 
-  // 검색창 입력 이벤트 (실시간 필터링)
+  // 검색창 입력 이벤트 (디바운스 적용 — 300ms)
+  const debouncedSearch = debounce(() => renderGames(), 300);
   searchInput.addEventListener('input', (e) => {
     searchQuery = e.target.value;
-    renderGames();
+    debouncedSearch();
   });
 
   // --- BGM 제어 및 설정 유지 로직 ---
@@ -1274,6 +1509,7 @@
     bgmAudio.pause();
     bgmAudio.currentTime = 0;
     bgmAudio.src = bgmSources[selectedMusicStyle];
+    bgmAudio.volume = bgmVolume;
     bgmAudio.load();
   }
 
@@ -1282,15 +1518,14 @@
    * 사용자가 BGM을 켠 상태일 때만 재생을 시도합니다.
    */
   function startMainBgm() {
-    // 1. 사용자가 BGM을 꺼두었다면 절대 재생하지 않음
     if (!bgmEnabled) return;
-    
-    // 2. 이미 재생 중이라면 중복 실행 방지
     if (bgmStarted) return;
-    
+
     bgmStarted = true;
-    bgmAudio.play().catch(() => {
-      // 자동 재생 정책으로 인해 차단된 경우, 다음 인터랙션 시 재시도할 수 있게 상태 리셋
+    bgmAudio.volume = 0;
+    bgmAudio.play().then(() => {
+      fadeBgm(bgmVolume, 800);
+    }).catch(() => {
       bgmStarted = false;
     });
   }
@@ -1298,18 +1533,17 @@
   // BGM On/Off 토글 버튼 클릭 이벤트
   musicBtn.addEventListener('click', () => {
     bgmEnabled = !bgmEnabled;
-    
-    // 설정값을 브라우저에 영구 저장 (새로고침해도 유지됨)
     localStorage.setItem('bgmEnabled', bgmEnabled);
-    
     syncMusicButton();
-    
+
     if (bgmEnabled) {
-      bgmStarted = false; 
+      bgmStarted = false;
       startMainBgm();
     } else {
-      bgmAudio.pause();
-      bgmStarted = false;
+      fadeBgm(0, 500, () => {
+        bgmAudio.pause();
+        bgmStarted = false;
+      });
     }
   });
 
@@ -1317,16 +1551,18 @@
   musicStyleButtons.forEach(button => {
     button.addEventListener('click', () => {
       selectedMusicStyle = button.dataset.style;
-      
-      // 선택한 스타일 저장
       localStorage.setItem('bgmStyle', selectedMusicStyle);
-      
       musicStyleButtons.forEach(item => item.classList.toggle('active', item === button));
-      loadMainBgm();
-      
-      if (bgmEnabled) {
-        bgmStarted = false;
-        startMainBgm();
+
+      if (bgmEnabled && bgmStarted) {
+        // 페이드 아웃 → 곡 변경 → 페이드 인
+        fadeBgm(0, 400, () => {
+          loadMainBgm();
+          bgmStarted = false;
+          startMainBgm();
+        });
+      } else {
+        loadMainBgm();
       }
     });
   });
@@ -1593,10 +1829,10 @@
       if (h.area) areaCounts[h.area] = (areaCounts[h.area] || 0) + 1;
     });
     const maxArea = Math.max(...Object.values(areaCounts), 1);
-    const areaLabels = { '기억력': '🧠', '관찰력': '👁️', '사고력': '💡', '루틴': '⏰' };
+    const areaLabels = { '기억력': '🧠', '관찰력': '👁️', '사고력': '💡', '청각': '👂', '언어': '📝', '창의력': '🎨', '순발력': '⚡', '전략': '♟️', '지식': '📚', '루틴': '⏰' };
 
     let areaHTML = '<h4>영역별 활동 분포</h4>';
-    ['기억력', '관찰력', '사고력', '루틴'].forEach(area => {
+    ['기억력', '관찰력', '사고력', '청각', '언어', '창의력', '순발력', '전략', '지식', '루틴'].forEach(area => {
       const count = areaCounts[area] || 0;
       const pct = Math.round((count / maxArea) * 100);
       areaHTML += `

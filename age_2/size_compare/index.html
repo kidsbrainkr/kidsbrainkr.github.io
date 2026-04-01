@@ -315,9 +315,35 @@ body {
   .progress-badge { font-size: 1rem; padding: 6px 16px; }
   .btn-restart { padding: 16px 40px; font-size: 1.3rem; }
 }
-</style>
+
+    .home-float-btn {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 9999;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.92);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      font-size: 1.3rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .home-float-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+  </style>
 </head>
 <body>
+<a href="../../index.html" class="home-float-btn" title="홈으로">🏠</a>
+
 
 <div id="game-screen" class="screen active">
   <div class="status-bar">
