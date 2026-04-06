@@ -1,0 +1,169 @@
+/**
+ * game-common.css — 인게임 공통 스타일
+ * 모든 게임 HTML에서 이 CSS를 로드하면 통일된 분위기 적용.
+ *
+ * 사용법 (게임 HTML <head>에 추가):
+ *   <link rel="stylesheet" href="../../assets/game-common.css">
+ *
+ * 게임별 고유 스타일은 게임 HTML 내 <style>에 유지.
+ * 이 CSS는 배경, 버튼, 카드, 헤더 등 공통 요소만 정의.
+ */
+
+/* ─── 공통 변수 ─── */
+:root {
+    --game-bg: linear-gradient(180deg, #E8F5FD 0%, #F3E5F5 50%, #FFF3E0 100%);
+    --game-card-bg: rgba(255,255,255,0.9);
+    --game-card-radius: 20px;
+    --game-card-shadow: 0 6px 20px rgba(91,79,207,0.12);
+    --game-accent: #7C6CF0;
+    --game-success: #4CAF50;
+    --game-error: #FF5252;
+    --game-font: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+}
+
+/* ─── 기본 배경 ─── */
+body.game-body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--game-font);
+    background: var(--game-bg);
+    min-height: 100vh;
+    color: #333;
+}
+
+/* ─── 게임 헤더 (뒤로가기 + 제목) ─── */
+.game-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(91,79,207,0.08);
+}
+.game-back-btn {
+    width: 44px; height: 44px;
+    border-radius: 14px;
+    border: none;
+    background: var(--game-accent);
+    color: #fff;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s;
+    box-shadow: 0 4px 12px rgba(124,108,240,0.3);
+}
+.game-back-btn:hover { transform: scale(1.08); }
+.game-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--game-accent);
+}
+
+/* ─── 게임 카드/아이템 공통 ─── */
+.game-card-item {
+    background: var(--game-card-bg);
+    border-radius: var(--game-card-radius);
+    box-shadow: var(--game-card-shadow);
+    padding: 16px;
+    transition: transform 0.2s;
+    border: 2px solid rgba(255,255,255,0.8);
+}
+.game-card-item:hover {
+    transform: translateY(-3px);
+}
+
+/* ─── 게임 아이템 이미지 (이모지 대체) ─── */
+.game-item-img {
+    width: 64px; height: 64px;
+    object-fit: contain;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.1));
+}
+.game-item-img.large { width: 96px; height: 96px; }
+.game-item-img.small { width: 48px; height: 48px; }
+
+/* ─── 공통 버튼 ─── */
+.game-btn {
+    padding: 12px 28px;
+    border-radius: 16px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.game-btn:hover { transform: translateY(-2px); }
+.game-btn:active { transform: translateY(0); }
+
+.game-btn-primary {
+    background: linear-gradient(135deg, #7C6CF0, #9C8CFF);
+    color: #fff;
+}
+.game-btn-success {
+    background: linear-gradient(135deg, #4CAF50, #66BB6A);
+    color: #fff;
+}
+.game-btn-warning {
+    background: linear-gradient(135deg, #FF9800, #FFB74D);
+    color: #fff;
+}
+
+/* ─── 점수/결과 표시 ─── */
+.game-score {
+    text-align: center;
+    padding: 24px;
+}
+.game-score .score-value {
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--game-accent);
+}
+.game-score .score-label {
+    font-size: 1rem;
+    color: #888;
+    font-weight: 600;
+}
+
+/* ─── 정답/오답 피드백 ─── */
+.feedback-correct {
+    animation: correctPop 0.5s ease-out;
+    outline: 3px solid var(--game-success);
+    outline-offset: 3px;
+    border-radius: var(--game-card-radius);
+}
+.feedback-wrong {
+    animation: wrongShake 0.4s ease-out;
+    outline: 3px solid var(--game-error);
+    outline-offset: 3px;
+    border-radius: var(--game-card-radius);
+}
+
+@keyframes correctPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+@keyframes wrongShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+}
+
+/* ─── 선택한 캐릭터 표시 (게임 내 구석) ─── */
+.game-mascot {
+    position: fixed;
+    bottom: 16px; right: 16px;
+    width: 60px; height: 60px;
+    z-index: 100;
+    animation: mascotFloat 3s ease-in-out infinite;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+    cursor: pointer;
+}
+.game-mascot img {
+    width: 100%; height: 100%; object-fit: contain;
+}
+@keyframes mascotFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}

@@ -10,7 +10,7 @@
 <style>
 /* ===== CSS 변수 ===== */
 :root {
-  --bg:        #FFF8F0;
+  --bg:        linear-gradient(180deg, #E8F5FD 0%, #F3E5F5 50%, #FFF3E0 100%);
   --accent:    #FF6B35;
   --accent-dk: #E55A24;
   --mint:      #4ECDC4;
@@ -652,7 +652,7 @@ function createCardElement(emoji, index) {
         <span class="card-back-icon">✨</span>
       </div>
       <div class="card-face-up">
-        <span class="card-emoji">${emoji}</span>
+        <span class="card-emoji">${_getItemHtml(emoji)}</span>
       </div>
     </div>
   `;

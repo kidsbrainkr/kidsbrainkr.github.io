@@ -6,7 +6,7 @@
   <style>
     :root {
       --accent:#FF6B35; --accent-h:#e85a25; --mint:#4ECDC4; --mint-h:#38b8ae;
-      --bg:#FFF8F0; --card-bg:#FFFFFF; --text:#333333;
+      --bg: linear-gradient(180deg, #E8F5FD 0%, #F3E5F5 50%, #FFF3E0 100%); --card-bg:#FFFFFF; --text:#333333;
       --shadow:0 4px 16px rgba(0,0,0,.12); --shadow-lg:0 8px 32px rgba(0,0,0,.18);
       --radius-sm:12px; --radius-md:20px; --radius-lg:24px;
     }
@@ -483,6 +483,60 @@
     }
 
     function resetGame(){showScreen('startScreen');}
-  </script>
+  
+/* ===== 이모지→이미지 자동 교체 (game-common) ===== */
+const _EMOJI_IMG = {
+  '🍎':'fruits/apple.png','🍌':'fruits/banana.png','🍇':'fruits/grape.png',
+  '🍊':'fruits/orange.png','🍓':'fruits/strawberry.png','🍑':'fruits/peach.png',
+  '🍒':'fruits/cherry.png','🍋':'fruits/lemon.png','🍉':'fruits/watermelon.png',
+  '🐶':'animals/dog.png','🐱':'animals/cat.png','🐰':'animals/rabbit.png',
+  '🐻':'animals/bear.png','🐧':'animals/penguin.png','🐸':'animals/frog.png',
+  '🐨':'animals/koala.png','🦊':'animals/fox.png','🦉':'animals/owl.png',
+  '🐯':'animals/tiger.png','🦁':'animals/lion.png','🐮':'animals/cow.png',
+  '🐷':'animals/pig.png','🐔':'animals/chicken.png','🐥':'animals/chick.png',
+  '🚗':'vehicles/car.png','🚌':'vehicles/bus.png','✈️':'vehicles/airplane.png',
+  '🚀':'vehicles/rocket.png','🚲':'vehicles/bicycle.png','🚢':'vehicles/ship.png',
+  '🚁':'vehicles/helicopter.png','🚂':'vehicles/train.png',
+  '⭕':'shapes/circle.png','🔺':'shapes/triangle.png','⬜':'shapes/square.png',
+  '⭐':'shapes/star.png','🔷':'shapes/diamond.png',
+  '🌸':'nature/flower.png','🌳':'nature/tree.png',
+};
+const _ASSET_BASE = (function() {
+  const p = window.location.pathname;
+  // routine_tools/index.html (허브)만 깊이 1, 나머지 전부 깊이 2
+  if (p.endsWith('/routine_tools/index.html') || p.endsWith('/routine_tools/'))
+    return '../assets/game_items/';
+  return '../../assets/game_items/';
+})();
+
+function _getItemHtml(emoji, sz) {
+  sz = sz || 64;
+  const f = _EMOJI_IMG[emoji];
+  if (!f) return emoji;
+  const src = _ASSET_BASE + f;
+  return '<img src="' + src + '" alt="' + emoji + '" style="width:' + sz + 'px;height:' + sz + 'px;object-fit:contain;" onerror="this.outerHTML=\'' + emoji + '\'">';
+}
+
+function _getItemSrc(emoji) {
+  const f = _EMOJI_IMG[emoji];
+  return f ? _ASSET_BASE + f : null;
+}
+
+// 선택된 캐릭터 마스코트 표시
+(function() {
+  const ch = localStorage.getItem('selectedCharacter') || 'fairy';
+  const charBase = _ASSET_BASE.replace('game_items/', 'characters/');
+  const m = document.createElement('div');
+  m.style.cssText = 'position:fixed;bottom:12px;right:12px;width:56px;height:56px;z-index:9999;cursor:pointer;animation:_mFloat 3s ease-in-out infinite;';
+  m.innerHTML = '<img src="' + charBase + ch + '_profile.png" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.15));">';
+  m.title = {fairy:'별이',robot:'볼트',dino:'꾸미'}[ch] + '와 함께 하는 중!';
+  m.onclick = function() { window.location.href = m.closest('html').querySelector('a[href*="index"]')?.href || '../../index.html'; };
+  const style = document.createElement('style');
+  style.textContent = '@keyframes _mFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}';
+  document.head.appendChild(style);
+  document.body.appendChild(m);
+})();
+
+</script>
 </body>
 </html>
