@@ -10,7 +10,8 @@
     /* ============================================================
        CSS CUSTOM PROPERTIES
        ============================================================ */
-    :root {
+    :root,
+    [data-theme="day"] {
       --bg: #FFF8E1;
       --hero-start: #4FC3F7;
       --hero-mid: #7C4DFF;
@@ -24,6 +25,22 @@
       --routine: #00BFA5;
       --card-radius: 24px;
       --font: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      --text-color: #333;
+      --section-heading: #5B4FCF;
+    }
+    [data-theme="night"] {
+      --bg: #1a1a2e;
+      --hero-start: #0f3460;
+      --hero-mid: #533483;
+      --hero-end: #e94560;
+      --text-color: #e5e5e5;
+      --section-heading: #c4b5fd;
+    }
+    [data-theme="night"] body {
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(circle, rgba(167,139,250,0.08) 3px, transparent 3px),
+        radial-gradient(circle, rgba(100,181,246,0.06) 3px, transparent 3px);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -519,7 +536,10 @@
     .game-card {
       background: #5B4FCF;
       border-radius: var(--card-radius);
-      box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+      box-shadow:
+        0 8px 24px rgba(0,0,0,0.15),
+        inset 0 2px 4px rgba(255,255,255,0.25),
+        inset 0 -2px 4px rgba(0,0,0,0.1);
       padding: 24px 20px 20px;
       text-decoration: none;
       color: #fff;
@@ -529,7 +549,7 @@
       transition: transform 0.25s cubic-bezier(.4,0,.2,1), box-shadow 0.25s;
       position: relative;
       overflow: hidden;
-      border: 4px solid rgba(255,255,255,0.3);
+      border: 4px solid rgba(255,255,255,0.35);
       animation: cardPop 0.5s cubic-bezier(.4,0,.2,1) both;
     }
     .game-card::before {
@@ -556,10 +576,17 @@
     }
     .game-card:hover {
       transform: translateY(-8px) scale(1.04);
-      box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+      box-shadow:
+        0 16px 40px rgba(0,0,0,0.25),
+        inset 0 2px 6px rgba(255,255,255,0.35),
+        inset 0 -2px 6px rgba(0,0,0,0.15);
     }
     .game-card:active {
-      transform: translateY(-2px) scale(0.98);
+      transform: translateY(-1px) scale(0.96);
+      box-shadow:
+        0 4px 12px rgba(0,0,0,0.2),
+        inset 0 3px 6px rgba(0,0,0,0.15),
+        inset 0 -1px 2px rgba(255,255,255,0.2);
     }
 
     /* Card icon */
@@ -582,7 +609,9 @@
       font-size: 1.3rem;
       font-weight: 900;
       color: #fff;
-      text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+      text-shadow:
+        0 2px 0 rgba(0,0,0,0.15),
+        0 4px 8px rgba(0,0,0,0.1);
       text-align: center;
       letter-spacing: -0.5px;
     }
@@ -1239,6 +1268,94 @@
       color: #888;
     }
     .empty-state .empty-icon { font-size: 4rem; margin-bottom: 16px; }
+
+    /* ============================================================
+       TODAY'S PICK CARD
+       ============================================================ */
+    .today-pick-card {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      background: linear-gradient(135deg, #7C4DFF 0%, #E040FB 50%, #FF6090 100%);
+      border-radius: 28px;
+      padding: 28px 32px;
+      text-decoration: none;
+      color: #fff;
+      box-shadow:
+        0 12px 40px rgba(124,77,255,0.3),
+        inset 0 2px 6px rgba(255,255,255,0.25),
+        inset 0 -2px 6px rgba(0,0,0,0.1);
+      border: 4px solid rgba(255,255,255,0.3);
+      transition: transform 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .today-pick-card::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 150px; height: 150px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+    }
+    .today-pick-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow:
+        0 20px 50px rgba(124,77,255,0.4),
+        inset 0 2px 8px rgba(255,255,255,0.3);
+    }
+    .today-pick-card:active {
+      transform: translateY(-1px) scale(0.98);
+    }
+    .tp-icon {
+      font-size: 5rem;
+      line-height: 1;
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.2));
+      animation: float 3s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    .tp-info { flex: 1; }
+    .tp-name {
+      font-size: 1.6rem;
+      font-weight: 900;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.15), 0 4px 10px rgba(0,0,0,0.1);
+      margin-bottom: 6px;
+    }
+    .tp-desc {
+      font-size: 0.92rem;
+      color: rgba(255,255,255,0.85);
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+    .tp-tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.25);
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+    .tp-play {
+      flex-shrink: 0;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(8px);
+      border: 2px solid rgba(255,255,255,0.4);
+      border-radius: 18px;
+      padding: 14px 24px;
+      font-weight: 900;
+      font-size: 1rem;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      transition: background 0.2s;
+    }
+    .today-pick-card:hover .tp-play {
+      background: rgba(255,255,255,0.35);
+    }
+    @media (max-width: 600px) {
+      .today-pick-card { flex-direction: column; text-align: center; padding: 24px 20px; gap: 12px; }
+      .tp-icon { font-size: 4rem; }
+      .tp-name { font-size: 1.3rem; }
+      .tp-play { width: 100%; text-align: center; }
+    }
   </style>
 </head>
 <body>
@@ -1399,6 +1516,24 @@
 </div>
 
 <!-- ============================================================
+     TODAY'S PICK (Featured Game)
+     ============================================================ -->
+<div class="content" id="todayPickSection">
+  <div class="section-header" style="margin-bottom:14px;">
+    <h2 style="color:var(--section-heading,#5B4FCF);">🎯 오늘의 추천 게임</h2>
+  </div>
+  <a class="today-pick-card" id="todayPickCard" href="#">
+    <div class="tp-icon" id="tpIcon">🎮</div>
+    <div class="tp-info">
+      <div class="tp-name" id="tpName">로딩 중...</div>
+      <div class="tp-desc" id="tpDesc"></div>
+      <div class="tp-tag" id="tpTag"></div>
+    </div>
+    <div class="tp-play">놀러가기 →</div>
+  </a>
+</div>
+
+<!-- ============================================================
      GAME GRID
      ============================================================ -->
 <div class="content">
@@ -1461,6 +1596,10 @@
 
 <audio id="bgmAudio" loop preload="auto"></audio>
 <script src="./data/sounds.js"></script>
+<!-- 게임 엔진 v2: GSAP + confetti + 사운드 -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script src="./assets/game-engine.js"></script>
 
 <script>
   /**
@@ -2227,12 +2366,82 @@
     logContainer.innerHTML = logHTML;
   }
 
+  // ─── 오늘의 추천 게임 ───
+  function renderTodayPick() {
+    const today = new Date();
+    const dayIndex = today.getFullYear() * 366 + today.getMonth() * 31 + today.getDate();
+    const pick = GAMES_DATA.filter(g => g.area !== '루틴')[dayIndex % GAMES_DATA.filter(g => g.area !== '루틴').length];
+    if (!pick) return;
+
+    document.getElementById('todayPickCard').href = pick.path;
+    document.getElementById('tpIcon').textContent = pick.icon;
+    document.getElementById('tpName').textContent = pick.title;
+    document.getElementById('tpDesc').textContent = pick.desc;
+    document.getElementById('tpTag').textContent = pick.tag;
+
+    // GSAP 스프링 등장
+    if (typeof gsap !== 'undefined') {
+      gsap.from('#todayPickCard', {
+        scale: 0.8, opacity: 0, y: 30, duration: 0.7,
+        ease: 'elastic.out(1,0.5)', delay: 0.3
+      });
+    }
+  }
+
+  // ─── GSAP 카드 애니메이션 오버라이드 ───
+  const _origRenderGames = renderGames;
+  renderGames = function() {
+    _origRenderGames();
+    // GSAP 스프링 카드 등장
+    if (typeof gsap !== 'undefined') {
+      gsap.from('.game-card', {
+        scale: 0.5, opacity: 0, y: 40,
+        duration: 0.5,
+        stagger: 0.04,
+        ease: 'elastic.out(1,0.6)',
+        clearProps: 'all',
+      });
+    }
+  };
+
+  // ─── 카드 클릭 시 스쿼시 + 사운드 ───
+  document.addEventListener('click', (e) => {
+    const card = e.target.closest('.game-card, .today-pick-card');
+    if (card) {
+      if (typeof GameSound !== 'undefined') GameSound.click();
+      if (typeof GameAnim !== 'undefined') GameAnim.squash(card);
+    }
+  });
+
+  // ─── 이스터에그: 히어로 로고 10회 클릭 시 선글라스 ───
+  let _eggClicks = 0;
+  const _heroLogo = document.querySelector('.hero-logo');
+  if (_heroLogo) {
+    _heroLogo.addEventListener('click', () => {
+      _eggClicks++;
+      if (_eggClicks >= 10) {
+        _heroLogo.innerHTML = '<span style="font-size:4rem;">😎</span>';
+        if (typeof GameParticle !== 'undefined') GameParticle.celebrateBurst();
+        if (typeof GameSound !== 'undefined') GameSound.complete();
+        _eggClicks = 0;
+        setTimeout(() => location.reload(), 3000);
+      } else if (_eggClicks >= 5) {
+        _heroLogo.style.animation = 'wiggle 0.3s ease-in-out';
+        if (typeof GameSound !== 'undefined') GameSound.bubble();
+      }
+    });
+  }
+
+  // ─── Day/Night 테마 적용 ───
+  if (typeof GameTheme !== 'undefined') GameTheme.apply();
+
   // 초기 로드 시 실행
   init();
   renderRewardDashboard();
   updateMascotSpeech();
   loadMainBgm();
   syncMusicButton();
+  renderTodayPick();
 </script>
 
 </body>
