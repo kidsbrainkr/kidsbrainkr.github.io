@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B — 플랫 일러스트</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;background:#FAFAFA;min-height:100vh;}
+
+.bg-shape{position:fixed;z-index:0;pointer-events:none;}
+.blob1{top:-80px;left:-80px;width:340px;height:340px;background:#FFE566;border-radius:61% 39% 54% 46%/45% 61% 39% 55%;opacity:0.4;}
+.blob2{bottom:-60px;right:-60px;width:280px;height:280px;background:#A8E6CF;border-radius:39% 61% 46% 54%/61% 39% 61% 39%;opacity:0.4;}
+.blob3{top:40%;left:-40px;width:180px;height:180px;background:#FFB3C6;border-radius:50% 50% 50% 50%;opacity:0.3;}
+
+.main{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;}
+
+/* 헤더 */
+.header{display:flex;align-items:center;gap:16px;margin-bottom:28px;}
+.logo-box{width:72px;height:72px;background:#FFE566;border-radius:24px;display:flex;align-items:center;justify-content:center;box-shadow:4px 4px 0 #E0C000;}
+.logo-svg{font-size:2.5rem;}
+.title-group{}
+.title{font-family:'Fredoka One',sans-serif;font-size:2.4rem;color:#1A1A2E;line-height:1;letter-spacing:-0.5px;}
+.subtitle{font-size:0.85rem;color:#888;font-weight:700;margin-top:2px;}
+
+/* 안내 텍스트 */
+.prompt{font-size:1.05rem;font-weight:800;color:#333;margin-bottom:20px;text-align:center;}
+.prompt span{color:#FF6B6B;}
+
+/* 카드 그리드 */
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;max-width:500px;}
+
+.card{
+  border-radius:20px;padding:20px;
+  display:flex;flex-direction:column;gap:10px;
+  cursor:pointer;border:3px solid #1A1A2E;
+  transition:transform 0.15s,box-shadow 0.15s;
+  box-shadow:4px 4px 0 #1A1A2E;
+  text-decoration:none;
+  background:#fff;
+  position:relative;overflow:hidden;
+}
+.card:hover{transform:translate(-3px,-3px);box-shadow:7px 7px 0 #1A1A2E;}
+.card:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #1A1A2E;}
+
+.card-color{position:absolute;top:0;left:0;right:0;height:6px;border-radius:0;}
+
+.card-scene{
+  width:100%;height:90px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:3rem;
+}
+.card-info{}
+.card-age{font-family:'Fredoka One',sans-serif;font-size:1.5rem;color:#1A1A2E;}
+.card-cnt{font-size:0.78rem;font-weight:700;color:#999;margin-top:2px;}
+.card-tag{display:inline-block;font-size:0.72rem;font-weight:800;padding:3px 10px;border-radius:20px;margin-top:6px;}
+
+.ca .card-color{background:#FF6B6B;}
+.ca .card-scene{background:#FFF0F0;}
+.ca .card-tag{background:#FF6B6B;color:#fff;}
+.cb .card-color{background:#6BCB77;}
+.cb .card-scene{background:#F0FFF2;}
+.cb .card-tag{background:#6BCB77;color:#fff;}
+.cc .card-color{background:#4D96FF;}
+.cc .card-scene{background:#F0F6FF;}
+.cc .card-tag{background:#4D96FF;color:#fff;}
+.cd .card-color{background:#A57BFF;}
+.cd .card-scene{background:#F5F0FF;}
+.cd .card-tag{background:#A57BFF;color:#fff;}
+
+.card-wide{grid-column:1/-1;flex-direction:row;align-items:center;gap:20px;}
+.card-wide .card-scene{width:100px;height:80px;flex-shrink:0;}
+.ce .card-color{background:#FFB830;}
+.ce .card-scene{background:#FFFBF0;}
+.ce .card-tag{background:#FFB830;color:#fff;}
+</style>
+</head>
+<body>
+<div class="bg-shape blob1"></div>
+<div class="bg-shape blob2"></div>
+<div class="bg-shape blob3"></div>
+<div class="main">
+  <div class="header">
+    <div class="logo-box"><div class="logo-svg">🌈</div></div>
+    <div class="title-group">
+      <div class="title">쑥쑥 놀이터</div>
+      <div class="subtitle">어린이집 · 유치원 두뇌발달 게임</div>
+    </div>
+  </div>
+  <p class="prompt">몇 살 친구들과 <span>함께 놀까요?</span></p>
+  <div class="grid">
+    <div class="card ca">
+      <div class="card-color"></div>
+      <div class="card-scene">🐣</div>
+      <div class="card-info">
+        <div class="card-age">2세</div>
+        <div class="card-cnt">5개 게임</div>
+        <div class="card-tag">색깔 · 소리 · 관찰</div>
+      </div>
+    </div>
+    <div class="card cb">
+      <div class="card-color"></div>
+      <div class="card-scene">🌱</div>
+      <div class="card-info">
+        <div class="card-age">3세</div>
+        <div class="card-cnt">6개 게임</div>
+        <div class="card-tag">기억력 · 집중력</div>
+      </div>
+    </div>
+    <div class="card cc">
+      <div class="card-color"></div>
+      <div class="card-scene">🚀</div>
+      <div class="card-info">
+        <div class="card-age">4세</div>
+        <div class="card-cnt">7개 게임</div>
+        <div class="card-tag">사고력 · 수개념</div>
+      </div>
+    </div>
+    <div class="card cd">
+      <div class="card-color"></div>
+      <div class="card-scene">👑</div>
+      <div class="card-info">
+        <div class="card-age">5세</div>
+        <div class="card-cnt">5개 게임</div>
+        <div class="card-tag">전략 · 언어 · 창의</div>
+      </div>
+    </div>
+    <div class="card ce card-wide">
+      <div class="card-color"></div>
+      <div class="card-scene">🎪</div>
+      <div class="card-info">
+        <div class="card-age">혼합 · 테마</div>
+        <div class="card-cnt">20개 게임 · 루틴 도구</div>
+        <div class="card-tag">모든 연령 · 통합활동</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>

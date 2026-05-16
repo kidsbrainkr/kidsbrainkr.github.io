@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C — 수채화 동화책</title>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Nanum+Pen+Script&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;min-height:100vh;overflow:hidden;background:#FDF6EC;}
+
+/* 수채화 배경 */
+.watercolor-bg{
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(255,182,193,0.35) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 50% at 80% 10%, rgba(173,216,230,0.4) 0%,transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 80%, rgba(144,238,144,0.3) 0%,transparent 70%),
+    radial-gradient(ellipse 40% 40% at 90% 70%, rgba(255,218,185,0.4) 0%,transparent 70%),
+    #FDF6EC;
+}
+/* 페이퍼 텍스처 */
+.paper{
+  position:fixed;inset:0;z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;
+}
+
+/* 손그림 테두리 SVG 장식 */
+.deco{position:fixed;pointer-events:none;z-index:1;}
+
+.main{position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;}
+
+/* 제목 영역 */
+.title-area{text-align:center;margin-bottom:24px;}
+.title{font-family:'Gaegu',cursive;font-size:3.2rem;color:#5C4033;
+  text-shadow:3px 3px 0 rgba(255,200,100,0.4);
+  position:relative;display:inline-block;}
+.title::after{
+  content:'';position:absolute;bottom:-4px;left:0;right:0;height:6px;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12'%3E%3Cpath d='M2,8 C40,2 80,12 120,6 C160,0 180,10 198,6' stroke='%23FFB830' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") center/cover no-repeat;
+}
+.subtitle{font-family:'Gaegu',cursive;font-size:1.1rem;color:#8D6E63;margin-top:10px;}
+
+/* 마스코트 */
+.mascot{font-size:5rem;text-align:center;margin-bottom:8px;
+  animation:sway 3s ease-in-out infinite;filter:drop-shadow(2px 8px 12px rgba(0,0,0,0.12));}
+@keyframes sway{0%,100%{transform:rotate(-5deg);}50%{transform:rotate(5deg);}}
+.mascot-msg{font-family:'Gaegu',cursive;font-size:1rem;color:#6D4C41;text-align:center;margin-bottom:20px;
+  background:rgba(255,255,255,0.7);border-radius:16px;padding:8px 20px;
+  border:2px solid rgba(255,180,100,0.4);backdrop-filter:blur(4px);}
+
+/* 카드 그리드 */
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;width:100%;max-width:480px;}
+
+.card{
+  border-radius:24px;padding:20px 16px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;
+  position:relative;overflow:hidden;
+  transition:transform 0.2s;
+  border:2px solid rgba(255,255,255,0.8);
+}
+.card:hover{transform:rotate(-1deg) scale(1.04);}
+.card:nth-child(even):hover{transform:rotate(1deg) scale(1.04);}
+
+/* 수채화 카드 배경 */
+.ca{background:radial-gradient(ellipse at 30% 30%,#FFB3C6 0%,#FF8FA3 50%,#FF6B85 100%);box-shadow:0 6px 20px rgba(255,107,133,0.3),inset 0 0 30px rgba(255,255,255,0.25);}
+.cb{background:radial-gradient(ellipse at 30% 30%,#B5EAC4 0%,#6ECF80 50%,#4AB860 100%);box-shadow:0 6px 20px rgba(74,184,96,0.3),inset 0 0 30px rgba(255,255,255,0.25);}
+.cc{background:radial-gradient(ellipse at 30% 30%,#B3D4FF 0%,#7AADFF 50%,#4D8EFF 100%);box-shadow:0 6px 20px rgba(77,142,255,0.3),inset 0 0 30px rgba(255,255,255,0.25);}
+.cd{background:radial-gradient(ellipse at 30% 30%,#D4B3FF 0%,#B07AFF 50%,#8A4FFF 100%);box-shadow:0 6px 20px rgba(138,79,255,0.3),inset 0 0 30px rgba(255,255,255,0.25);}
+.ce{grid-column:1/-1;background:radial-gradient(ellipse at 30% 40%,#FFE8A3 0%,#FFD060 50%,#FFC030 100%);box-shadow:0 6px 20px rgba(255,192,48,0.3),inset 0 0 30px rgba(255,255,255,0.25);flex-direction:row;gap:16px;}
+
+/* 카드 그림 영역 */
+.card-pic{
+  width:80px;height:80px;border-radius:50%;
+  background:rgba(255,255,255,0.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.8rem;
+  box-shadow:inset 0 2px 8px rgba(255,255,255,0.5),0 4px 12px rgba(0,0,0,0.08);
+  border:3px solid rgba(255,255,255,0.5);
+}
+.card-age{font-family:'Gaegu',cursive;font-size:1.8rem;color:#fff;text-shadow:1px 2px 4px rgba(0,0,0,0.15);}
+.card-desc{font-size:0.75rem;font-weight:700;color:rgba(255,255,255,0.9);text-align:center;line-height:1.4;}
+</style>
+</head>
+<body>
+<div class="watercolor-bg"></div>
+<div class="paper"></div>
+
+<!-- SVG 장식 -->
+<svg class="deco" style="top:0;left:0;width:200px;height:200px;" viewBox="0 0 200 200">
+  <path d="M10,50 Q30,10 60,40 Q90,70 50,90 Q20,110 10,50Z" fill="rgba(255,182,193,0.2)" stroke="rgba(255,150,150,0.15)" stroke-width="1.5"/>
+  <circle cx="160" cy="30" r="25" fill="rgba(173,216,230,0.2)" stroke="rgba(100,180,220,0.15)" stroke-width="1.5"/>
+</svg>
+<svg class="deco" style="bottom:0;right:0;width:180px;height:180px;" viewBox="0 0 180 180">
+  <path d="M170,140 Q150,170 120,155 Q90,140 110,110 Q130,80 160,100 Q190,120 170,140Z" fill="rgba(144,238,144,0.2)" stroke="rgba(80,200,80,0.15)" stroke-width="1.5"/>
+</svg>
+
+<div class="main">
+  <div class="mascot">🦊</div>
+  <div class="mascot-msg">✨ 오늘은 어떤 나이 친구들과 놀까요? ✨</div>
+  <div class="title-area">
+    <div class="title">쑥쑥 놀이터</div>
+    <div class="subtitle">어린이집 · 유치원 선생님을 위한 놀이 게임</div>
+  </div>
+  <div class="grid">
+    <div class="card ca"><div class="card-pic">🐣</div><div class="card-age">2세</div><div class="card-desc">색깔 · 소리 · 관찰<br>5개 게임</div></div>
+    <div class="card cb"><div class="card-pic">🌿</div><div class="card-age">3세</div><div class="card-desc">기억력 · 집중력<br>6개 게임</div></div>
+    <div class="card cc"><div class="card-pic">🌙</div><div class="card-age">4세</div><div class="card-desc">사고력 · 수개념<br>7개 게임</div></div>
+    <div class="card cd"><div class="card-pic">⭐</div><div class="card-age">5세</div><div class="card-desc">전략 · 언어 · 창의<br>5개 게임</div></div>
+    <div class="card ce"><div class="card-pic">🎪</div><div><div class="card-age">혼합 · 테마</div><div class="card-desc" style="text-align:left;">모든 연령 · 루틴 도구<br>20개 게임</div></div></div>
+  </div>
+</div>
+</body></html>

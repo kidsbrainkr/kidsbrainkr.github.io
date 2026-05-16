@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D — 밝은 팝아트</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;background:#FFF200;min-height:100vh;overflow:hidden;}
+
+/* 배경 패턴 */
+.bg-pattern{
+  position:fixed;inset:0;z-index:0;
+  background-color:#FFF200;
+  background-image:
+    radial-gradient(circle, rgba(0,0,0,0.06) 1.5px, transparent 1.5px);
+  background-size:24px 24px;
+}
+
+/* 컬러 배경 슬래시 */
+.slash{position:fixed;z-index:0;pointer-events:none;}
+.slash1{top:-100px;right:-60px;width:320px;height:500px;background:#FF3366;transform:rotate(-12deg);border-radius:20px;}
+.slash2{bottom:-80px;left:-40px;width:260px;height:400px;background:#00C8FF;transform:rotate(-12deg);border-radius:20px;}
+.slash3{top:30%;right:-20px;width:100px;height:200px;background:#FF9F00;transform:rotate(-12deg);border-radius:10px;}
+
+.main{position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 16px 32px;}
+
+/* 헤더 타이틀 */
+.title-wrap{position:relative;margin-bottom:6px;text-align:center;}
+.title{
+  font-family:'Black Han Sans',sans-serif;
+  font-size:3rem;color:#fff;
+  -webkit-text-stroke:3px #1A1A1A;
+  text-shadow:4px 4px 0 #1A1A1A;
+  letter-spacing:2px;
+}
+.title-badge{
+  display:inline-block;
+  background:#1A1A1A;color:#FFF200;
+  font-size:0.78rem;font-weight:900;
+  padding:4px 16px;border-radius:4px;
+  letter-spacing:1px;margin-top:4px;
+  text-transform:uppercase;
+}
+
+/* 마스코트 */
+.mascot-zone{
+  background:#1A1A1A;border-radius:24px;
+  padding:16px 28px;margin:16px 0 20px;
+  display:flex;align-items:center;gap:14px;
+  box-shadow:5px 5px 0 #FF3366;
+  max-width:420px;width:100%;
+}
+.mascot-face{font-size:3rem;animation:wiggle 1.5s ease-in-out infinite;}
+@keyframes wiggle{0%,100%{transform:rotate(-8deg);}50%{transform:rotate(8deg);}}
+.mascot-text{font-size:1rem;font-weight:900;color:#FFF200;line-height:1.4;}
+.mascot-text span{color:#FF9F00;}
+
+/* 그리드 */
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;max-width:480px;}
+
+.card{
+  border-radius:16px;
+  border:3px solid #1A1A1A;
+  cursor:pointer;
+  transition:transform 0.12s;
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;
+  padding:18px 14px;gap:6px;
+}
+.card::after{
+  content:'';position:absolute;
+  bottom:-3px;right:-3px;
+  width:100%;height:100%;
+  background:#1A1A1A;
+  border-radius:16px;
+  z-index:-1;
+}
+.card:hover{transform:translate(-4px,-4px);}
+.card:active{transform:translate(0,0);}
+
+.ca{background:#FF3366;}
+.cb{background:#00C853;}
+.cc{background:#00C8FF;}
+.cd{background:#B84FFF;}
+.ce{grid-column:1/-1;background:#FF9F00;flex-direction:row;align-items:center;gap:20px;}
+
+.card-num{
+  font-family:'Black Han Sans',sans-serif;
+  font-size:3.5rem;color:rgba(255,255,255,0.25);
+  position:absolute;top:8px;right:12px;
+  line-height:1;
+  -webkit-text-stroke:2px rgba(255,255,255,0.3);
+}
+.card-icon{
+  width:60px;height:60px;
+  background:rgba(255,255,255,0.2);
+  border-radius:12px;border:2px solid rgba(255,255,255,0.4);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;
+}
+.card-age{font-family:'Black Han Sans',sans-serif;font-size:1.6rem;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,0.2);letter-spacing:1px;}
+.card-cnt{font-size:0.78rem;font-weight:800;color:rgba(255,255,255,0.85);
+  background:rgba(0,0,0,0.2);border-radius:6px;padding:2px 8px;width:fit-content;}
+.card-tag{font-size:0.7rem;font-weight:800;color:rgba(255,255,255,0.7);margin-top:2px;}
+
+/* 선생님 버튼 */
+.teacher{
+  position:fixed;top:16px;right:16px;z-index:100;
+  background:#1A1A1A;color:#FFF200;
+  border:none;border-radius:8px;
+  padding:8px 16px;font-size:0.85rem;font-weight:900;
+  cursor:pointer;
+  box-shadow:3px 3px 0 #FF3366;
+  transition:transform 0.1s,box-shadow 0.1s;
+}
+.teacher:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 #FF3366;}
+</style>
+</head>
+<body>
+<div class="bg-pattern"></div>
+<div class="slash slash1"></div>
+<div class="slash slash2"></div>
+<div class="slash slash3"></div>
+<button class="teacher">👩‍🏫 선생님</button>
+
+<div class="main">
+  <div class="title-wrap">
+    <div class="title">쑥쑥 놀이터</div>
+    <div class="title-badge">🧠 두뇌발달 게임 모음</div>
+  </div>
+
+  <div class="mascot-zone">
+    <div class="mascot-face">🤖</div>
+    <div class="mascot-text">몇 살 친구들과<br><span>놀 거예요?</span> 골라봐요!</div>
+  </div>
+
+  <div class="grid">
+    <div class="card ca">
+      <div class="card-num">2</div>
+      <div class="card-icon">🐣</div>
+      <div class="card-age">2세</div>
+      <div class="card-cnt">5개 게임</div>
+      <div class="card-tag">색깔 · 소리 · 관찰</div>
+    </div>
+    <div class="card cb">
+      <div class="card-num">3</div>
+      <div class="card-icon">🌱</div>
+      <div class="card-age">3세</div>
+      <div class="card-cnt">6개 게임</div>
+      <div class="card-tag">기억력 · 집중력</div>
+    </div>
+    <div class="card cc">
+      <div class="card-num">4</div>
+      <div class="card-icon">🚀</div>
+      <div class="card-age">4세</div>
+      <div class="card-cnt">7개 게임</div>
+      <div class="card-tag">사고력 · 수개념</div>
+    </div>
+    <div class="card cd">
+      <div class="card-num">5</div>
+      <div class="card-icon">👑</div>
+      <div class="card-age">5세</div>
+      <div class="card-cnt">5개 게임</div>
+      <div class="card-tag">전략 · 언어 · 창의</div>
+    </div>
+    <div class="card ce">
+      <div class="card-icon" style="width:70px;height:70px;font-size:2.5rem;">🎪</div>
+      <div>
+        <div class="card-age">혼합 · 테마</div>
+        <div class="card-cnt">20개 게임</div>
+        <div class="card-tag">모든 연령 · 루틴 도구 포함</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>

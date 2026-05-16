@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A — 3D 카툰</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;background:#E8F4FD;min-height:100vh;overflow:hidden;}
+
+/* 하늘 배경 */
+.sky{position:fixed;inset:0;background:linear-gradient(180deg,#87CEEB 0%,#B0E2FF 40%,#E8F9FF 70%,#FFF9F0 100%);z-index:0;}
+
+/* 구름 */
+.cloud{position:absolute;border-radius:50px;background:#fff;filter:blur(0px);box-shadow:0 4px 0 rgba(0,0,0,0.05);}
+.c1{width:160px;height:50px;top:8%;left:5%;animation:cloudFloat 12s ease-in-out infinite;}
+.c1::before{content:'';position:absolute;width:80px;height:70px;background:#fff;border-radius:50%;top:-35px;left:25px;}
+.c1::after{content:'';position:absolute;width:60px;height:60px;background:#fff;border-radius:50%;top:-30px;left:70px;}
+.c2{width:120px;height:40px;top:15%;right:8%;animation:cloudFloat 16s ease-in-out 3s infinite;}
+.c2::before{content:'';position:absolute;width:60px;height:55px;background:#fff;border-radius:50%;top:-28px;left:20px;}
+.c3{width:100px;height:35px;top:5%;left:45%;animation:cloudFloat 14s ease-in-out 6s infinite;}
+.c3::before{content:'';position:absolute;width:50px;height:45px;background:#fff;border-radius:50%;top:-22px;left:15px;}
+@keyframes cloudFloat{0%,100%{transform:translateX(0);}50%{transform:translateX(20px);}}
+
+/* 언덕 */
+.hills{position:fixed;bottom:0;left:0;width:100%;z-index:1;pointer-events:none;}
+
+/* 메인 */
+.main{position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 16px 80px;}
+
+/* 마스코트 */
+.mascot-area{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;}
+.mascot-body{
+  width:120px;height:120px;
+  background:linear-gradient(145deg,#FFE066,#FFB700);
+  border-radius:50%;
+  box-shadow:0 8px 0 #CC8800, 0 12px 30px rgba(204,136,0,0.3), inset 0 -4px 8px rgba(0,0,0,0.1), inset 0 4px 8px rgba(255,255,255,0.4);
+  display:flex;align-items:center;justify-content:center;
+  font-size:3.5rem;
+  animation:mascotBob 2s ease-in-out infinite;
+  position:relative;
+}
+.mascot-body::before{
+  content:'';position:absolute;top:10px;left:20px;
+  width:25px;height:15px;
+  background:rgba(255,255,255,0.5);
+  border-radius:50%;
+  transform:rotate(-30deg);
+}
+@keyframes mascotBob{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-12px) rotate(2deg);}}
+.bubble{
+  background:#fff;
+  border-radius:20px;padding:10px 20px;
+  font-size:0.95rem;font-weight:800;color:#444;
+  margin-top:12px;
+  box-shadow:0 4px 0 #ddd, 0 8px 20px rgba(0,0,0,0.08);
+  position:relative;
+}
+.bubble::before{content:'';position:absolute;top:-10px;left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:#fff;}
+
+/* 제목 */
+.title{font-size:2.8rem;font-weight:900;color:#fff;text-shadow:0 4px 0 #E8A000,0 8px 20px rgba(232,160,0,0.3);margin:14px 0 4px;text-align:center;
+  -webkit-text-stroke:2px rgba(0,0,0,0.08);}
+.subtitle{font-size:0.95rem;color:#5B8DB8;font-weight:700;margin-bottom:28px;}
+
+/* 버블 그리드 */
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;width:100%;max-width:480px;}
+
+.card{
+  border-radius:28px;padding:22px 16px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;border:none;
+  position:relative;overflow:hidden;
+  transition:transform 0.15s cubic-bezier(.4,0,.2,1);
+}
+.card:active{transform:scale(0.94) translateY(4px);}
+.card:hover{transform:translateY(-6px);}
+
+/* 3D 효과 */
+.card-a{background:linear-gradient(145deg,#FF8FA3,#FF4D6D);box-shadow:0 8px 0 #C02040,0 12px 30px rgba(255,77,109,0.35);}
+.card-b{background:linear-gradient(145deg,#56E39F,#22BF6F);box-shadow:0 8px 0 #158A4E,0 12px 30px rgba(34,191,111,0.35);}
+.card-c{background:linear-gradient(145deg,#5BC8F5,#1E9EE0);box-shadow:0 8px 0 #0D6FA0,0 12px 30px rgba(30,158,224,0.35);}
+.card-d{background:linear-gradient(145deg,#B57BFF,#7C3AED);box-shadow:0 8px 0 #5020B0,0 12px 30px rgba(124,58,237,0.35);}
+.card-e{
+  grid-column:1/-1;
+  background:linear-gradient(145deg,#FFD93D,#FF9F0A);
+  box-shadow:0 8px 0 #C06000,0 12px 30px rgba(255,159,10,0.35);
+  flex-direction:row;justify-content:center;gap:20px;
+}
+
+.card-img{
+  width:72px;height:72px;
+  background:rgba(255,255,255,0.25);
+  border-radius:20px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.5rem;
+  box-shadow:inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.1);
+}
+.card-age{font-size:1.6rem;font-weight:900;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,0.15);}
+.card-cnt{font-size:0.78rem;font-weight:700;color:rgba(255,255,255,0.85);background:rgba(0,0,0,0.12);padding:3px 12px;border-radius:20px;}
+</style>
+</head>
+<body>
+<div class="sky"></div>
+<div class="cloud c1"></div>
+<div class="cloud c2"></div>
+<div class="cloud c3"></div>
+<svg class="hills" viewBox="0 0 1440 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+  <path d="M0,160 C200,80 400,180 600,120 C800,60 1000,160 1200,100 C1300,70 1380,120 1440,100 L1440,200 L0,200Z" fill="#6DBF6A" opacity="0.6"/>
+  <path d="M0,180 C180,120 360,190 540,150 C720,110 900,180 1080,140 C1200,110 1340,160 1440,140 L1440,200 L0,200Z" fill="#4CAF50"/>
+</svg>
+
+<div class="main">
+  <div class="mascot-area">
+    <div class="mascot-body">🐥</div>
+    <div class="bubble">오늘 어떤 친구들이랑 놀까요? 🎉</div>
+  </div>
+  <h1 class="title">쑥쑥 놀이터</h1>
+  <p class="subtitle">어린이집 · 유치원 선생님을 위한 두뇌발달 게임</p>
+  <div class="grid">
+    <div class="card card-a"><div class="card-img">🐣</div><div class="card-age">2세</div><div class="card-cnt">5개 게임</div></div>
+    <div class="card card-b"><div class="card-img">🌱</div><div class="card-age">3세</div><div class="card-cnt">6개 게임</div></div>
+    <div class="card card-c"><div class="card-img">🚀</div><div class="card-age">4세</div><div class="card-cnt">7개 게임</div></div>
+    <div class="card card-d"><div class="card-img">👑</div><div class="card-age">5세</div><div class="card-cnt">5개 게임</div></div>
+    <div class="card card-e"><div class="card-img">🎯</div><div><div class="card-age">혼합 · 테마</div><div class="card-cnt" style="margin-top:4px;">20개 게임</div></div></div>
+  </div>
+</div>
+</body></html>

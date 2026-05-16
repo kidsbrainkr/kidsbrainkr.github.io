@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>틀린그림찾기 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0118;
+      --card: rgba(255,255,255,0.06);
+      --card-border: rgba(255,255,255,0.12);
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --cyan: #06b6d4;
+      --amber: #f59e0b;
+      --green: #22c55e;
+      --red: #ef4444;
+      --grad: linear-gradient(135deg, #06b6d4, #a855f7);
+      --text: #f0e8ff;
+      --text-dim: rgba(240,232,255,0.55);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Nunito', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      user-select: none; -webkit-user-select: none;
+      overflow: hidden;
+    }
+    .star {
+      position: fixed; border-radius: 50%; background: #fff;
+      animation: twinkle var(--dur,3s) ease-in-out infinite var(--delay,0s);
+      pointer-events: none; z-index: 0;
+    }
+    @keyframes twinkle {
+      0%,100%{opacity:.15;transform:scale(1)}50%{opacity:.9;transform:scale(1.4)}
+    }
+    #game-wrap {
+      position: relative;
+      width: 800px; height: 600px;
+      background: linear-gradient(160deg, #1a0a2e 0%, #0a0118 55%, #0f0a20 100%);
+      border-radius: 28px;
+      border: 1px solid rgba(6,182,212,0.2);
+      box-shadow: 0 0 80px rgba(6,182,212,0.08), 0 24px 64px rgba(0,0,0,0.7);
+      overflow: hidden; z-index: 1;
+    }
+    /* HUD */
+    #hud {
+      position: absolute;
+      top: 14px; left: 18px; right: 18px;
+      display: flex; justify-content: space-between; align-items: center;
+      z-index: 20;
+    }
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50px; color: var(--text-dim);
+      font-family: inherit; font-size: 0.82rem; font-weight: 800;
+      cursor: pointer; text-decoration: none;
+      transition: background .2s, color .2s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+    .hud-center {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .round-badge {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50px; padding: 6px 14px;
+      font-size: 0.82rem; font-weight: 800; color: var(--text-dim);
+    }
+    .found-badge {
+      background: rgba(6,182,212,0.12);
+      border: 1px solid rgba(6,182,212,0.3);
+      border-radius: 50px; padding: 6px 14px;
+      font-size: 0.9rem; font-weight: 900; color: var(--cyan);
+    }
+    .timer-badge {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50px; padding: 6px 14px;
+      font-size: 0.9rem; font-weight: 900; color: var(--amber);
+    }
+    .hearts-wrap { display: flex; gap: 3px; }
+    .heart-icon { width: 22px; height: 22px; transition: opacity .2s, transform .2s; }
+    .heart-icon.lost { opacity: 0.18; transform: scale(0.8); }
+    /* Scene label */
+    #scene-label {
+      position: absolute;
+      top: 54px; left: 50%; transform: translateX(-50%);
+      font-size: 0.82rem; font-weight: 800; color: var(--text-dim);
+      white-space: nowrap; z-index: 10;
+    }
+    /* Images area */
+    #images-area {
+      position: absolute;
+      top: 72px; left: 12px; right: 12px; bottom: 50px;
+      display: flex; gap: 10px;
+      z-index: 5;
+    }
+    .img-frame {
+      flex: 1;
+      position: relative;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+    .img-frame svg {
+      width: 100%; height: 100%;
+    }
+    /* Highlight circles */
+    .highlight-circle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      animation: highlight-pulse 0.5s ease;
+    }
+    @keyframes highlight-pulse {
+      0%{transform:translate(-50%,-50%) scale(0.2); opacity:0}
+      60%{transform:translate(-50%,-50%) scale(1.2); opacity:1}
+      100%{transform:translate(-50%,-50%) scale(1); opacity:1}
+    }
+    .highlight-circle.found {
+      border: 3px solid #fbbf24;
+      background: rgba(251,191,36,0.15);
+      box-shadow: 0 0 16px rgba(251,191,36,0.5);
+    }
+    .highlight-circle.wrong-flash {
+      border: 3px solid #ef4444;
+      background: rgba(239,68,68,0.18);
+      animation: wrong-flash 0.4s ease forwards;
+    }
+    @keyframes wrong-flash {
+      0%{transform:translate(-50%,-50%) scale(1.2);opacity:1}
+      100%{transform:translate(-50%,-50%) scale(1.5);opacity:0}
+    }
+    /* Timer bar */
+    #timer-bar-outer {
+      position: absolute;
+      bottom: 12px; left: 18px; right: 18px;
+      height: 6px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50px; z-index: 20;
+    }
+    #timer-bar-inner {
+      height: 100%;
+      background: linear-gradient(90deg, #06b6d4, #a855f7);
+      border-radius: 50px;
+      transition: width 1s linear;
+    }
+    /* Flash */
+    #flash {
+      position: absolute; inset: 0; border-radius: 28px;
+      pointer-events: none; z-index: 30; opacity: 0;
+      transition: opacity 0.1s;
+    }
+    /* Particle canvas */
+    #particle-canvas {
+      position: absolute; inset: 0; pointer-events: none; z-index: 25;
+    }
+    /* Round complete overlay */
+    #round-complete {
+      position: absolute; inset: 0;
+      background: rgba(10,1,24,0.88);
+      border-radius: 28px;
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px;
+      z-index: 45;
+    }
+    #round-complete.show { display: flex; }
+    .rc-title {
+      font-size: 2rem; font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .rc-sub { font-size: 0.9rem; font-weight: 700; color: var(--text-dim); }
+    .rc-next-btn {
+      padding: 14px 36px; border-radius: 50px;
+      background: var(--grad); border: none; color: #fff;
+      font-family: inherit; font-size: 1rem; font-weight: 900;
+      cursor: pointer; transition: transform .15s;
+    }
+    .rc-next-btn:hover { transform: translateY(-3px); }
+    /* Result screen */
+    #result-screen {
+      position: absolute; inset: 0;
+      background: rgba(10,1,24,0.94); border-radius: 28px;
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center; z-index: 50; gap: 14px;
+    }
+    #result-screen.show { display: flex; }
+    .result-title {
+      font-size: 2.2rem; font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .result-stars { display: flex; gap: 12px; margin: 4px 0; }
+    .result-star { width: 50px; height: 50px; }
+    .result-score { font-size: 1.1rem; font-weight: 700; color: var(--text-dim); }
+    .result-btns { display: flex; gap: 14px; margin-top: 8px; }
+    .res-btn {
+      padding: 14px 28px; border-radius: 50px;
+      font-family: inherit; font-size: 1rem; font-weight: 900;
+      cursor: pointer; border: none; transition: transform .15s;
+    }
+    .res-btn:hover { transform: translateY(-3px); }
+    .res-btn.primary { background: var(--grad); color: #fff; }
+    .res-btn.secondary {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15); color: var(--text);
+    }
+    @keyframes shake-wrap {
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-8px)}40%{transform:translateX(8px)}
+      60%{transform:translateX(-5px)}80%{transform:translateX(4px)}
+    }
+  </style>
+</head>
+<body>
+<div id="stars-container"></div>
+
+<div id="game-wrap">
+  <div id="hud">
+    <a class="btn-back" href="../../index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      홈
+    </a>
+    <div class="hud-center">
+      <div class="round-badge" id="round-badge">1 / 5</div>
+      <div class="found-badge" id="found-badge">0 / 5</div>
+      <div class="timer-badge" id="timer-display">60</div>
+    </div>
+    <div class="hearts-wrap" id="hearts-wrap"></div>
+  </div>
+
+  <div id="scene-label" id="scene-label">유치원 교실</div>
+
+  <div id="images-area">
+    <div class="img-frame" id="frame-left">
+      <svg id="svg-left" viewBox="0 0 380 490" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div class="img-frame" id="frame-right">
+      <svg id="svg-right" viewBox="0 0 380 490" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </div>
+
+  <div id="timer-bar-outer">
+    <div id="timer-bar-inner" style="width:100%"></div>
+  </div>
+
+  <div id="flash"></div>
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- Round complete -->
+  <div id="round-complete">
+    <div class="rc-title" id="rc-title">다 찾았어요!</div>
+    <div class="rc-sub" id="rc-sub">5개를 모두 찾았어요!</div>
+    <button class="rc-next-btn" id="rc-next-btn">다음 그림</button>
+  </div>
+
+  <!-- Result -->
+  <div id="result-screen">
+    <div class="result-title" id="result-title">관찰왕!</div>
+    <div class="result-stars" id="result-stars"></div>
+    <div class="result-score" id="result-score">5세트 완료!</div>
+    <div class="result-btns">
+      <button class="res-btn secondary" onclick="goHome()">홈으로</button>
+      <button class="res-btn primary" onclick="restartGame()">다시하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Stars
+(function(){
+  const c = document.getElementById('stars-container');
+  for(let i = 0; i < 55; i++){
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random()*2.5+0.8;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}vw;top:${Math.random()*100}vh;--dur:${2+Math.random()*4}s;--delay:${Math.random()*4}s;`;
+    c.appendChild(s);
+  }
+})();
+
+// ============================================================
+// Scene definitions: each scene has a base SVG builder and
+// a list of differences that are toggled in the "right" image.
+// Differences have: id, x, y (percent of 380x490), r (radius px)
+// and a patch function applied to the right SVG element.
+// ============================================================
+
+// Helper: build common SVG string, then modify for right version
+// We define scenes as objects with:
+//   name, drawBase(isMod) -> SVG inner string
+//   diffs: [{id, cx, cy, r, label}] — positions in 380x490 space
+
+const SCENES = [
+  // ── Scene 1: 유치원 교실 ──────────────────────────────────
+  {
+    name: '유치원 교실',
+    diffs: [
+      { id: 0, cx: 285, cy: 90,  r: 28, label: '시계 방향' },
+      { id: 1, cx: 100, cy: 165, r: 26, label: '의자 색상' },
+      { id: 2, cx: 310, cy: 240, r: 24, label: '창문 커튼' },
+      { id: 3, cx: 200, cy: 340, r: 26, label: '책상 위 책' },
+      { id: 4, cx: 70,  cy: 400, r: 24, label: '칠판 글씨' },
+    ],
+    draw(mod) {
+      const chairColor = mod ? '#60a5fa' : '#fb923c';
+      const curtainColor = mod ? '#4ade80' : '#f87171';
+      const clockDir = mod ? 'M285 80 L285 68' : 'M285 80 L297 80'; // clock hand
+      const boardText = mod ? '123' : 'ABC';
+      const bookColor = mod ? '#a855f7' : '#fbbf24';
+      return `
+      <!-- Sky/background -->
+      <rect width="380" height="490" fill="#e0f2fe" rx="14"/>
+      <!-- Floor -->
+      <rect x="0" y="380" width="380" height="110" fill="#fef3c7" rx="0"/>
+      <!-- Floor lines -->
+      <line x1="0" y1="380" x2="380" y2="380" stroke="#fde68a" stroke-width="2"/>
+      <line x1="0" y1="420" x2="380" y2="420" stroke="#fde68a" stroke-width="1" opacity="0.5"/>
+      <!-- Back wall -->
+      <rect x="0" y="0" width="380" height="385" fill="#dbeafe"/>
+      <!-- Chalkboard -->
+      <rect x="30" y="30" width="180" height="110" rx="8" fill="#065f46"/>
+      <rect x="34" y="34" width="172" height="102" rx="6" fill="#064e3b"/>
+      <text x="50" y="90" font-family="Nunito,sans-serif" font-size="28" font-weight="900" fill="#86efac">${boardText}</text>
+      <rect x="30" y="138" width="180" height="6" rx="3" fill="#78716c"/>
+      <!-- Clock -->
+      <circle cx="285" cy="80" r="32" fill="white" stroke="#94a3b8" stroke-width="3"/>
+      <circle cx="285" cy="80" r="4" fill="#1e293b"/>
+      <line x1="285" y1="80" x2="285" y2="54" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
+      ${mod ? '<line x1="285" y1="80" x2="311" y2="80" stroke="#1e293b" stroke-width="2" stroke-linecap="round"/>' :
+              '<line x1="285" y1="80" x2="285" y2="60" stroke="#1e293b" stroke-width="2" stroke-linecap="round"/>'}
+      <!-- Window -->
+      <rect x="240" y="160" width="120" height="100" rx="8" fill="#bae6fd" stroke="#93c5fd" stroke-width="3"/>
+      <line x1="300" y1="160" x2="300" y2="260" stroke="#93c5fd" stroke-width="2"/>
+      <line x1="240" y1="210" x2="360" y2="210" stroke="#93c5fd" stroke-width="2"/>
+      <!-- Curtains -->
+      <path d="M240 160 Q255 190 250 260" stroke="${curtainColor}" stroke-width="14" fill="none" stroke-linecap="round"/>
+      <path d="M360 160 Q345 190 350 260" stroke="${curtainColor}" stroke-width="14" fill="none" stroke-linecap="round"/>
+      <!-- Desk -->
+      <rect x="130" y="290" width="160" height="80" rx="10" fill="#fed7aa"/>
+      <rect x="130" y="355" width="160" height="10" rx="4" fill="#fb923c"/>
+      <rect x="148" y="365" width="14" height="28" rx="4" fill="#fb923c"/>
+      <rect x="258" y="365" width="14" height="28" rx="4" fill="#fb923c"/>
+      <!-- Book on desk -->
+      <rect x="175" y="273" width="40" height="52" rx="5" fill="${bookColor}"/>
+      <rect x="178" y="276" width="34" height="46" rx="4" fill="rgba(255,255,255,0.2)"/>
+      <line x1="195" y1="285" x2="205" y2="285" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+      <line x1="190" y1="294" x2="208" y2="294" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+      <!-- Chair (left) -->
+      <rect x="60" y="300" width="70" height="10" rx="4" fill="${chairColor}"/>
+      <rect x="66" y="310" width="14" height="50" rx="4" fill="${chairColor}"/>
+      <rect x="106" y="310" width="14" height="50" rx="4" fill="${chairColor}"/>
+      <rect x="62" y="250" width="78" height="52" rx="8" fill="${chairColor}" opacity="0.85"/>
+      <!-- Plant -->
+      <rect x="326" y="340" width="18" height="30" rx="4" fill="#92400e"/>
+      <ellipse cx="335" cy="330" rx="26" ry="22" fill="#4ade80"/>
+      <ellipse cx="318" cy="340" rx="16" ry="14" fill="#22c55e"/>
+      <ellipse cx="352" cy="338" rx="16" ry="14" fill="#22c55e"/>
+      <!-- Cubbies -->
+      <rect x="0" y="200" width="34" height="150" rx="6" fill="#d97706"/>
+      <rect x="2" y="206" width="30" height="44" rx="4" fill="#fef3c7"/>
+      <rect x="2" y="256" width="30" height="44" rx="4" fill="#fef3c7"/>
+      <rect x="2" y="306" width="30" height="38" rx="4" fill="#fef3c7"/>
+      <!-- Kids' drawings on wall -->
+      <rect x="60" y="50" width="40" height="50" rx="4" fill="white" opacity="0.8"/>
+      <circle cx="80" cy="65" r="10" fill="#fde68a"/>
+      <path d="M70 82 Q80 90 90 82" stroke="#fb923c" stroke-width="2" fill="none"/>
+      <rect x="110" y="55" width="40" height="45" rx="4" fill="white" opacity="0.8"/>
+      <rect x="117" y="64" width="26" height="28" rx="3" fill="#60a5fa"/>
+      <rect x="119" y="80" width="10" height="12" rx="2" fill="#1e40af"/>
+      `;
+    }
+  },
+
+  // ── Scene 2: 공원 장면 ────────────────────────────────────
+  {
+    name: '공원 장면',
+    diffs: [
+      { id: 0, cx: 80,  cy: 95,  r: 28, label: '나무 수' },
+      { id: 1, cx: 310, cy: 75,  r: 26, label: '풍선 색' },
+      { id: 2, cx: 195, cy: 280, r: 26, label: '벤치 색상' },
+      { id: 3, cx: 105, cy: 180, r: 24, label: '구름 모양' },
+      { id: 4, cx: 280, cy: 390, r: 24, label: '꽃 색상' },
+    ],
+    draw(mod) {
+      const balloonColor = mod ? '#f87171' : '#a78bfa';
+      const benchColor = mod ? '#92400e' : '#166534';
+      const cloudExtra = mod ? '<ellipse cx="105" cy="175" rx="18" ry="12" fill="white" opacity="0.9"/>' : '';
+      const flowerColor = mod ? '#f43f5e' : '#fbbf24';
+      const treeExtra = mod ? '<ellipse cx="80" cy="80" rx="26" ry="30" fill="#4ade80"/><rect x="74" y="108" width="12" height="40" rx="4" fill="#92400e"/>' : '';
+      return `
+      <!-- Sky -->
+      <rect width="380" height="490" fill="#bfdbfe"/>
+      <!-- Ground -->
+      <rect x="0" y="320" width="380" height="170" fill="#bbf7d0" rx="0"/>
+      <ellipse cx="190" cy="320" rx="200" ry="12" fill="#86efac"/>
+      <!-- Clouds -->
+      <ellipse cx="90" cy="70" rx="46" ry="24" fill="white" opacity="0.9"/>
+      <ellipse cx="120" cy="60" rx="34" ry="20" fill="white" opacity="0.9"/>
+      <ellipse cx="60" cy="60" rx="30" ry="18" fill="white" opacity="0.9"/>
+      ${cloudExtra}
+      <ellipse cx="270" cy="90" rx="38" ry="20" fill="white" opacity="0.85"/>
+      <ellipse cx="295" cy="82" rx="26" ry="16" fill="white" opacity="0.85"/>
+      <!-- Sun -->
+      <circle cx="345" cy="45" r="26" fill="#fde68a" opacity="0.9"/>
+      <!-- Trees -->
+      <ellipse cx="200" cy="140" rx="38" ry="44" fill="#22c55e"/>
+      <rect x="194" y="175" width="12" height="52" rx="4" fill="#92400e"/>
+      <ellipse cx="300" cy="165" rx="30" ry="36" fill="#16a34a"/>
+      <rect x="294" y="192" width="12" height="42" rx="4" fill="#92400e"/>
+      ${treeExtra}
+      <!-- Bench -->
+      <rect x="140" y="268" width="110" height="12" rx="4" fill="${benchColor}"/>
+      <rect x="140" y="260" width="110" height="10" rx="3" fill="${benchColor}" opacity="0.7"/>
+      <rect x="148" y="278" width="10" height="20" rx="3" fill="${benchColor}"/>
+      <rect x="232" y="278" width="10" height="20" rx="3" fill="${benchColor}"/>
+      <rect x="145" y="248" width="8" height="30" rx="3" fill="${benchColor}"/>
+      <rect x="227" y="248" width="8" height="30" rx="3" fill="${benchColor}"/>
+      <!-- Kid on bench -->
+      <circle cx="195" cy="240" r="16" fill="#fde68a"/>
+      <circle cx="189" cy="237" r="3" fill="#1e293b"/>
+      <circle cx="201" cy="237" r="3" fill="#1e293b"/>
+      <path d="M189 248 Q195 254 201 248" stroke="#1e293b" stroke-width="2" fill="none"/>
+      <!-- Balloon -->
+      <ellipse cx="310" cy="72" rx="20" ry="24" fill="${balloonColor}"/>
+      <line x1="310" y1="96" x2="305" y2="130" stroke="#1e293b" stroke-width="2"/>
+      <circle cx="305" cy="132" r="4" fill="#fde68a"/>
+      <!-- Flowers -->
+      <circle cx="260" cy="385" r="10" fill="${flowerColor}"/>
+      <circle cx="257" cy="374" r="7" fill="${flowerColor}" opacity="0.7"/>
+      <circle cx="270" cy="376" r="7" fill="${flowerColor}" opacity="0.7"/>
+      <circle cx="250" cy="382" r="7" fill="${flowerColor}" opacity="0.7"/>
+      <circle cx="260" cy="392" r="7" fill="${flowerColor}" opacity="0.7"/>
+      <circle cx="271" cy="387" r="7" fill="${flowerColor}" opacity="0.7"/>
+      <circle cx="260" cy="385" r="6" fill="#fde68a"/>
+      <circle cx="310" cy="375" r="9" fill="#f9a8d4"/>
+      <circle cx="325" cy="380" r="9" fill="#f9a8d4"/>
+      <circle cx="318" cy="372" r="9" fill="#f9a8d4"/>
+      <circle cx="318" cy="375" r="5" fill="#fde68a"/>
+      <!-- Path -->
+      <path d="M80 490 Q190 380 300 490" fill="#fed7aa" opacity="0.5"/>
+      <!-- Duck in pond -->
+      <ellipse cx="55" cy="400" rx="34" ry="14" fill="#bae6fd"/>
+      <ellipse cx="52" cy="394" rx="14" ry="9" fill="white"/>
+      <circle cx="60" cy="388" r="7" fill="#fde68a"/>
+      <ellipse cx="66" cy="388" rx="6" ry="3" fill="#fb923c"/>
+      `;
+    }
+  },
+
+  // ── Scene 3: 주방 요리 장면 ──────────────────────────────
+  {
+    name: '주방 요리 장면',
+    diffs: [
+      { id: 0, cx: 200, cy: 100, r: 28, label: '냄비 뚜껑' },
+      { id: 1, cx: 90,  cy: 220, r: 26, label: '앞치마 색' },
+      { id: 2, cx: 300, cy: 250, r: 26, label: '냉장고 자석' },
+      { id: 3, cx: 155, cy: 310, r: 24, label: '채소 색상' },
+      { id: 4, cx: 280, cy: 130, r: 24, label: '창문 커튼' },
+    ],
+    draw(mod) {
+      const lidColor = mod ? '#f43f5e' : '#fbbf24';
+      const apronColor = mod ? '#60a5fa' : '#f9a8d4';
+      const magnetColor = mod ? '#a855f7' : '#22c55e';
+      const vegColor = mod ? '#f87171' : '#4ade80';
+      const curtainColor = mod ? '#a78bfa' : '#fb923c';
+      return `
+      <!-- Kitchen background -->
+      <rect width="380" height="490" fill="#fef9ee"/>
+      <!-- Counter -->
+      <rect x="0" y="280" width="380" height="210" fill="#fde68a"/>
+      <rect x="0" y="280" width="380" height="14" fill="#fbbf24"/>
+      <!-- Back wall tiles -->
+      <rect x="0" y="0" width="380" height="285" fill="#e0f2fe"/>
+      ${[...Array(10)].map((_,i)=>[...Array(6)].map((_,j)=>`<rect x="${i*38}" y="${j*48}" width="36" height="46" rx="2" fill="none" stroke="#bfdbfe" stroke-width="1.5"/>`).join('')).join('')}
+      <!-- Window -->
+      <rect x="230" y="50" width="120" height="90" rx="8" fill="#bae6fd" stroke="#93c5fd" stroke-width="3"/>
+      <line x1="290" y1="50" x2="290" y2="140" stroke="#93c5fd" stroke-width="2"/>
+      <line x1="230" y1="95" x2="350" y2="95" stroke="#93c5fd" stroke-width="2"/>
+      <!-- Curtains -->
+      <path d="M230 50 Q245 78 240 140" stroke="${curtainColor}" stroke-width="12" fill="none" stroke-linecap="round"/>
+      <path d="M350 50 Q335 78 340 140" stroke="${curtainColor}" stroke-width="12" fill="none" stroke-linecap="round"/>
+      <!-- Stove -->
+      <rect x="110" y="220" width="160" height="80" rx="10" fill="#e2e8f0"/>
+      <circle cx="160" cy="250" r="18" fill="#94a3b8"/>
+      <circle cx="160" cy="250" r="12" fill="#64748b"/>
+      <circle cx="220" cy="250" r="18" fill="#94a3b8"/>
+      <circle cx="220" cy="250" r="12" fill="#64748b"/>
+      <!-- Pot -->
+      <ellipse cx="200" cy="218" rx="40" ry="10" fill="#64748b"/>
+      <rect x="160" y="140" width="80" height="80" rx="8" fill="#475569"/>
+      <ellipse cx="200" cy="140" rx="40" ry="8" fill="#64748b"/>
+      <!-- Lid -->
+      <ellipse cx="200" cy="138" rx="44" ry="12" fill="${lidColor}"/>
+      <ellipse cx="200" cy="126" rx="10" ry="5" fill="${lidColor}"/>
+      <!-- Steam -->
+      <path d="M185 125 Q188 112 185 100" stroke="#cbd5e1" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M200 120 Q203 107 200 95" stroke="#cbd5e1" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M215 125 Q218 112 215 100" stroke="#cbd5e1" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <!-- Chef character -->
+      <circle cx="80" cy="170" r="26" fill="#fde68a"/>
+      <circle cx="73" cy="166" r="4" fill="#1e293b"/>
+      <circle cx="87" cy="166" r="4" fill="#1e293b"/>
+      <path d="M73 180 Q80 186 87 180" stroke="#1e293b" stroke-width="2.5" fill="none"/>
+      <!-- Chef hat -->
+      <rect x="64" y="140" width="32" height="20" rx="4" fill="white"/>
+      <rect x="60" y="155" width="40" height="8" rx="3" fill="#e2e8f0"/>
+      <!-- Apron -->
+      <rect x="52" y="196" width="56" height="70" rx="8" fill="${apronColor}"/>
+      <rect x="66" y="196" width="28" height="8" rx="3" fill="${apronColor}" opacity="0.7"/>
+      <!-- Refrigerator -->
+      <rect x="258" y="30" width="100" height="255" rx="10" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
+      <line x1="258" y1="145" x2="358" y2="145" stroke="#cbd5e1" stroke-width="2"/>
+      <rect x="270" y="80" width="10" height="50" rx="4" fill="#94a3b8"/>
+      <rect x="270" y="155" width="10" height="50" rx="4" fill="#94a3b8"/>
+      <!-- Fridge magnet -->
+      <rect x="290" y="55" width="28" height="20" rx="5" fill="${magnetColor}"/>
+      <text x="304" y="69" text-anchor="middle" font-size="9" fill="white" font-weight="800" font-family="sans-serif">A</text>
+      <!-- Cutting board + veggies -->
+      <rect x="100" y="288" width="120" height="22" rx="6" fill="#d4a76a"/>
+      <ellipse cx="135" cy="296" rx="14" ry="9" fill="${vegColor}"/>
+      <ellipse cx="162" cy="296" rx="14" ry="9" fill="${vegColor}" opacity="0.85"/>
+      <ellipse cx="190" cy="296" rx="12" ry="8" fill="${vegColor}" opacity="0.7"/>
+      <!-- Utensils -->
+      <line x1="46" y1="280" x2="40" y2="320" stroke="#94a3b8" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="43" cy="278" rx="7" ry="5" fill="#94a3b8"/>
+      <line x1="60" y1="280" x2="60" y2="322" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+      <path d="M56 280 Q60 270 64 280" fill="#94a3b8"/>
+      `;
+    }
+  },
+
+  // ── Scene 4: 바닷속 장면 ─────────────────────────────────
+  {
+    name: '바닷속 장면',
+    diffs: [
+      { id: 0, cx: 100, cy: 120, r: 28, label: '물고기 수' },
+      { id: 1, cx: 280, cy: 200, r: 26, label: '산호 색' },
+      { id: 2, cx: 60,  cy: 340, r: 24, label: '거품 개수' },
+      { id: 3, cx: 200, cy: 420, r: 26, label: '보물상자' },
+      { id: 4, cx: 320, cy: 350, r: 24, label: '해초 방향' },
+    ],
+    draw(mod) {
+      const coralColor = mod ? '#f87171' : '#f9a8d4';
+      const extraFish = mod ? `<ellipse cx="130" cy="110" rx="20" ry="12" fill="#fbbf24"/>
+        <polygon points="150,110 162,100 162,120" fill="#f59e0b"/>
+        <circle cx="122" cy="107" r="3" fill="#1e293b"/>` : '';
+      const bubblesExtra = mod ? `<circle cx="50" cy="310" r="5" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+        <circle cx="68" cy="290" r="4" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>` : '';
+      const chestOpen = mod;
+      const seaweedDir = mod ? 'scale(-1,1) translate(-380,0)' : '';
+      return `
+      <!-- Ocean background -->
+      <rect width="380" height="490" fill="#0c4a6e"/>
+      <!-- Light rays -->
+      <path d="M190 0 L100 200" stroke="rgba(186,230,253,0.12)" stroke-width="40"/>
+      <path d="M190 0 L260 200" stroke="rgba(186,230,253,0.1)" stroke-width="30"/>
+      <path d="M190 0 L190 300" stroke="rgba(186,230,253,0.08)" stroke-width="50"/>
+      <!-- Sand bottom -->
+      <ellipse cx="190" cy="490" rx="220" ry="80" fill="#fde68a"/>
+      <rect x="0" y="440" width="380" height="50" fill="#fde68a"/>
+      <!-- Sand ripples -->
+      <path d="M20 455 Q80 450 140 455 Q200 460 260 455 Q320 450 370 455" stroke="#fbbf24" stroke-width="1.5" fill="none"/>
+      <path d="M0 468 Q60 464 120 468 Q180 472 240 468 Q300 464 380 468" stroke="#fbbf24" stroke-width="1" fill="none"/>
+      <!-- Coral cluster left -->
+      <path d="M60 440 Q58 400 55 380 Q52 360 58 350" stroke="${coralColor}" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <path d="M58 350 Q48 335 42 320" stroke="${coralColor}" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M58 350 Q68 335 72 318" stroke="${coralColor}" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <circle cx="42" cy="318" r="8" fill="${coralColor}"/>
+      <circle cx="72" cy="316" r="8" fill="${coralColor}"/>
+      <circle cx="58" cy="350" r="6" fill="${coralColor}"/>
+      <!-- Coral cluster right -->
+      <path d="M280 440 Q278 400 276 372" stroke="#f87171" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <path d="M276 372 Q265 355 260 340" stroke="#f87171" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M276 372 Q288 355 292 340" stroke="#f87171" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <circle cx="260" cy="338" r="7" fill="#f87171"/>
+      <circle cx="292" cy="338" r="7" fill="#f87171"/>
+      <!-- Seaweed -->
+      <g transform="${seaweedDir}">
+      <path d="M320 440 Q310 410 320 390 Q330 370 318 350 Q308 330 320 310" stroke="#4ade80" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <path d="M340 440 Q330 415 342 395 Q352 375 340 355 Q328 335 342 315" stroke="#22c55e" stroke-width="6" fill="none" stroke-linecap="round"/>
+      </g>
+      <!-- Treasure chest -->
+      <rect x="160" y="400" width="60" height="40" rx="6" fill="#92400e"/>
+      <rect x="160" y="400" width="60" height="8" rx="4" fill="#78350f"/>
+      ${chestOpen ? `<rect x="160" y="380" width="60" height="22" rx="6" fill="#78350f" transform="rotate(-30 190 400)"/>
+        <circle cx="190" cy="410" r="6" fill="#fbbf24"/>
+        <ellipse cx="190" cy="415" rx="18" ry="8" fill="#fde68a" opacity="0.7"/>` :
+        `<rect x="175" y="408" width="10" height="12" rx="3" fill="#fbbf24"/>
+        <circle cx="180" cy="408" r="4" fill="#fbbf24"/>`}
+      <!-- Fish school -->
+      <ellipse cx="88" cy="118" rx="22" ry="13" fill="#60a5fa"/>
+      <polygon points="110,118 122,108 122,128" fill="#3b82f6"/>
+      <circle cx="80" cy="114" r="3.5" fill="#1e293b"/>
+      ${extraFish}
+      <!-- More fish -->
+      <ellipse cx="230" cy="160" rx="18" ry="10" fill="#f9a8d4"/>
+      <polygon points="248,160 258,152 258,168" fill="#f472b6"/>
+      <circle cx="223" cy="157" r="3" fill="#1e293b"/>
+      <ellipse cx="150" cy="260" rx="16" ry="9" fill="#86efac"/>
+      <polygon points="166,260 175,253 175,267" fill="#4ade80"/>
+      <circle cx="143" cy="257" r="3" fill="#1e293b"/>
+      <!-- Octopus -->
+      <ellipse cx="310" cy="300" rx="28" ry="22" fill="#c084fc"/>
+      <ellipse cx="310" cy="290" rx="24" ry="18" fill="#d8b4fe"/>
+      <circle cx="302" cy="285" r="5" fill="#1e293b"/>
+      <circle cx="318" cy="285" r="5" fill="#1e293b"/>
+      <circle cx="303" cy="284" r="2" fill="white"/>
+      <circle cx="319" cy="284" r="2" fill="white"/>
+      ${['282','292','302','312','322','332'].map((x,i)=>`<path d="M${x} 316 Q${parseInt(x)-6} ${336+i*4} ${x} ${356+i*4}" stroke="#c084fc" stroke-width="5" fill="none" stroke-linecap="round"/>`).join('')}
+      <!-- Bubbles -->
+      <circle cx="46" cy="350" r="6" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+      <circle cx="58" cy="330" r="4" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+      <circle cx="40" cy="310" r="5" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+      ${bubblesExtra}
+      `;
+    }
+  },
+
+  // ── Scene 5: 우주 로켓 장면 ──────────────────────────────
+  {
+    name: '우주 로켓 장면',
+    diffs: [
+      { id: 0, cx: 60,  cy: 80,  r: 28, label: '별 개수' },
+      { id: 1, cx: 300, cy: 160, r: 26, label: '행성 색' },
+      { id: 2, cx: 185, cy: 160, r: 24, label: '창문 크기' },
+      { id: 3, cx: 185, cy: 80,  r: 24, label: '로켓 패턴' },
+      { id: 4, cx: 90,  cy: 300, r: 26, label: '우주인 장갑' },
+    ],
+    draw(mod) {
+      const planetColor = mod ? '#f87171' : '#a855f7';
+      const extraStars = mod ? `<polygon points="55,60 58,70 68,70 60,76 63,86 55,80 47,86 50,76 42,70 52,70" fill="#fbbf24" opacity="0.9"/>
+        <polygon points="30,100 32,107 39,107 33,112 35,119 30,115 25,119 27,112 21,107 28,107" fill="#fbbf24" opacity="0.7"/>` : '';
+      const windowSize = mod ? 22 : 16;
+      const stripeColor = mod ? '#60a5fa' : '#f43f5e';
+      const gloveColor = mod ? '#fde68a' : '#fff';
+      return `
+      <!-- Space background -->
+      <rect width="380" height="490" fill="#0f0a20"/>
+      <!-- Stars -->
+      ${[...Array(40)].map((_,i)=>{
+        const x=Math.sin(i*137.5)*160+190;const y=((i*73)%470)+10;
+        const r=i%5===0?2.5:i%3===0?1.8:1.2;
+        return `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${r}" fill="white" opacity="${0.4+Math.random()*0.6}"/>`;
+      }).join('')}
+      ${extraStars}
+      <!-- Large planet right -->
+      <circle cx="300" cy="155" r="50" fill="${planetColor}" opacity="0.85"/>
+      <ellipse cx="300" cy="155" rx="70" ry="14" fill="none" stroke="${planetColor}" stroke-width="6" opacity="0.5"/>
+      <circle cx="284" cy="140" r="14" fill="rgba(0,0,0,0.15)"/>
+      <circle cx="315" cy="165" r="10" fill="rgba(255,255,255,0.1)"/>
+      <!-- Small planet left -->
+      <circle cx="42" cy="380" r="28" fill="#06b6d4" opacity="0.7"/>
+      <circle cx="34" cy="370" r="8" fill="rgba(0,0,0,0.15)"/>
+      <!-- Rocket -->
+      <path d="M185 30 Q200 10 215 30 L222 180 L148 180 Z" fill="#e2e8f0"/>
+      <path d="M185 30 Q200 10 215 30 L222 180 L148 180 Z" fill="none" stroke="#94a3b8" stroke-width="2"/>
+      <!-- Rocket stripe -->
+      <rect x="155" y="130" width="70" height="20" rx="0" fill="${stripeColor}" opacity="0.8"/>
+      <!-- Rocket window -->
+      <circle cx="185" cy="100" r="${windowSize}" fill="#bae6fd" stroke="#93c5fd" stroke-width="3"/>
+      <circle cx="185" cy="100" r="${windowSize-6}" fill="#7dd3fc"/>
+      <!-- Astronaut in window -->
+      <circle cx="185" cy="100" r="${windowSize-10}" fill="#fde68a"/>
+      <circle cx="181" cy="97" r="2.5" fill="#1e293b"/>
+      <circle cx="189" cy="97" r="2.5" fill="#1e293b"/>
+      <path d="M181 104 Q185 108 189 104" stroke="#1e293b" stroke-width="1.5" fill="none"/>
+      <!-- Rocket fins -->
+      <path d="M148 180 L122 220 L148 210 Z" fill="#94a3b8"/>
+      <path d="M222 180 L248 220 L222 210 Z" fill="#94a3b8"/>
+      <!-- Rocket exhaust -->
+      <path d="M162 180 Q185 230 208 180" fill="#fb923c" opacity="0.7"/>
+      <path d="M168 188 Q185 250 202 188" fill="#fbbf24" opacity="0.6"/>
+      <path d="M174 192 Q185 270 196 192" fill="#fde68a" opacity="0.5"/>
+      <!-- Astronaut floating -->
+      <circle cx="85" cy="265" r="22" fill="white"/>
+      <circle cx="85" cy="265" r="18" fill="#bfdbfe"/>
+      <circle cx="78" cy="260" r="4" fill="#1e293b"/>
+      <circle cx="92" cy="260" r="4" fill="#1e293b"/>
+      <path d="M78 272 Q85 278 92 272" stroke="#1e293b" stroke-width="2" fill="none"/>
+      <!-- Helmet ring -->
+      <circle cx="85" cy="265" r="22" fill="none" stroke="white" stroke-width="4"/>
+      <!-- Astronaut suit -->
+      <rect x="68" y="286" width="34" height="36" rx="10" fill="#e2e8f0"/>
+      <rect x="74" y="290" width="22" height="14" rx="4" fill="#bfdbfe"/>
+      <!-- Gloves -->
+      <circle cx="58" cy="296" r="10" fill="${gloveColor}"/>
+      <circle cx="112" cy="296" r="10" fill="${gloveColor}"/>
+      <!-- Tether -->
+      <path d="M85 290 Q160 260 160 210" stroke="#94a3b8" stroke-width="2" fill="none" stroke-dasharray="6,4"/>
+      <!-- Shooting star -->
+      <path d="M10 150 L80 120" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="10" cy="150" r="4" fill="#fde68a"/>
+      <!-- Galaxy swirl -->
+      <path d="M340 400 Q360 380 340 360 Q320 340 340 320" stroke="rgba(168,85,247,0.3)" stroke-width="20" fill="none"/>
+      `;
+    }
+  },
+];
+
+// === Game State ===
+let currentScene = 0;
+let sceneOrder = [];
+let foundInScene = [];
+let totalFound = 0;
+let hearts = 3;
+let timerSecs = 60;
+let timerInterval = null;
+let canTap = true;
+
+const TOTAL_SCENES = 5;
+
+// === Particles ===
+const pCanvas = document.getElementById('particle-canvas');
+const pCtx = pCanvas.getContext('2d');
+let particles = [];
+pCanvas.width = 800; pCanvas.height = 600;
+
+function spawnRingParticles(x, y) {
+  const colors = ['#fbbf24','#f59e0b','#a855f7','#06b6d4','#22c55e'];
+  for(let i = 0; i < 24; i++) {
+    const angle = (i/24)*Math.PI*2;
+    const speed = 3+Math.random()*4;
+    particles.push({ x, y, vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed,
+      life:1, decay:0.025+Math.random()*0.02, size:4+Math.random()*6,
+      color:colors[Math.floor(Math.random()*colors.length)] });
+  }
+}
+function animateParticles() {
+  pCtx.clearRect(0,0,800,600);
+  particles = particles.filter(p=>p.life>0);
+  for(const p of particles) {
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.15; p.vx*=0.97; p.life-=p.decay;
+    pCtx.save(); pCtx.globalAlpha=Math.max(0,p.life); pCtx.fillStyle=p.color;
+    pCtx.beginPath(); pCtx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2); pCtx.fill(); pCtx.restore();
+  }
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+function flashScreen(color) {
+  const f = document.getElementById('flash');
+  f.style.background = color; f.style.opacity='1';
+  setTimeout(()=>{ f.style.opacity='0'; }, 320);
+}
+
+// === Hearts ===
+function buildHearts() {
+  const wrap = document.getElementById('hearts-wrap');
+  wrap.innerHTML = '';
+  for(let i = 0; i < 3; i++) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox','0 0 24 24');
+    svg.classList.add('heart-icon');
+    svg.id = `heart-${i}`;
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d','M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z');
+    path.setAttribute('fill','#f43f5e');
+    svg.appendChild(path);
+    wrap.appendChild(svg);
+  }
+}
+function updateHearts() {
+  for(let i = 0; i < 3; i++) {
+    const h = document.getElementById(`heart-${i}`);
+    if(h) h.classList.toggle('lost', i >= hearts);
+  }
+}
+
+// === Load Scene ===
+function loadScene(idx) {
+  const scene = SCENES[sceneOrder[idx]];
+  foundInScene = [];
+  canTap = true;
+
+  document.getElementById('scene-label').textContent = scene.name;
+  document.getElementById('round-badge').textContent = `${idx+1} / ${TOTAL_SCENES}`;
+  updateFoundBadge(scene);
+
+  const leftSVG = document.getElementById('svg-left');
+  const rightSVG = document.getElementById('svg-right');
+  leftSVG.innerHTML = scene.draw(false);
+  rightSVG.innerHTML = scene.draw(true);
+
+  // Clear old highlights
+  document.querySelectorAll('.highlight-circle').forEach(el => el.remove());
+
+  // Tap handlers
+  const frameLeft = document.getElementById('frame-left');
+  const frameRight = document.getElementById('frame-right');
+  frameLeft.onclick = (e) => handleFrameClick(e, 'left', scene, idx);
+  frameRight.onclick = (e) => handleFrameClick(e, 'right', scene, idx);
+
+  // Reset timer
+  resetTimer();
+}
+
+function updateFoundBadge(scene) {
+  document.getElementById('found-badge').textContent =
+    `${foundInScene.length} / ${scene.diffs.length}`;
+}
+
+// === Click handling ===
+function handleFrameClick(e, side, scene, sceneIdx) {
+  if(!canTap) return;
+  const frame = e.currentTarget;
+  const rect = frame.getBoundingClientRect();
+  // Convert click to SVG coordinate (380x490)
+  const relX = (e.clientX - rect.left) / rect.width * 380;
+  const relY = (e.clientY - rect.top) / rect.height * 490;
+
+  // Check against diff hitboxes
+  let hit = -1;
+  for(const diff of scene.diffs) {
+    if(foundInScene.includes(diff.id)) continue;
+    const dx = relX - diff.cx;
+    const dy = relY - diff.cy;
+    const tolerance = diff.r * 1.3;
+    if(Math.sqrt(dx*dx + dy*dy) <= tolerance) { hit = diff.id; break; }
+  }
+
+  if(hit >= 0) {
+    // Correct!
+    const diff = scene.diffs.find(d => d.id === hit);
+    foundInScene.push(hit);
+    totalFound++;
+    markDiff(diff, true);
+    spawnRingParticles(e.clientX - document.getElementById('game-wrap').getBoundingClientRect().left,
+                       e.clientY - document.getElementById('game-wrap').getBoundingClientRect().top);
+    flashScreen('rgba(251,191,36,0.14)');
+    updateFoundBadge(scene);
+
+    if(foundInScene.length >= scene.diffs.length) {
+      // All found!
+      canTap = false;
+      clearInterval(timerInterval);
+      setTimeout(() => showRoundComplete(scene, sceneIdx), 600);
+    }
+  } else {
+    // Wrong — show temporary X ring
+    showWrongHighlight(e, frame);
+    hearts--;
+    updateHearts();
+    flashScreen('rgba(239,68,68,0.18)');
+    if(hearts <= 0) {
+      setTimeout(() => endGame(), 500);
+    }
+  }
+}
+
+function markDiff(diff, permanent) {
+  // Place circle on both frames
+  ['frame-left','frame-right'].forEach(frameId => {
+    const frame = document.getElementById(frameId);
+    const rect = frame.getBoundingClientRect();
+    const wrapRect = document.getElementById('game-wrap').getBoundingClientRect();
+    // SVG coords to frame pixel
+    const px = (diff.cx / 380) * rect.width + rect.left - wrapRect.left;
+    const py = (diff.cy / 490) * rect.height + rect.top - wrapRect.top;
+    const r = (diff.r / 380) * rect.width * 1.6;
+
+    const circle = document.createElement('div');
+    circle.className = 'highlight-circle found';
+    circle.style.cssText = `left:${px}px;top:${py}px;width:${r*2}px;height:${r*2}px;`;
+    document.getElementById('game-wrap').appendChild(circle);
+  });
+}
+
+function showWrongHighlight(e, frame) {
+  const wrapRect = document.getElementById('game-wrap').getBoundingClientRect();
+  const px = e.clientX - wrapRect.left;
+  const py = e.clientY - wrapRect.top;
+  const circle = document.createElement('div');
+  circle.className = 'highlight-circle wrong-flash';
+  circle.style.cssText = `left:${px}px;top:${py}px;width:60px;height:60px;`;
+  document.getElementById('game-wrap').appendChild(circle);
+  setTimeout(() => circle.remove(), 500);
+}
+
+// === Timer ===
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerSecs = 60;
+  document.getElementById('timer-display').textContent = timerSecs;
+  document.getElementById('timer-display').style.color = '#f59e0b';
+  document.getElementById('timer-bar-inner').style.width = '100%';
+
+  timerInterval = setInterval(() => {
+    timerSecs--;
+    document.getElementById('timer-display').textContent = timerSecs;
+    document.getElementById('timer-bar-inner').style.width = `${(timerSecs/60)*100}%`;
+    if(timerSecs <= 10) document.getElementById('timer-display').style.color = '#f43f5e';
+    if(timerSecs <= 0) {
+      clearInterval(timerInterval);
+      endGame();
+    }
+  }, 1000);
+}
+
+// === Round complete ===
+function showRoundComplete(scene, sceneIdx) {
+  document.getElementById('rc-title').textContent = '다 찾았어요!';
+  document.getElementById('rc-sub').textContent = `${scene.diffs.length}개를 모두 찾았어요!`;
+  const nextBtn = document.getElementById('rc-next-btn');
+  if(sceneIdx + 1 >= TOTAL_SCENES) {
+    nextBtn.textContent = '결과 보기';
+    nextBtn.onclick = () => { document.getElementById('round-complete').classList.remove('show'); showResult(); };
+  } else {
+    nextBtn.textContent = '다음 그림';
+    nextBtn.onclick = () => { document.getElementById('round-complete').classList.remove('show'); nextScene(); };
+  }
+  document.getElementById('round-complete').classList.add('show');
+
+  // Confetti
+  for(let i = 0; i < 40; i++) {
+    setTimeout(() => {
+      const colors=['#fbbf24','#a855f7','#ec4899','#22c55e','#06b6d4'];
+      particles.push({ x:Math.random()*800,y:-10,vx:(Math.random()-0.5)*4,vy:2+Math.random()*3,
+        life:1,decay:0.007+Math.random()*0.007,size:5+Math.random()*5,
+        color:colors[Math.floor(Math.random()*colors.length)] });
+    }, i*30);
+  }
+}
+
+function nextScene() {
+  currentScene++;
+  loadScene(currentScene);
+}
+
+// === Game over ===
+function endGame() {
+  clearInterval(timerInterval);
+  canTap = false;
+  showResult();
+}
+
+// === Result ===
+function showResult() {
+  const maxPossible = SCENES.reduce((a,b)=>a+b.diffs.length,0);
+  const pct = totalFound / maxPossible;
+  const stars = pct >= 0.8 ? 3 : pct >= 0.5 ? 2 : pct >= 0.2 ? 1 : 0;
+  const titles = { 3:'관찰 박사!', 2:'잘 찾았어요!', 1:'계속 도전해봐요!', 0:'다시 해봐요!' };
+
+  document.getElementById('result-title').textContent = titles[stars] || '수고했어요!';
+  document.getElementById('result-score').textContent = `${totalFound}/${maxPossible} 발견`;
+  renderStars(stars);
+  document.getElementById('result-screen').classList.add('show');
+
+  for(let i = 0; i < 60; i++) {
+    setTimeout(()=>{
+      const colors=['#fbbf24','#a855f7','#ec4899','#22c55e','#06b6d4'];
+      particles.push({x:Math.random()*800,y:-10,vx:(Math.random()-0.5)*3,vy:2+Math.random()*3,
+        life:1,decay:0.006+Math.random()*0.006,size:4+Math.random()*6,
+        color:colors[Math.floor(Math.random()*colors.length)]});
+    }, i*20);
+  }
+}
+
+function renderStars(count) {
+  const c = document.getElementById('result-stars');
+  c.innerHTML = '';
+  for(let i = 0; i < 3; i++) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox','0 0 24 24');
+    svg.classList.add('result-star');
+    const pts=[];
+    for(let j=0;j<10;j++){const r=j%2===0?11:5;const a=(j*Math.PI/5)-Math.PI/2;pts.push(`${12+r*Math.cos(a)},${12+r*Math.sin(a)}`);}
+    const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    poly.setAttribute('points',pts.join(' '));
+    poly.setAttribute('fill',i<count?'#fbbf24':'rgba(255,255,255,0.1)');
+    poly.setAttribute('stroke',i<count?'#f59e0b':'rgba(255,255,255,0.15)');
+    poly.setAttribute('stroke-width','1');
+    svg.appendChild(poly);
+    c.appendChild(svg);
+  }
+}
+
+function restartGame() {
+  currentScene = 0; totalFound = 0; hearts = 3;
+  particles = [];
+  document.getElementById('result-screen').classList.remove('show');
+  document.querySelectorAll('.highlight-circle').forEach(el=>el.remove());
+  updateHearts();
+  sceneOrder = SCENES.map((_,i)=>i).sort(()=>Math.random()-0.5);
+  loadScene(0);
+}
+
+function goHome() { window.location.href = '../../index.html'; }
+
+// === Init ===
+buildHearts();
+sceneOrder = SCENES.map((_,i)=>i).sort(()=>Math.random()-0.5);
+loadScene(0);
+</script>
+</body>
+</html>

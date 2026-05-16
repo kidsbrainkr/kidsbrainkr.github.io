@@ -1,2448 +1,713 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  <meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🌈⭐ 쑥쑥 놀이터</title>
-  <style>
-    /* ============================================================
-       CSS CUSTOM PROPERTIES
-       ============================================================ */
-    :root,
-    [data-theme="day"] {
-      --bg: #FFF8E1;
-      --hero-start: #4FC3F7;
-      --hero-mid: #7C4DFF;
-      --hero-end: #FF6090;
-      --age2: #FF6D00;
-      --age3: #00C853;
-      --age4: #2979FF;
-      --age5: #AA00FF;
-      --mixed: #FF6D00;
-      --theme: #FF1744;
-      --routine: #00BFA5;
-      --card-radius: 24px;
-      --font: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-      --text-color: #333;
-      --section-heading: #5B4FCF;
-    }
-    [data-theme="night"] {
-      --bg: #1a1a2e;
-      --hero-start: #0f3460;
-      --hero-mid: #533483;
-      --hero-end: #e94560;
-      --text-color: #e5e5e5;
-      --section-heading: #c4b5fd;
-    }
-    [data-theme="night"] body {
-      background-color: var(--bg);
-      background-image:
-        radial-gradient(circle, rgba(167,139,250,0.08) 3px, transparent 3px),
-        radial-gradient(circle, rgba(100,181,246,0.06) 3px, transparent 3px);
-    }
+<meta charset="UTF-8">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>쑥쑥 놀이터 — 유아 두뇌발달 게임</title>
+<meta name="description" content="유아 두뇌발달을 돕는 놀이 게임 모음. 기억력, 관찰력, 사고력, 청각, 창의력을 키워요.">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Nunito','Malgun Gothic','Apple SD Gothic Neo',sans-serif;}
+body{background:radial-gradient(ellipse at 50% 40%,#1a0533 0%,#0a0118 60%,#000 100%);}
+#stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+#world{position:fixed;inset:0;z-index:1;cursor:grab;overflow:hidden;user-select:none;}
+#world.dragging{cursor:grabbing;}
+#world.edit-mode{cursor:default;}
+#stage{position:absolute;width:3600px;height:3000px;top:50%;left:50%;transform:translate(-50%,-50%);}
+#lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;}
 
-    body {
-      font-family: var(--font);
-      background-color: var(--bg);
-      background-image:
-        radial-gradient(circle, rgba(255,105,135,0.18) 3px, transparent 3px),
-        radial-gradient(circle, rgba(100,181,246,0.18) 3px, transparent 3px),
-        radial-gradient(circle, rgba(255,213,79,0.15) 2px, transparent 2px),
-        radial-gradient(circle, rgba(129,199,132,0.15) 2px, transparent 2px);
-      background-size: 40px 40px, 60px 60px, 80px 80px, 50px 50px;
-      background-position: 0 0, 30px 30px, 15px 45px, 55px 10px;
-      min-height: 100vh;
-      color: #333;
-      overflow-x: hidden;
-    }
+/* 태양 */
+.sun{position:absolute;width:160px;height:160px;left:1800px;top:1500px;transform:translate(-50%,-50%);z-index:10;}
+.sun-core{
+  width:160px;height:160px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#FFE566,#FF9F0A,#FF5500);
+  box-shadow:0 0 80px 28px rgba(255,180,0,0.5),0 0 160px 60px rgba(255,120,0,0.25);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  animation:sunPulse 3s ease-in-out infinite;
+}
+.sun-core img{width:120px;height:120px;object-fit:contain;}
+.sun-core .sun-emoji{font-size:3.8rem;}
+.sun-label{position:absolute;bottom:-36px;left:50%;transform:translateX(-50%);
+  font-size:0.88rem;font-weight:900;color:rgba(255,220,100,0.9);white-space:nowrap;
+  text-shadow:0 0 12px rgba(255,180,0,0.5);}
+@keyframes sunPulse{
+  0%,100%{box-shadow:0 0 80px 28px rgba(255,180,0,0.5),0 0 160px 60px rgba(255,120,0,0.25);}
+  50%{box-shadow:0 0 100px 40px rgba(255,180,0,0.7),0 0 200px 80px rgba(255,120,0,0.35);}
+}
 
-    /* ============================================================
-       KEYFRAMES
-       ============================================================ */
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      30% { transform: translateY(-18px); }
-      50% { transform: translateY(-6px); }
-      70% { transform: translateY(-12px); }
-    }
-    @keyframes float {
-      0%, 100% { transform: translateY(0) rotate(0deg); }
-      50% { transform: translateY(-16px) rotate(5deg); }
-    }
-    @keyframes popIn {
-      0% { transform: scale(0.3); opacity: 0; }
-      60% { transform: scale(1.1); opacity: 1; }
-      100% { transform: scale(1); }
-    }
-    @keyframes wiggle {
-      0%, 100% { transform: rotate(0deg); }
-      25% { transform: rotate(-8deg); }
-      75% { transform: rotate(8deg); }
-    }
-    @keyframes rainbow {
-      0% { color: #FF1744; }
-      16% { color: #FF6D00; }
-      33% { color: #FFD600; }
-      50% { color: #00C853; }
-      66% { color: #2979FF; }
-      83% { color: #AA00FF; }
-      100% { color: #FF1744; }
-    }
-    @keyframes cloudMove {
-      0% { transform: translateX(-120%); }
-      100% { transform: translateX(120vw); }
-    }
-    @keyframes twinkle {
-      0%, 100% { opacity: 0.3; transform: scale(0.8); }
-      50% { opacity: 1; transform: scale(1.2); }
-    }
-    @keyframes heroFloat {
-      0%, 100% { transform: translateY(0) scale(1); }
-      50% { transform: translateY(-10px) scale(1.03); }
-    }
-    @keyframes scrollArrow {
-      0%, 100% { transform: translateY(0); opacity: 0.6; }
-      50% { transform: translateY(12px); opacity: 1; }
-    }
-    @keyframes cardPop {
-      0% { transform: scale(0.5) translateY(40px); opacity: 0; }
-      60% { transform: scale(1.06) translateY(-5px); opacity: 1; }
-      100% { transform: scale(1) translateY(0); opacity: 1; }
-    }
-    @keyframes newPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,0,0.6); transform: scale(1); }
-      50% { box-shadow: 0 0 0 8px rgba(255,255,0,0); transform: scale(1.08); }
-    }
-    @keyframes glowRing {
-      0%, 100% { box-shadow: 0 0 0 4px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.3); }
-      50% { box-shadow: 0 0 0 8px rgba(255,255,255,0.7), 0 0 40px rgba(255,255,255,0.5); }
-    }
-    @keyframes mascotBounce {
-      0%, 100% { transform: translateY(0) rotate(0deg); }
-      25% { transform: translateY(-10px) rotate(-3deg); }
-      75% { transform: translateY(-4px) rotate(3deg); }
-    }
-    @keyframes fadeUp {
-      from { transform: translateY(20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-    @keyframes speechIn {
-      from { opacity: 0; transform: translateX(-12px) scale(0.9); }
-      to { opacity: 1; transform: translateX(0) scale(1); }
-    }
-    @keyframes milestoneIn {
-      from { transform: scale(0.5) rotate(-5deg); opacity: 0; }
-      to { transform: scale(1) rotate(0deg); opacity: 1; }
-    }
-    @keyframes sheetUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
-    }
-    @keyframes sparkle {
-      0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
-      50% { opacity: 1; transform: scale(1) rotate(180deg); }
-    }
-    @keyframes balloonFloat {
-      0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-      10% { opacity: 0.8; }
-      90% { opacity: 0.8; }
-      100% { transform: translateY(-120vh) rotate(20deg); opacity: 0; }
-    }
+/* 궤도 링 */
+.orbit-ring{position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,0.05);
+  transform:translate(-50%,-50%);left:1800px;top:1500px;pointer-events:none;}
 
-    /* ============================================================
-       FLOATING BACKGROUND ELEMENTS
-       ============================================================ */
-    .bg-clouds {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
-    }
-    .cloud {
-      position: absolute;
-      font-size: 3rem;
-      opacity: 0.25;
-      animation: cloudMove linear infinite;
-    }
-    .cloud:nth-child(1) { top: 8%; animation-duration: 30s; animation-delay: 0s; font-size: 5rem; opacity: 0.3; }
-    .cloud:nth-child(2) { top: 22%; animation-duration: 40s; animation-delay: -8s; font-size: 4.5rem; opacity: 0.25; }
-    .cloud:nth-child(3) { top: 45%; animation-duration: 35s; animation-delay: -18s; font-size: 4rem; }
-    .cloud:nth-child(4) { top: 65%; animation-duration: 45s; animation-delay: -5s; font-size: 3.5rem; }
-    .cloud:nth-child(5) { top: 85%; animation-duration: 38s; animation-delay: -12s; font-size: 4rem; opacity: 0.2; }
-    .cloud:nth-child(6) { top: 35%; animation-duration: 50s; animation-delay: -25s; font-size: 3rem; opacity: 0.2; }
+/* 행성 */
+.planet{position:absolute;transform:translate(-50%,-50%);z-index:5;cursor:pointer;}
+.planet.spare{opacity:0.35;filter:grayscale(0.4);}
+.planet.spare:hover .planet-body{transform:scale(1.05);}
+.planet.spare .planet-label{color:rgba(255,255,255,0.45);font-size:0.7rem;}
+.planet:hover:not(.dragging-item) .planet-body{transform:scale(1.1);}
+.planet.active .planet-body{box-shadow:0 0 55px 22px var(--glow)!important;transform:scale(1.08);}
+.planet.edit-handle{cursor:move;}
+.planet.edit-handle .planet-body{
+  border-color:rgba(255,255,100,0.5)!important;
+  outline:2px dashed rgba(255,255,100,0.35);outline-offset:4px;}
+.planet-body{
+  width:100px;height:100px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  border:3px solid rgba(255,255,255,0.18);overflow:hidden;
+  animation:planetFloat var(--dur) ease-in-out var(--delay) infinite;
+  transition:transform .3s,box-shadow .3s,border-color .3s;
+}
+.planet-body img{width:70px;height:70px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4));}
+.planet-body .fallback{font-size:2.2rem;}
+.planet-label{text-align:center;font-size:0.8rem;font-weight:900;color:rgba(255,255,255,0.88);
+  margin-top:9px;text-shadow:0 2px 8px rgba(0,0,0,0.6);}
+.planet-count{text-align:center;font-size:0.63rem;color:rgba(255,255,255,0.4);font-weight:700;margin-top:2px;}
+@keyframes planetFloat{
+  0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}
+}
+.planet.active .planet-body,.planet.edit-handle .planet-body{animation:none;}
 
-    .bg-stars {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
-    }
-    .bg-star {
-      position: absolute;
-      animation: twinkle ease-in-out infinite;
-    }
+/* 게임 위성 */
+.game-dot{
+  position:absolute;transform:translate(-50%,-50%) scale(0.6);
+  z-index:6;cursor:pointer;opacity:0;pointer-events:none;
+  transition:opacity .35s,transform .35s;
+}
+.game-dot.visible{opacity:1;pointer-events:all;transform:translate(-50%,-50%) scale(1);}
+.game-dot.edit-handle{cursor:move;}
+.game-dot.edit-handle .game-dot-body{
+  border:2px dashed rgba(255,255,100,0.6)!important;background:rgba(255,255,100,0.08)!important;}
+.game-dot-body{
+  width:62px;height:62px;border-radius:18px;
+  background:rgba(255,255,255,0.07);border:2px solid rgba(255,255,255,0.18);
+  backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;
+  transition:all .2s;box-shadow:0 4px 24px rgba(0,0,0,0.35);overflow:hidden;
+}
+.game-dot-body img{width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.4));}
+.game-dot-body .fallback{font-size:1.9rem;}
+.game-dot:not(.edit-handle):hover .game-dot-body{
+  background:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.5);transform:scale(1.12);}
+.game-dot-name{position:absolute;bottom:-27px;left:50%;transform:translateX(-50%);
+  font-size:0.6rem;font-weight:800;color:rgba(255,255,255,0.78);white-space:nowrap;
+  background:rgba(0,0,0,0.5);padding:2px 7px;border-radius:7px;max-width:90px;
+  overflow:hidden;text-overflow:ellipsis;}
 
-    .bg-balloons {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
-    }
-    .balloon {
-      position: absolute;
-      font-size: 2rem;
-      animation: balloonFloat linear infinite;
-    }
+/* 패널 */
+#panel{
+  position:fixed;bottom:28px;right:28px;z-index:100;width:315px;
+  background:rgba(12,6,28,0.97);backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,0.1);border-radius:22px;overflow:hidden;
+  transform:translateY(28px);opacity:0;pointer-events:none;
+  transition:all .3s cubic-bezier(.4,0,.2,1);
+}
+#panel.open{transform:translateY(0);opacity:1;pointer-events:all;}
+.panel-thumb{width:100%;height:150px;display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;}
+.panel-thumb-bg{position:absolute;inset:0;opacity:0.3;filter:blur(24px);
+  background-size:cover;background-position:center;}
+.panel-thumb img{width:120px;height:120px;object-fit:contain;position:relative;z-index:1;
+  filter:drop-shadow(0 4px 14px rgba(0,0,0,0.55));}
+.panel-thumb .f-icon{font-size:4.5rem;position:relative;z-index:1;}
+.panel-body{padding:14px 20px 20px;}
+.panel-badge{display:inline-flex;align-items:center;gap:5px;font-size:0.68rem;font-weight:900;
+  padding:3px 11px;border-radius:20px;background:rgba(255,255,255,0.08);
+  color:rgba(255,255,255,0.6);margin-bottom:8px;}
+.panel-title{font-size:1.15rem;font-weight:900;color:#fff;margin-bottom:5px;}
+.panel-desc{font-size:0.79rem;color:rgba(255,255,255,0.52);line-height:1.65;margin-bottom:14px;}
+.panel-tip{font-size:0.72rem;color:rgba(255,255,255,0.35);line-height:1.5;margin-bottom:16px;
+  border-left:2px solid rgba(255,255,255,0.15);padding-left:10px;}
+.panel-play{
+  display:block;text-align:center;background:linear-gradient(135deg,#A855F7,#EC4899);
+  color:#fff;border-radius:12px;padding:12px;font-size:0.92rem;font-weight:900;
+  cursor:pointer;text-decoration:none;
+  box-shadow:0 4px 20px rgba(168,85,247,0.4);transition:transform .15s,box-shadow .15s;
+}
+.panel-play:hover{transform:scale(1.02);box-shadow:0 6px 28px rgba(168,85,247,0.55);}
+.panel-close{
+  position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.1);border:none;
+  color:rgba(255,255,255,0.5);width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:1rem;font-family:sans-serif;z-index:10;transition:background .15s;
+}
+.panel-close:hover{background:rgba(255,255,255,0.2);}
 
-    /* ============================================================
-       HERO SECTION (Full Viewport)
-       ============================================================ */
-    .hero {
-      position: relative;
-      width: 100%;
-      min-height: 100vh;
-      background: linear-gradient(135deg, var(--hero-start) 0%, var(--hero-mid) 50%, var(--hero-end) 100%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      padding: 40px 20px 60px;
-    }
+/* UI */
+#ui{position:fixed;inset:0;z-index:50;pointer-events:none;}
+.ui-top{
+  position:absolute;top:0;left:0;right:0;padding:20px 28px;
+  display:flex;align-items:center;gap:10px;
+  background:linear-gradient(to bottom,rgba(0,0,0,0.7),transparent);
+  pointer-events:all;
+}
+.logo{font-size:1.3rem;font-weight:900;
+  background:linear-gradient(135deg,#C084FC,#F472B6);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.ui-right{margin-left:auto;display:flex;gap:8px;}
+.ui-btn{
+  background:rgba(255,255,255,0.08);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.14);color:#fff;
+  border-radius:10px;padding:8px 16px;font-size:0.8rem;font-weight:900;
+  cursor:pointer;font-family:'Nunito',sans-serif;transition:all .15s;white-space:nowrap;
+}
+.ui-btn:hover{background:rgba(255,255,255,0.18);}
+.ui-btn.gold{background:rgba(251,191,36,0.15);border-color:rgba(251,191,36,0.35);color:#FCD34D;}
+.ui-btn.edit-on{background:rgba(255,255,100,0.18);border-color:rgba(255,255,100,0.5);color:#FFF176;}
 
-    /* Hero floating decorations */
-    .hero-deco {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      overflow: hidden;
-    }
-    .hero-deco .h-particle {
-      position: absolute;
-      font-size: 2.2rem;
-      opacity: 0.4;
-      animation: float var(--dur) ease-in-out infinite;
-      animation-delay: var(--delay);
-    }
+#edit-banner{
+  position:absolute;top:72px;left:50%;transform:translateX(-50%);
+  background:rgba(20,18,5,0.88);border:1px solid rgba(255,255,100,0.4);
+  border-radius:12px;padding:7px 20px;font-size:0.75rem;font-weight:900;
+  color:rgba(255,255,100,0.9);pointer-events:none;white-space:nowrap;
+  opacity:0;transition:opacity .3s;display:flex;align-items:center;gap:10px;
+}
+#edit-banner.on{opacity:1;}
+#edit-banner button{
+  background:rgba(255,255,100,0.15);border:1px solid rgba(255,255,100,0.4);
+  color:rgba(255,255,100,0.9);border-radius:7px;padding:3px 10px;
+  font-size:0.7rem;font-weight:900;cursor:pointer;font-family:'Nunito',sans-serif;
+  pointer-events:all;transition:background .15s;
+}
+#edit-banner button:hover{background:rgba(255,255,100,0.3);}
 
-    .hero-logo {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 120px;
-      height: 120px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.2);
-      box-shadow: 0 0 0 6px rgba(255,255,255,0.15), 0 12px 40px rgba(0,0,0,0.15);
-      backdrop-filter: blur(10px);
-      animation: popIn 0.8s cubic-bezier(.4,0,.2,1), heroFloat 3s ease-in-out 0.8s infinite;
-      position: relative;
-      z-index: 2;
-      margin-bottom: 12px;
-    }
-    .hero-logo svg { width: 80px; height: 80px; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2)); }
+#cat-bar{
+  position:absolute;bottom:0;left:0;right:0;padding:12px 20px;
+  display:flex;gap:6px;justify-content:center;
+  background:linear-gradient(to top,rgba(0,0,0,0.68),transparent);
+  pointer-events:all;flex-wrap:wrap;
+}
+.cat-chip{
+  background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);
+  border-radius:20px;padding:5px 12px;font-size:0.7rem;font-weight:900;
+  color:rgba(255,255,255,0.58);cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;gap:5px;
+}
+.cat-chip img{width:16px;height:16px;object-fit:contain;border-radius:50%;}
+.cat-chip:hover,.cat-chip.active{
+  background:rgba(255,255,255,0.16);color:#fff;border-color:rgba(255,255,255,0.35);}
 
-    .hero h1 {
-      font-size: 4.5rem;
-      font-weight: 900;
-      color: #fff;
-      text-shadow: 4px 4px 0 rgba(0,0,0,0.2), 0 0 40px rgba(255,255,255,0.4);
-      letter-spacing: -2px;
-      animation: fadeUp 0.6s ease-out 0.2s both;
-      position: relative;
-      z-index: 2;
-      text-align: center;
-      -webkit-text-stroke: 2px rgba(255,255,255,0.3);
-    }
-    .hero-subtitle {
-      font-size: 1.2rem;
-      color: rgba(255,255,255,0.9);
-      font-weight: 700;
-      text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
-      animation: fadeUp 0.6s ease-out 0.35s both;
-      position: relative;
-      z-index: 2;
-      margin-top: 8px;
-    }
-
-    /* Hero character images */
-    .hero-characters {
-      display: flex;
-      gap: 24px;
-      align-items: flex-end;
-      margin-top: 32px;
-      animation: fadeUp 0.6s ease-out 0.5s both;
-      position: relative;
-      z-index: 2;
-    }
-    .hero-char-img {
-      width: 260px;
-      height: 260px;
-      object-fit: contain;
-      filter: drop-shadow(0 12px 30px rgba(0,0,0,0.3));
-      animation: bounce 2s ease-in-out infinite;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    .hero-char-img:nth-child(1) { animation-delay: 0s; }
-    .hero-char-img:nth-child(2) { animation-delay: 0.3s; width: 300px; height: 300px; }
-    .hero-char-img:nth-child(3) { animation-delay: 0.6s; }
-    .hero-char-img:hover { transform: scale(1.1) rotate(-5deg); }
-
-    /* Scroll arrow */
-    .scroll-arrow {
-      position: absolute;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 2;
-      font-size: 2rem;
-      color: rgba(255,255,255,0.8);
-      animation: scrollArrow 1.5s ease-in-out infinite;
-      cursor: pointer;
-    }
-
-    /* ============================================================
-       CHARACTER SELECTION BAR (Horizontal)
-       ============================================================ */
-    .character-bar {
-      background: linear-gradient(135deg, #6A1B9A, #8E24AA, #AB47BC);
-      padding: 16px 20px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 20px;
-      position: relative;
-      z-index: 10;
-      box-shadow: 0 6px 24px rgba(106,27,154,0.3);
-    }
-    .char-btn {
-      width: 200px;
-      height: 230px;
-      border: 4px solid rgba(255,255,255,0.3);
-      border-radius: 28px;
-      background: rgba(255,255,255,0.15);
-      cursor: pointer;
-      padding: 12px;
-      transition: all 0.3s cubic-bezier(.4,0,.2,1);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      position: relative;
-      backdrop-filter: blur(8px);
-    }
-    .char-btn img {
-      width: 160px;
-      height: 160px;
-      object-fit: contain;
-      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
-      transition: transform 0.3s;
-    }
-    .char-btn span {
-      font-size: 1.1rem;
-      font-weight: 900;
-      color: rgba(255,255,255,0.8);
-      transition: color 0.25s;
-    }
-    .char-btn:hover {
-      transform: scale(1.08);
-      border-color: rgba(255,255,255,0.6);
-      background: rgba(255,255,255,0.25);
-    }
-    .char-btn:hover img { transform: scale(1.15) rotate(-5deg); }
-    .char-btn.active {
-      border-color: #fff;
-      background: rgba(255,255,255,0.3);
-      animation: glowRing 2s ease-in-out infinite;
-    }
-    .char-btn.active img { animation: bounce 1.5s ease-in-out infinite; }
-    .char-btn.active span { color: #fff; font-weight: 900; }
-
-    /* ============================================================
-       STICKY FILTER BAR
-       ============================================================ */
-    .filter-section {
-      background: linear-gradient(135deg, #FF6F00, #FFA000, #FFD600);
-      padding: 14px 16px 12px;
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      box-shadow: 0 4px 20px rgba(255,111,0,0.25);
-      transition: box-shadow 0.3s;
-    }
-    .filter-section.scrolled {
-      box-shadow: 0 6px 30px rgba(255,111,0,0.35);
-    }
-
-    /* Tab bar */
-    .tab-bar {
-      display: flex;
-      gap: 8px;
-      padding: 4px 0 10px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      max-width: 1000px;
-      margin: 0 auto;
-      justify-content: center;
-    }
-    .tab-bar::-webkit-scrollbar { display: none; }
-
-    .tab-btn {
-      flex: 0 0 auto;
-      padding: 12px 22px;
-      border: 3px solid rgba(255,255,255,0.5);
-      border-radius: 999px;
-      font-size: 0.95rem;
-      font-weight: 900;
-      font-family: var(--font);
-      cursor: pointer;
-      background: rgba(255,255,255,0.35);
-      color: #fff;
-      text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
-      transition: all 0.25s cubic-bezier(.4,0,.2,1);
-      white-space: nowrap;
-      min-height: 50px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .tab-btn.active {
-      transform: scale(1.08);
-      border-color: #fff;
-    }
-    .tab-btn[data-tab="all"].active { background: #5B4FCF; box-shadow: 0 4px 20px rgba(91,79,207,0.5); }
-    .tab-btn[data-tab="age2"].active { background: var(--age2); box-shadow: 0 4px 20px rgba(255,109,0,0.5); }
-    .tab-btn[data-tab="age3"].active { background: var(--age3); box-shadow: 0 4px 20px rgba(0,200,83,0.5); }
-    .tab-btn[data-tab="age4"].active { background: var(--age4); box-shadow: 0 4px 20px rgba(41,121,255,0.5); }
-    .tab-btn[data-tab="age5"].active { background: var(--age5); box-shadow: 0 4px 20px rgba(170,0,255,0.5); }
-    .tab-btn[data-tab="theme"].active { background: var(--theme); box-shadow: 0 4px 20px rgba(255,23,68,0.5); }
-    .tab-btn[data-tab="mixed"].active { background: #FF6D00; box-shadow: 0 4px 20px rgba(255,109,0,0.5); }
-    .tab-btn[data-tab="routine"].active { background: var(--routine); box-shadow: 0 4px 20px rgba(0,191,165,0.5); }
-    .tab-btn:hover:not(.active) {
-      transform: translateY(-2px) scale(1.03);
-      background: rgba(255,255,255,0.5);
-    }
-
-    .tab-count {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 22px;
-      height: 22px;
-      font-size: 0.7rem;
-      font-weight: 900;
-      background: rgba(255,255,255,0.35);
-      border-radius: 99px;
-      padding: 0 6px;
-    }
-    .tab-btn.active .tab-count {
-      background: rgba(255,255,255,0.4);
-    }
-
-    /* Search */
-    .search-container {
-      max-width: 600px;
-      margin: 0 auto 12px;
-      position: relative;
-    }
-    .search-container input {
-      width: 100%;
-      padding: 14px 20px 14px 50px;
-      border-radius: 999px;
-      border: 3px solid rgba(255,255,255,0.6);
-      font-family: var(--font);
-      font-size: 1rem;
-      font-weight: 700;
-      background: rgba(255,255,255,0.85);
-      color: #333;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .search-container input::placeholder { color: #999; font-weight: 600; }
-    .search-container input:focus {
-      border-color: #fff;
-      box-shadow: 0 0 0 4px rgba(255,255,255,0.3);
-    }
-    .search-icon {
-      position: absolute;
-      left: 18px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 1.3rem;
-    }
-
-    /* Sub filter buttons */
-    .sub-filter-bar {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      max-width: 1000px;
-      margin: 0 auto;
-    }
-    .sub-filter-btn {
-      padding: 10px 18px;
-      border-radius: 999px;
-      border: 2px solid rgba(255,255,255,0.5);
-      background: rgba(255,255,255,0.3);
-      color: #fff;
-      font-size: 0.88rem;
-      font-weight: 800;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
-    }
-    .sub-filter-btn.active {
-      background: rgba(255,255,255,0.85);
-      color: #E65100;
-      border-color: #fff;
-      text-shadow: none;
-      box-shadow: 0 3px 12px rgba(0,0,0,0.15);
-    }
-    .sub-filter-btn:hover:not(.active) {
-      background: rgba(255,255,255,0.5);
-      transform: translateY(-1px);
-    }
-
-    /* ============================================================
-       GAME GRID
-       ============================================================ */
-    .content {
-      padding: 20px 12px 52px;
-      max-width: 1200px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 1;
-    }
-
-    .game-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 14px;
-    }
-
-    /* ============================================================
-       GAME CARDS - Colored backgrounds!
-       ============================================================ */
-    .game-card {
-      background: #5B4FCF;
-      border-radius: var(--card-radius);
-      box-shadow:
-        0 8px 24px rgba(0,0,0,0.15),
-        inset 0 2px 4px rgba(255,255,255,0.25),
-        inset 0 -2px 4px rgba(0,0,0,0.1);
-      padding: 24px 20px 20px;
-      text-decoration: none;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      transition: transform 0.25s cubic-bezier(.4,0,.2,1), box-shadow 0.25s;
-      position: relative;
-      overflow: hidden;
-      border: 4px solid rgba(255,255,255,0.35);
-      animation: cardPop 0.5s cubic-bezier(.4,0,.2,1) both;
-    }
-    .game-card::before {
-      content: '';
-      position: absolute;
-      top: -40px;
-      right: -40px;
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.1);
-      pointer-events: none;
-    }
-    .game-card::after {
-      content: '';
-      position: absolute;
-      bottom: -30px;
-      left: -30px;
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.06);
-      pointer-events: none;
-    }
-    .game-card:hover {
-      transform: translateY(-8px) scale(1.04);
-      box-shadow:
-        0 16px 40px rgba(0,0,0,0.25),
-        inset 0 2px 6px rgba(255,255,255,0.35),
-        inset 0 -2px 6px rgba(0,0,0,0.15);
-    }
-    .game-card:active {
-      transform: translateY(-1px) scale(0.96);
-      box-shadow:
-        0 4px 12px rgba(0,0,0,0.2),
-        inset 0 3px 6px rgba(0,0,0,0.15),
-        inset 0 -1px 2px rgba(255,255,255,0.2);
-    }
-
-    /* Card icon */
-    .game-card .card-icon {
-      font-size: 6rem;
-      line-height: 1;
-      text-align: center;
-      display: block;
-      margin: 4px auto 8px;
-      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.2));
-      transition: transform 0.3s;
-    }
-    .game-card:hover .card-icon {
-      animation: wiggle 0.5s ease-in-out;
-      transform: scale(1.1);
-    }
-
-    /* Card text */
-    .game-card .card-name {
-      font-size: 1.3rem;
-      font-weight: 900;
-      color: #fff;
-      text-shadow:
-        0 2px 0 rgba(0,0,0,0.15),
-        0 4px 8px rgba(0,0,0,0.1);
-      text-align: center;
-      letter-spacing: -0.5px;
-    }
-    .game-card .card-desc {
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.75);
-      line-height: 1.4;
-      text-align: center;
-      display: -webkit-box;
-      -webkit-line-clamp: 1;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    /* Card meta */
-    .game-card .card-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 4px;
-      justify-content: center;
-    }
-    .game-card .card-tag {
-      font-size: 0.75rem;
-      font-weight: 800;
-      padding: 4px 12px;
-      border-radius: 20px;
-      background: rgba(255,255,255,0.25);
-      color: #fff;
-      display: inline-block;
-    }
-    .game-card .card-difficulty {
-      font-size: 0.72rem;
-      color: rgba(255,255,255,0.7);
-      letter-spacing: 1px;
-    }
-    .game-card .card-played {
-      font-size: 0.7rem;
-      color: rgba(255,255,255,0.7);
-    }
-
-    /* Age-specific card colors */
-    .game-card.age2 { background: linear-gradient(135deg, #FF6D00, #FF9100); }
-    .game-card.age3 { background: linear-gradient(135deg, #00C853, #69F0AE); }
-    .game-card.age4 { background: linear-gradient(135deg, #2979FF, #448AFF); }
-    .game-card.age5 { background: linear-gradient(135deg, #AA00FF, #D500F9); }
-    .game-card.theme { background: linear-gradient(135deg, #FF1744, #FF5252); }
-    .game-card.mixed { background: linear-gradient(135deg, #FF6D00, #FFAB40); }
-    .game-card.routine { background: linear-gradient(135deg, #00BFA5, #64FFDA); }
-
-    /* Card hover glow per age */
-    .game-card.age2:hover { box-shadow: 0 12px 40px rgba(255,109,0,0.4); }
-    .game-card.age3:hover { box-shadow: 0 12px 40px rgba(0,200,83,0.4); }
-    .game-card.age4:hover { box-shadow: 0 12px 40px rgba(41,121,255,0.4); }
-    .game-card.age5:hover { box-shadow: 0 12px 40px rgba(170,0,255,0.4); }
-    .game-card.theme:hover { box-shadow: 0 12px 40px rgba(255,23,68,0.4); }
-    .game-card.mixed:hover { box-shadow: 0 12px 40px rgba(255,109,0,0.4); }
-    .game-card.routine:hover { box-shadow: 0 12px 40px rgba(0,191,165,0.4); }
-
-    /* NEW badge */
-    .game-card .new-badge {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      background: linear-gradient(135deg, #FFD600, #FFAB00);
-      color: #333;
-      font-size: 0.72rem;
-      font-weight: 900;
-      padding: 5px 14px;
-      border-radius: 20px;
-      letter-spacing: 0.5px;
-      animation: newPulse 1.5s ease-in-out infinite;
-      z-index: 3;
-      border: 2px solid rgba(255,255,255,0.5);
-      text-shadow: none;
-    }
-
-    /* Teacher tip (hidden on cards, data preserved for parent dashboard) */
-    .teacher-tip { display: none; }
-    .tip-toggle { display: none; }
-
-    /* ============================================================
-       REWARD DASHBOARD
-       ============================================================ */
-    .reward-dashboard {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 24px 16px 0;
-      position: relative;
-      z-index: 1;
-    }
-    .reward-stats {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
-    .reward-stat {
-      flex: 1;
-      min-width: 130px;
-      background: linear-gradient(135deg, #FF6090, #FF80AB);
-      border-radius: 22px;
-      padding: 18px;
-      text-align: center;
-      box-shadow: 0 6px 20px rgba(255,96,144,0.3);
-      border: 3px solid rgba(255,255,255,0.4);
-      transition: transform 0.2s;
-      color: #fff;
-    }
-    .reward-stat:nth-child(2) { background: linear-gradient(135deg, #7C4DFF, #B388FF); box-shadow: 0 6px 20px rgba(124,77,255,0.3); }
-    .reward-stat:nth-child(3) { background: linear-gradient(135deg, #FF6D00, #FFAB40); box-shadow: 0 6px 20px rgba(255,109,0,0.3); }
-    .reward-stat:nth-child(4) { background: linear-gradient(135deg, #00C853, #69F0AE); box-shadow: 0 6px 20px rgba(0,200,83,0.3); }
-    .reward-stat:hover { transform: translateY(-4px) scale(1.03); }
-    .reward-stat .stat-icon { font-size: 2.2rem; }
-    .reward-stat .stat-value {
-      font-size: 2rem;
-      font-weight: 900;
-      color: #fff;
-      margin: 4px 0 2px;
-      text-shadow: 1px 1px 0 rgba(0,0,0,0.15);
-    }
-    .reward-stat .stat-label {
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.85);
-      font-weight: 700;
-    }
-
-    /* Recent plays */
-    .recent-section { margin-top: 16px; margin-bottom: 8px; }
-    .recent-header {
-      font-size: 1rem;
-      font-weight: 900;
-      color: #5B4FCF;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      text-shadow: 1px 1px 0 rgba(91,79,207,0.1);
-    }
-    .recent-list {
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-      scrollbar-width: none;
-    }
-    .recent-list::-webkit-scrollbar { display: none; }
-    .recent-item {
-      flex: 0 0 auto;
-      background: linear-gradient(135deg, #EDE7F6, #E8EAF6);
-      border-radius: 18px;
-      padding: 14px 18px;
-      text-decoration: none;
-      color: inherit;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      box-shadow: 0 4px 16px rgba(91,79,207,0.12);
-      border: 2px solid rgba(91,79,207,0.1);
-      transition: transform 0.2s, box-shadow 0.2s;
-      min-width: 190px;
-    }
-    .recent-item:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(91,79,207,0.2);
-    }
-    .recent-item .ri-icon { font-size: 2rem; }
-    .recent-item .ri-info { display: flex; flex-direction: column; gap: 2px; }
-    .recent-item .ri-name { font-size: 0.88rem; font-weight: 800; color: #333; }
-    .recent-item .ri-stars { font-size: 0.8rem; }
-    .recent-item .ri-time { font-size: 0.72rem; color: #aaa; }
-
-    /* Badge collection */
-    .badge-section { margin-top: 16px; }
-    .badge-grid {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .badge-item {
-      width: 60px;
-      height: 60px;
-      border-radius: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.8rem;
-      background: linear-gradient(135deg, #FFF8E1, #FFECB3);
-      box-shadow: 0 4px 14px rgba(255,143,0,0.15);
-      border: 2px solid rgba(255,143,0,0.15);
-      position: relative;
-      transition: transform 0.2s;
-    }
-    .badge-item:hover { transform: scale(1.15) rotate(-5deg); }
-    .badge-item.locked {
-      filter: grayscale(1) opacity(0.3);
-    }
-    .badge-item .badge-check {
-      position: absolute;
-      bottom: -3px;
-      right: -3px;
-      font-size: 0.7rem;
-      background: #00C853;
-      color: #fff;
-      width: 18px;
-      height: 18px;
-      border-radius: 99px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid #fff;
-    }
-    .badge-tooltip {
-      display: none;
-      position: absolute;
-      bottom: calc(100% + 8px);
-      left: 50%;
-      transform: translateX(-50%);
-      background: #333;
-      color: #fff;
-      font-size: 0.72rem;
-      padding: 5px 12px;
-      border-radius: 10px;
-      white-space: nowrap;
-      z-index: 10;
-    }
-    .badge-item:hover .badge-tooltip { display: block; }
-
-    /* ============================================================
-       MASCOT
-       ============================================================ */
-    .mascot-container {
-      position: fixed;
-      bottom: 80px;
-      left: 20px;
-      z-index: 60;
-      display: flex;
-      align-items: flex-end;
-      gap: 4px;
-    }
-    .mascot {
-      width: 120px;
-      height: 120px;
-      position: relative;
-      animation: mascotBounce 2.5s ease-in-out infinite;
-      cursor: pointer;
-      filter: drop-shadow(0 8px 16px rgba(0,0,0,0.2));
-    }
-    .mascot img { width: 100%; height: 100%; object-fit: contain; }
-    .mascot-speech {
-      position: absolute;
-      bottom: calc(100% + 8px);
-      left: 50%;
-      transform: translateX(-50%);
-      background: linear-gradient(135deg, #FFD600, #FFAB00);
-      border-radius: 18px;
-      padding: 10px 16px;
-      font-size: 0.85rem;
-      font-weight: 800;
-      color: #333;
-      box-shadow: 0 6px 20px rgba(255,171,0,0.3);
-      white-space: nowrap;
-      animation: speechIn 0.4s ease-out;
-      z-index: 11;
-      border: 3px solid rgba(255,255,255,0.5);
-    }
-    .mascot-speech::after {
-      content: '';
-      position: absolute;
-      top: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      border: 8px solid transparent;
-      border-top-color: #FFAB00;
-    }
-
-    /* ============================================================
-       MILESTONE OVERLAY
-       ============================================================ */
-    .milestone-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      z-index: 9999;
-      align-items: center;
-      justify-content: center;
-    }
-    .milestone-overlay.show { display: flex; }
-    .milestone-card {
-      background: linear-gradient(135deg, #FFF8E1, #FFECB3);
-      border-radius: 30px;
-      padding: 44px 40px;
-      text-align: center;
-      box-shadow: 0 24px 60px rgba(0,0,0,0.35);
-      animation: milestoneIn 0.5s cubic-bezier(.4,0,.2,1);
-      max-width: 360px;
-      border: 4px solid rgba(255,255,255,0.6);
-    }
-    .milestone-card .mc-icon { font-size: 5rem; margin-bottom: 14px; }
-    .milestone-card .mc-title {
-      font-size: 1.4rem;
-      font-weight: 900;
-      color: #FF6D00;
-      margin-bottom: 8px;
-      text-shadow: 1px 1px 0 rgba(255,109,0,0.1);
-    }
-    .milestone-card .mc-desc { font-size: 0.92rem; color: #666; margin-bottom: 22px; line-height: 1.6; }
-    .milestone-card .mc-btn {
-      background: linear-gradient(135deg, #FF6090, #FF1744);
-      color: #fff;
-      border: none;
-      border-radius: 999px;
-      padding: 14px 36px;
-      font-size: 1rem;
-      font-weight: 900;
-      cursor: pointer;
-      font-family: var(--font);
-      box-shadow: 0 6px 20px rgba(255,23,68,0.35);
-      border: 3px solid rgba(255,255,255,0.4);
-      transition: transform 0.2s;
-    }
-    .milestone-card .mc-btn:hover { transform: scale(1.05); }
-
-    /* ============================================================
-       PARENT DASHBOARD
-       ============================================================ */
-    .parent-toggle {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: linear-gradient(135deg, #5B4FCF, #7C4DFF);
-      color: #fff;
-      border: 3px solid rgba(255,255,255,0.4);
-      border-radius: 999px;
-      width: 56px;
-      height: 56px;
-      font-size: 1.4rem;
-      cursor: pointer;
-      box-shadow: 0 6px 24px rgba(91,79,207,0.4);
-      z-index: 100;
-      transition: transform 0.2s;
-      font-family: var(--font);
-    }
-    .parent-toggle:hover { transform: scale(1.12); }
-
-    .parent-panel {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 9998;
-      justify-content: center;
-      align-items: flex-end;
-    }
-    .parent-panel.show { display: flex; }
-    .parent-sheet {
-      background: #fff;
-      border-radius: 28px 28px 0 0;
-      width: 100%;
-      max-width: 640px;
-      max-height: 80vh;
-      overflow-y: auto;
-      padding: 30px 26px 44px;
-      animation: sheetUp 0.35s ease-out;
-    }
-    .parent-sheet h3 {
-      font-size: 1.2rem;
-      font-weight: 900;
-      color: #333;
-      margin-bottom: 18px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .parent-sheet .close-btn {
-      margin-left: auto;
-      background: none;
-      border: none;
-      font-size: 1.3rem;
-      cursor: pointer;
-      color: #999;
-    }
-    .parent-summary {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .ps-card {
-      background: linear-gradient(135deg, #EDE7F6, #E8EAF6);
-      border-radius: 16px;
-      padding: 16px;
-      text-align: center;
-      border: 2px solid rgba(91,79,207,0.08);
-    }
-    .ps-card .ps-val { font-size: 1.4rem; font-weight: 900; color: #5B4FCF; }
-    .ps-card .ps-label { font-size: 0.75rem; color: #888; margin-top: 4px; font-weight: 600; }
-    .activity-log { margin-top: 8px; }
-    .activity-log h4 { font-size: 0.95rem; font-weight: 900; color: #555; margin-bottom: 10px; }
-    .log-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 0;
-      border-bottom: 1px solid #f0f0f0;
-      font-size: 0.85rem;
-    }
-    .log-item .log-icon { font-size: 1.5rem; }
-    .log-item .log-info { flex: 1; }
-    .log-item .log-name { font-weight: 800; color: #333; }
-    .log-item .log-detail { font-size: 0.75rem; color: #999; margin-top: 2px; }
-    .log-item .log-stars { font-size: 0.8rem; }
-    .area-chart { margin-top: 16px; }
-    .area-chart h4 { font-size: 0.95rem; font-weight: 900; color: #555; margin-bottom: 10px; }
-    .area-bar-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    .area-bar-label { font-size: 0.82rem; font-weight: 800; color: #555; min-width: 65px; }
-    .area-bar-track {
-      flex: 1;
-      height: 14px;
-      background: #EDE7F6;
-      border-radius: 99px;
-      overflow: hidden;
-    }
-    .area-bar-fill {
-      height: 100%;
-      border-radius: 99px;
-      background: linear-gradient(90deg, #7C4DFF, #B388FF);
-      transition: width 0.5s ease;
-    }
-    .area-bar-count { font-size: 0.75rem; color: #999; min-width: 35px; text-align: right; }
-
-    /* ============================================================
-       BGM FLOATING BUTTON
-       ============================================================ */
-    .bgm-float-btn {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 100;
-      background: linear-gradient(135deg, #7C4DFF, #B388FF);
-      color: #fff;
-      border: 3px solid rgba(255,255,255,0.4);
-      border-radius: 999px;
-      width: 52px;
-      height: 52px;
-      font-size: 1.3rem;
-      cursor: pointer;
-      box-shadow: 0 6px 20px rgba(124,77,255,0.4);
-      transition: transform 0.2s;
-      font-family: var(--font);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .bgm-float-btn:hover { transform: scale(1.1); }
-    .bgm-float-btn.off { background: linear-gradient(135deg, #9E9E9E, #BDBDBD); box-shadow: 0 6px 20px rgba(158,158,158,0.3); }
-
-    .bgm-panel {
-      display: none;
-      position: fixed;
-      top: 80px;
-      right: 20px;
-      z-index: 100;
-      background: linear-gradient(135deg, #7C4DFF, #9C27B0);
-      border-radius: 22px;
-      padding: 18px 20px;
-      box-shadow: 0 10px 40px rgba(124,77,255,0.4);
-      border: 3px solid rgba(255,255,255,0.3);
-      animation: popIn 0.3s ease-out;
-    }
-    .bgm-panel.show { display: block; }
-    .bgm-panel-title {
-      font-size: 0.85rem;
-      font-weight: 900;
-      color: #fff;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-    .bgm-style-row {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
-    .hero-music-style {
-      border: 2px solid rgba(255,255,255,0.3);
-      border-radius: 999px;
-      padding: 8px 14px;
-      font-size: 0.78rem;
-      font-weight: 800;
-      font-family: var(--font);
-      cursor: pointer;
-      color: rgba(255,255,255,0.8);
-      background: rgba(255,255,255,0.15);
-      transition: all 0.2s;
-    }
-    .hero-music-style.active {
-      color: #333;
-      background: rgba(255,255,255,0.9);
-      border-color: #fff;
-    }
-    .hero-music-style:hover:not(.active) { background: rgba(255,255,255,0.3); }
-    .volume-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .volume-row label {
-      font-size: 0.85rem;
-      color: rgba(255,255,255,0.8);
-    }
-    .volume-slider {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 100px;
-      height: 6px;
-      border-radius: 3px;
-      background: rgba(255,255,255,0.3);
-      outline: none;
-      flex: 1;
-    }
-    .volume-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-      cursor: pointer;
-    }
-    .volume-slider::-moz-range-thumb {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-      cursor: pointer;
-      border: none;
-    }
-
-    /* ============================================================
-       RESPONSIVE
-       ============================================================ */
-    @media (max-width: 600px) {
-      .hero { min-height: 60vh; padding: 30px 16px 50px; }
-      .hero h1 { font-size: 2.8rem; -webkit-text-stroke: 1px rgba(255,255,255,0.3); }
-      .hero-subtitle { font-size: 1rem; }
-      .hero-characters { gap: 8px; }
-      .hero-char-img { width: 140px; height: 140px; }
-      .hero-char-img:nth-child(2) { width: 170px; height: 170px; }
-
-      .character-bar {
-        gap: 10px;
-        padding: 12px 16px;
-      }
-      .char-btn { width: 140px; height: 170px; }
-      .char-btn img { width: 110px; height: 110px; }
-
-      .tab-btn { font-size: 0.82rem; padding: 10px 16px; min-height: 42px; }
-      .game-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
-      .game-card { padding: 18px 14px 16px; }
-      .game-card .card-icon { font-size: 4rem; }
-      .game-card .card-name { font-size: 1rem; }
-      .game-card .card-desc { font-size: 0.78rem; }
-
-      .reward-stats { gap: 8px; }
-      .reward-stat { min-width: 100px; padding: 14px 10px; }
-      .reward-stat .stat-icon { font-size: 1.6rem; }
-      .reward-stat .stat-value { font-size: 1.5rem; }
-      .recent-item { min-width: 160px; }
-      .badge-item { width: 48px; height: 48px; font-size: 1.4rem; }
-
-      .mascot-container { bottom: 70px; left: 10px; }
-      .mascot { width: 80px; height: 80px; }
-      .mascot-speech { font-size: 0.72rem; padding: 7px 12px; }
-    }
-
-    @media (min-width: 601px) and (max-width: 768px) {
-      .hero h1 { font-size: 2.8rem; }
-      .game-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
-      .hero-char-img { width: 140px; height: 140px; }
-      .hero-char-img:nth-child(2) { width: 160px; height: 160px; }
-    }
-
-    @media (max-width: 340px) {
-      .game-grid { grid-template-columns: 1fr; }
-      .hero h1 { font-size: 1.8rem; }
-      .character-bar { gap: 6px; }
-      .char-btn { width: 110px; height: 140px; }
-      .char-btn img { width: 85px; height: 85px; }
-    }
-
-    /* Section heading for game grid */
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 18px;
-      padding: 0 2px;
-    }
-    .section-header .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 14px;
-      border-radius: 20px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: #fff;
-    }
-    .section-header h2 {
-      font-size: 1.3rem;
-      font-weight: 900;
-      color: #5B4FCF;
-      text-shadow: 1px 1px 0 rgba(91,79,207,0.1);
-    }
-    .section-header p {
-      font-size: 0.85rem;
-      color: #888;
-      margin-top: 2px;
-    }
-    .section-divider {
-      height: 2px;
-      background: linear-gradient(90deg, transparent, #FFD600, #FF6090, #7C4DFF, transparent);
-      margin: 28px 0;
-      border-radius: 2px;
-    }
-
-    /* Routine info box */
-    .routine-info {
-      background: linear-gradient(135deg, #E0F7FA, #B2EBF2);
-      border-radius: 22px;
-      padding: 18px 20px;
-      font-size: 0.88rem;
-      color: #00695C;
-      margin-bottom: 18px;
-      line-height: 1.6;
-      box-shadow: 0 6px 20px rgba(0,150,136,0.12);
-      border: 2px solid rgba(0,150,136,0.15);
-    }
-    .routine-info strong { font-weight: 900; }
-
-    /* Empty state */
-    .empty-state {
-      grid-column: 1/-1;
-      text-align: center;
-      padding: 60px 40px;
-      color: #888;
-    }
-    .empty-state .empty-icon { font-size: 4rem; margin-bottom: 16px; }
-
-    /* ============================================================
-       TODAY'S PICK CARD
-       ============================================================ */
-    .today-pick-card {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      background: linear-gradient(135deg, #7C4DFF 0%, #E040FB 50%, #FF6090 100%);
-      border-radius: 28px;
-      padding: 28px 32px;
-      text-decoration: none;
-      color: #fff;
-      box-shadow:
-        0 12px 40px rgba(124,77,255,0.3),
-        inset 0 2px 6px rgba(255,255,255,0.25),
-        inset 0 -2px 6px rgba(0,0,0,0.1);
-      border: 4px solid rgba(255,255,255,0.3);
-      transition: transform 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s;
-      position: relative;
-      overflow: hidden;
-    }
-    .today-pick-card::before {
-      content: '';
-      position: absolute;
-      top: -60px; right: -60px;
-      width: 150px; height: 150px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.08);
-    }
-    .today-pick-card:hover {
-      transform: translateY(-6px) scale(1.02);
-      box-shadow:
-        0 20px 50px rgba(124,77,255,0.4),
-        inset 0 2px 8px rgba(255,255,255,0.3);
-    }
-    .today-pick-card:active {
-      transform: translateY(-1px) scale(0.98);
-    }
-    .tp-icon {
-      font-size: 5rem;
-      line-height: 1;
-      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.2));
-      animation: float 3s ease-in-out infinite;
-      flex-shrink: 0;
-    }
-    .tp-info { flex: 1; }
-    .tp-name {
-      font-size: 1.6rem;
-      font-weight: 900;
-      text-shadow: 0 2px 0 rgba(0,0,0,0.15), 0 4px 10px rgba(0,0,0,0.1);
-      margin-bottom: 6px;
-    }
-    .tp-desc {
-      font-size: 0.92rem;
-      color: rgba(255,255,255,0.85);
-      line-height: 1.5;
-      margin-bottom: 8px;
-    }
-    .tp-tag {
-      display: inline-block;
-      background: rgba(255,255,255,0.25);
-      padding: 4px 14px;
-      border-radius: 20px;
-      font-size: 0.78rem;
-      font-weight: 800;
-    }
-    .tp-play {
-      flex-shrink: 0;
-      background: rgba(255,255,255,0.2);
-      backdrop-filter: blur(8px);
-      border: 2px solid rgba(255,255,255,0.4);
-      border-radius: 18px;
-      padding: 14px 24px;
-      font-weight: 900;
-      font-size: 1rem;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
-      transition: background 0.2s;
-    }
-    .today-pick-card:hover .tp-play {
-      background: rgba(255,255,255,0.35);
-    }
-    @media (max-width: 600px) {
-      .today-pick-card { flex-direction: column; text-align: center; padding: 24px 20px; gap: 12px; }
-      .tp-icon { font-size: 4rem; }
-      .tp-name { font-size: 1.3rem; }
-      .tp-play { width: 100%; text-align: center; }
-    }
-  </style>
+.hint{position:absolute;bottom:62px;left:50%;transform:translateX(-50%);
+  font-size:0.7rem;color:rgba(255,255,255,0.25);font-weight:700;
+  animation:hintFade 6s ease-in-out 2s forwards;pointer-events:none;white-space:nowrap;}
+@keyframes hintFade{0%{opacity:1;}90%{opacity:.15;}100%{opacity:0;}}
+</style>
 </head>
 <body>
-
-<!-- ============================================================
-     FLOATING BACKGROUND ELEMENTS
-     ============================================================ -->
-<div class="bg-clouds">
-  <div class="cloud">☁️</div>
-  <div class="cloud">☁️</div>
-  <div class="cloud">⛅</div>
-  <div class="cloud">☁️</div>
-  <div class="cloud">☁️</div>
-  <div class="cloud">⛅</div>
-</div>
-<div class="bg-stars" id="bgStars"></div>
-<div class="bg-balloons" id="bgBalloons"></div>
-
-<!-- ============================================================
-     HERO SECTION (Full Viewport)
-     ============================================================ -->
-<section class="hero">
-  <div class="hero-deco" id="heroParticles"></div>
-
-  <div class="hero-logo">
-    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#FFF176"/>
-          <stop offset="100%" style="stop-color:#FFD54F"/>
-        </linearGradient>
-        <linearGradient id="rainbowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#FF8A65"/>
-          <stop offset="50%" style="stop-color:#FFD54F"/>
-          <stop offset="100%" style="stop-color:#81D4FA"/>
-        </linearGradient>
-      </defs>
-      <polygon points="50,5 58,35 90,35 64,52 74,82 50,64 26,82 36,52 10,35 42,35" fill="url(#starGrad)" opacity="0.95">
-        <animateTransform attributeName="transform" type="rotate" values="0 50 50;5 50 50;0 50 50;-5 50 50;0 50 50" dur="5s" repeatCount="indefinite"/>
-      </polygon>
-      <circle cx="22" cy="20" r="2.5" fill="#fff" opacity="0.8">
-        <animate attributeName="opacity" values="0.8;0.2;0.8" dur="2s" repeatCount="indefinite"/>
-      </circle>
-      <circle cx="78" cy="18" r="2" fill="#fff" opacity="0.6">
-        <animate attributeName="opacity" values="0.6;0.1;0.6" dur="1.5s" repeatCount="indefinite"/>
-      </circle>
-      <circle cx="85" cy="60" r="1.8" fill="#fff" opacity="0.7">
-        <animate attributeName="opacity" values="0.7;0.2;0.7" dur="2.5s" repeatCount="indefinite"/>
-      </circle>
-      <path d="M12 88 Q50 65 88 88" fill="none" stroke="#EF5350" stroke-width="3" opacity="0.6" stroke-linecap="round"/>
-      <path d="M16 92 Q50 70 84 92" fill="none" stroke="#FFA726" stroke-width="3" opacity="0.6" stroke-linecap="round"/>
-      <path d="M20 96 Q50 75 80 96" fill="none" stroke="#66BB6A" stroke-width="3" opacity="0.6" stroke-linecap="round"/>
-      <path d="M40 45 Q43 40 46 45" fill="none" stroke="#E65100" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M54 45 Q57 40 60 45" fill="none" stroke="#E65100" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M44 52 Q50 58 56 52" fill="none" stroke="#E65100" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-  </div>
-
-  <h1>🌈⭐ 쑥쑥 놀이터</h1>
-  <p class="hero-subtitle">어린이집 · 유치원 선생님을 위한 놀이 게임 모음</p>
-
-  <div class="hero-characters">
-    <img class="hero-char-img" src="assets/characters/fairy_profile.png" alt="별이" onclick="selectCharacter('fairy')">
-    <img class="hero-char-img" src="assets/characters/robot_profile.png" alt="볼트" onclick="selectCharacter('robot')">
-    <img class="hero-char-img" src="assets/characters/dino_profile.png" alt="꾸미" onclick="selectCharacter('dino')">
-  </div>
-
-  <div class="scroll-arrow" onclick="document.getElementById('characterBar').scrollIntoView({behavior:'smooth'})">⬇️</div>
-</section>
-
-<!-- ============================================================
-     CHARACTER SELECTION BAR (Horizontal)
-     ============================================================ -->
-<div class="character-bar" id="characterBar">
-  <button class="char-btn active" data-char="fairy" title="별이와 놀기!" onclick="selectCharacter('fairy')">
-    <img src="assets/characters/fairy_profile.png" alt="별이">
-    <span>별이</span>
-  </button>
-  <button class="char-btn" data-char="robot" title="볼트와 놀기!" onclick="selectCharacter('robot')">
-    <img src="assets/characters/robot_profile.png" alt="볼트">
-    <span>볼트</span>
-  </button>
-  <button class="char-btn" data-char="dino" title="꾸미와 놀기!" onclick="selectCharacter('dino')">
-    <img src="assets/characters/dino_profile.png" alt="꾸미">
-    <span>꾸미</span>
-  </button>
-</div>
-
-<!-- ============================================================
-     STICKY FILTER BAR
-     ============================================================ -->
-<div class="filter-section" id="filterSection">
-  <div class="tab-bar" id="tabBar">
-    <button class="tab-btn active" data-tab="all">🌟 전체</button>
-    <button class="tab-btn" data-tab="age2">🐣 2세</button>
-    <button class="tab-btn" data-tab="age3">🌱 3세</button>
-    <button class="tab-btn" data-tab="age4">🚀 4세</button>
-    <button class="tab-btn" data-tab="age5">👑 5세</button>
-    <button class="tab-btn" data-tab="theme">🎪 테마</button>
-    <button class="tab-btn" data-tab="mixed">🎯 혼합</button>
-    <button class="tab-btn" data-tab="routine">⏰ 루틴</button>
-  </div>
-  <div class="search-container">
-    <input type="text" id="gameSearch" placeholder="어떤 게임 찾고 있어? (예: 색깔, 공룡, 기억)">
-    <span class="search-icon">🔍</span>
-  </div>
-  <div class="sub-filter-bar" id="areaFilter">
-    <button class="sub-filter-btn active" data-area="all">전체</button>
-    <button class="sub-filter-btn" data-area="기억력">💭 기억력</button>
-    <button class="sub-filter-btn" data-area="관찰력">👁️ 관찰력</button>
-    <button class="sub-filter-btn" data-area="사고력">💡 사고력</button>
-    <button class="sub-filter-btn" data-area="청각">👂 청각</button>
-    <button class="sub-filter-btn" data-area="언어">📝 언어</button>
-    <button class="sub-filter-btn" data-area="창의력">🎨 창의력</button>
-    <button class="sub-filter-btn" data-area="순발력">⚡ 순발력</button>
-    <button class="sub-filter-btn" data-area="전략">♟️ 전략</button>
-    <button class="sub-filter-btn" data-area="지식">📚 지식</button>
-    <button class="sub-filter-btn" data-area="루틴">⏰ 루틴</button>
+<canvas id="stars"></canvas>
+<div id="world">
+  <div id="stage">
+    <svg id="lines" xmlns="http://www.w3.org/2000/svg"></svg>
   </div>
 </div>
-
-<!-- ============================================================
-     REWARD DASHBOARD
-     ============================================================ -->
-<div class="reward-dashboard" id="rewardDashboard">
-  <div class="reward-stats">
-    <div class="reward-stat">
-      <div class="stat-icon">⭐</div>
-      <div class="stat-value" id="totalStars">0</div>
-      <div class="stat-label">모은 별</div>
-    </div>
-    <div class="reward-stat">
-      <div class="stat-icon">🎮</div>
-      <div class="stat-value" id="todayCount">0</div>
-      <div class="stat-label">오늘 한 게임</div>
-    </div>
-    <div class="reward-stat">
-      <div class="stat-icon">🔥</div>
-      <div class="stat-value" id="streakCount">0</div>
-      <div class="stat-label">연속 출석</div>
-    </div>
-    <div class="reward-stat">
-      <div class="stat-icon">🏅</div>
-      <div class="stat-value" id="badgeCount">0</div>
-      <div class="stat-label">획득 뱃지</div>
+<div id="ui">
+  <div class="ui-top">
+    <div class="logo">🌱 쑥쑥 놀이터</div>
+    <div class="ui-right">
+      <button class="ui-btn" onclick="resetView()">🏠 홈</button>
+      <button class="ui-btn" id="editBtn" onclick="toggleEdit()">✏️ 편집</button>
+      <button class="ui-btn gold" onclick="toggleTeacher()">👩‍🏫 선생님</button>
     </div>
   </div>
-
-  <div class="recent-section" id="recentSection" style="display:none;">
-    <div class="recent-header">🕹️ 최근에 한 게임</div>
-    <div class="recent-list" id="recentList"></div>
+  <div id="edit-banner">
+    <span>행성과 게임을 드래그해서 원하는 위치로 이동해요</span>
+    <button onclick="resetPositions()">↺ 초기화</button>
   </div>
-
-  <div class="badge-section">
-    <div class="recent-header">🏆 뱃지 컬렉션</div>
-    <div class="badge-grid" id="badgeGrid"></div>
+  <div id="cat-bar"></div>
+  <div class="hint">🖱 드래그 탐험 · 스크롤 확대/축소 · 행성 클릭 → 게임 펼치기</div>
+</div>
+<div id="panel">
+  <button class="panel-close" onclick="closePanel()">✕</button>
+  <div class="panel-thumb">
+    <div class="panel-thumb-bg" id="pBg"></div>
+    <img id="pImg" src="" alt="" style="display:none;"
+      onerror="this.style.display='none';document.getElementById('pFi').style.display='block'">
+    <div class="f-icon" id="pFi" style="display:none;"></div>
+  </div>
+  <div class="panel-body">
+    <div class="panel-badge" id="pBadge"></div>
+    <div class="panel-title" id="pTitle"></div>
+    <div class="panel-desc" id="pDesc"></div>
+    <div class="panel-tip" id="pTip" style="display:none;"></div>
+    <a class="panel-play" id="pLink" href="#">▶ 게임 시작!</a>
   </div>
 </div>
-
-<!-- ============================================================
-     TODAY'S PICK (Featured Game)
-     ============================================================ -->
-<div class="content" id="todayPickSection">
-  <div class="section-header" style="margin-bottom:14px;">
-    <h2 style="color:var(--section-heading,#5B4FCF);">🎯 오늘의 추천 게임</h2>
-  </div>
-  <a class="today-pick-card" id="todayPickCard" href="#">
-    <div class="tp-icon" id="tpIcon">🎮</div>
-    <div class="tp-info">
-      <div class="tp-name" id="tpName">로딩 중...</div>
-      <div class="tp-desc" id="tpDesc"></div>
-      <div class="tp-tag" id="tpTag"></div>
-    </div>
-    <div class="tp-play">놀러가기 →</div>
-  </a>
-</div>
-
-<!-- ============================================================
-     GAME GRID
-     ============================================================ -->
-<div class="content">
-  <div id="gameContainer" class="game-grid"></div>
-</div>
-
-<!-- ============================================================
-     MASCOT (Fixed, bottom-left)
-     ============================================================ -->
-<div class="mascot-container">
-  <div class="mascot" id="mascot" title="같이 놀자!">
-    <img id="mascotImg" src="assets/characters/fairy_profile.png" alt="마스코트">
-  </div>
-  <div class="mascot-speech" id="mascotSpeech">안녕! 오늘도 같이 놀자!</div>
-</div>
-
-<!-- ============================================================
-     MILESTONE OVERLAY
-     ============================================================ -->
-<div class="milestone-overlay" id="milestoneOverlay">
-  <div class="milestone-card">
-    <div class="mc-icon" id="mcIcon">🎉</div>
-    <div class="mc-title" id="mcTitle">축하해요!</div>
-    <div class="mc-desc" id="mcDesc"></div>
-    <button class="mc-btn" onclick="closeMilestone()">좋아요!</button>
-  </div>
-</div>
-
-<!-- ============================================================
-     PARENT DASHBOARD
-     ============================================================ -->
-<button class="parent-toggle" id="parentToggle" title="학부모/선생님 리포트">📊</button>
-
-<div class="parent-panel" id="parentPanel">
-  <div class="parent-sheet">
-    <h3>📊 활동 리포트 <button class="close-btn" id="parentClose">&times;</button></h3>
-    <div class="parent-summary" id="parentSummary"></div>
-    <div class="area-chart" id="areaChart"></div>
-    <div class="activity-log" id="activityLog"></div>
-  </div>
-</div>
-
-<!-- ============================================================
-     BGM FLOATING BUTTON + PANEL
-     ============================================================ -->
-<button class="bgm-float-btn" id="musicBtn" title="배경음악">🎵</button>
-<div class="bgm-panel" id="bgmPanel">
-  <div class="bgm-panel-title">🎵 배경음악</div>
-  <div class="bgm-style-row">
-    <button class="hero-music-style active" data-style="calm" type="button">차분한 교실</button>
-    <button class="hero-music-style" data-style="rainbow" type="button">밝은 무지개</button>
-    <button class="hero-music-style" data-style="dreamy" type="button">포근한 별빛</button>
-  </div>
-  <div class="volume-row">
-    <label>🔈</label>
-    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50">
-    <label>🔊</label>
-  </div>
-</div>
-
-<audio id="bgmAudio" loop preload="auto"></audio>
-<script src="./data/sounds.js"></script>
-<!-- 게임 엔진 v2: GSAP + confetti + 사운드 -->
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-<script src="./assets/game-engine.js"></script>
 
 <script>
-  /**
-   * KidsBrain Game Hub 메인 로직
-   * 1. 데이터 로드: games.json에서 게임 목록을 가져옴
-   * 2. 필터링: 선택된 연령 탭, 영역 버튼, 검색어에 따라 목록 필터링
-   * 3. 렌더링: 필터링된 데이터를 바탕으로 게임 카드 HTML 동적 생성
-   * 4. BGM 관리: 배경음악 온/오프 및 스타일 전환 제어
-   */
-
-  let gameData = [];        // 전체 게임 목록 저장 변수
-  let currentTab = 'all';   // 현재 선택된 연령 탭 (기본값: 전체)
-  let currentArea = 'all';  // 현재 선택된 영역 필터 (기본값: 전체)
-  let searchQuery = '';     // 현재 입력된 검색어
-  let currentCharacter = localStorage.getItem('selectedCharacter') || 'fairy'; // 현재 선택된 캐릭터
-
-  /**
-   * 캐릭터 선택 — 사이드바 버튼 클릭 시 호출
-   * 선택된 캐릭터에 맞는 썸네일로 전체 카드 교체
-   */
-  const CHAR_NAMES = { fairy: '별이', robot: '볼트', dino: '꾸미' };
-  const CHAR_GREETINGS = {
-    fairy: '별이와 함께 놀자! ✨',
-    robot: '볼트 출동! 같이 도전하자! ⚡',
-    dino: '꾸미랑 신나게 놀자! 🌿',
-  };
-
-  function selectCharacter(charId) {
-    currentCharacter = charId;
-    localStorage.setItem('selectedCharacter', charId);
-    // 버튼 활성화 토글
-    document.querySelectorAll('.char-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.char === charId);
-    });
-    // 마스코트 이미지 + 말풍선 교체
-    const mascotImg = document.getElementById('mascotImg');
-    if (mascotImg) mascotImg.src = `assets/characters/${charId}_profile.png`;
-    const speech = document.getElementById('mascotSpeech');
-    if (speech) speech.textContent = CHAR_GREETINGS[charId];
-    // 카드 썸네일 교체
-    renderGames();
+// ── 별 ──
+(()=>{
+  const c=document.getElementById('stars'),cx=c.getContext('2d');
+  c.width=window.innerWidth;c.height=window.innerHeight;
+  for(let i=0;i<260;i++){
+    cx.beginPath();
+    cx.arc(Math.random()*c.width,Math.random()*c.height,Math.random()*1.8,0,Math.PI*2);
+    cx.fillStyle=`rgba(255,255,255,${0.1+Math.random()*0.9})`;cx.fill();
   }
+})();
 
-  /**
-   * 게임별 썸네일 경로 반환
-   * assets/thumbnails/{캐릭터}/{게임id}.png 형태
-   * 파일 없으면 이모지 아이콘 폴백
-   */
-  function getThumbnailHtml(game) {
-    const path = `assets/thumbnails/${currentCharacter}/${game.id}.png`;
-    return `<div class="card-thumbnail" style="display:none;">
-      <img src="${path}" alt="${game.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <div class="fallback-icon" style="display:none">${game.icon}</div>
-    </div>`;
-  }
+const THUMB='assets/thumbs/';
+const HAS=new Set([
+  'color_basket','color_finder','easy_matching','hidden_picture','home_matching',
+  'opposite_game','pattern_complete','position_memory','rhythm_game','sequence_memory',
+  'shadow_matching','sound_match','spot_difference','seat_memory','maze_treasure',
+  'vehicle_sound','initial_match','character_dress','flower_garden','car_race',
+  'animal_food','classroom_search','hidden_object','shape_matching','size_compare',
+  'planet_memory','planet_think','planet_sound','planet_create'
+]);
+const tUrl=id=>HAS.has(id)?THUMB+id+'_nb.png':null;
 
-  // DOM 요소 참조
-  const gameContainer = document.getElementById('gameContainer');
-  const tabs = document.querySelectorAll('.tab-btn');
-  const areaBtns = document.querySelectorAll('.sub-filter-btn');
-  const searchInput = document.getElementById('gameSearch');
-  const filterSection = document.getElementById('filterSection');
+function imgEl(id,fallback,w,h){
+  const u=tUrl(id);
+  if(!u) return `<span class="fallback">${fallback}</span>`;
+  return `<img src="${u}" alt="" width="${w}" height="${h}"
+    onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span class=\\'fallback\\'>${fallback}</span>')">`;
+}
 
-  // 스크롤 시 필터바 그림자
-  window.addEventListener('scroll', () => {
-    filterSection.classList.toggle('scrolled', window.scrollY > 200);
-  }, { passive: true });
+// ── 게임 데이터 (행성별 분류) ──
+const CX=1800, CY=1500;
 
-  // 탭별 게임 수 표시
-  function updateTabCounts() {
-    tabs.forEach(btn => {
-      const tab = btn.dataset.tab;
-      let count = 0;
-      if (tab === 'all') count = gameData.length;
-      else if (tab === 'age2') count = gameData.filter(g => g.age.includes(2)).length;
-      else if (tab === 'age3') count = gameData.filter(g => g.age.includes(3)).length;
-      else if (tab === 'age4') count = gameData.filter(g => g.age.includes(4)).length;
-      else if (tab === 'age5') count = gameData.filter(g => g.age.includes(5)).length;
-      else if (tab === 'theme') count = gameData.filter(g => g.isTheme).length;
-      else if (tab === 'mixed') count = gameData.filter(g => g.age.includes(0) && !g.isTheme && g.area !== '루틴').length;
-      else if (tab === 'routine') count = gameData.filter(g => g.area === '루틴').length;
-      const existing = btn.querySelector('.tab-count');
-      if (existing) existing.textContent = count;
-      else btn.insertAdjacentHTML('beforeend', `<span class="tab-count">${count}</span>`);
-    });
-  }
+const PLANETS=[
+  {id:'memory', label:'기억력', icon:'💭', pImg:'planet_memory',
+   color:'#7C3AED', glow:'rgba(124,58,237,0.55)', angle:0, dist:380, prefDist:300, dur:'4s', delay:'0s',
+   games:[
+    {id:'easy_matching',     icon:'🃏', name:'쉬운 짝맞추기',     age:'3세+',  desc:'카드를 뒤집어 같은 그림 두 장을 찾아요!',                    tip:'처음에는 카드를 모두 보여준 뒤 뒤집어서 시작하면 쉬워요.',      path:'age_3/easy_matching/index.html'},
+    {id:'position_memory',   icon:'📍', name:'위치 기억',          age:'4세+',  desc:'물건이 어디 있었는지 기억해서 맞춰요.',                       tip:'손가락으로 위치를 짚어보게 하며 기억을 도와주세요.',             path:'age_4/position_memory/index.html'},
+    {id:'sequence_memory',   icon:'🔢', name:'순서 기억',          age:'4세+',  desc:'순서대로 나온 그림을 같은 순서로 눌러요.',                    tip:'리듬감 있게 순서를 외우는 말놀이로 접근해 보세요.',              path:'age_4/sequence_memory/index.html'},
+    {id:'rhythm_game',       icon:'🥁', name:'리듬 따라하기',      age:'전연령', desc:'빛나는 버튼을 같은 순서로 눌러요. 기억력+리듬!',             tip:'박수를 치며 리듬을 먼저 익힌 뒤 게임을 시작하면 더 즐거워요.', path:'mixed/rhythm_game/index.html'},
+    {id:'seat_memory',       icon:'🪑', name:'자리 기억',          age:'5세+',  desc:'친구나 캐릭터가 어디 앉았는지 기억해요.',                     tip:'교실 안 실제 친구들의 자리를 떠올리며 이야기 나눠보세요.',      path:'age_5/seat_memory/index.html'},
+    {id:'image_matching',    icon:'🌈', name:'두뇌 쑥쑥 짝맞추기', age:'5세+',  desc:'고급 이미지·친구 얼굴 이름 매칭. 멀티플레이 지원!',          tip:'학기 초 친구들의 이름을 익히는 활동으로 추천합니다.',           path:'age_5/image_matching/index.html'},
+    {id:'difficulty_matching',icon:'🎯', name:'난이도 선택 짝맞추기',age:'전연령',desc:'카드 수와 공개 시간을 조정해 어떤 연령에도 맞춰요.',         tip:'아이들의 수준에 맞춰 카드 개수를 조금씩 늘려가 보세요.',        path:'mixed/difficulty_matching/index.html'},
+    {id:'sequence_stages',   icon:'🎵', name:'순서 기억 (단계)',   age:'전연령', desc:'빛나는 순서를 기억해서 따라 눌러요! 난이도 선택 가능.',       tip:'쉬운 단계부터 시작해서 점점 도전해 보세요.',                    path:'mixed/sequence_stages/index.html'},
+    {id:'friend_custom',     icon:'👫', name:'친구 맞춤 모드',     age:'전연령', desc:'쉬움: 얼굴-얼굴 / 어려움: 얼굴-이름. 연령에 맞게 선택!',    tip:'우리 반 친구들의 사진을 활용해 친밀감을 높여보세요.',           path:'mixed/friend_custom/index.html'},
+  ]},
+  {id:'observe', label:'관찰력', icon:'👁️', pImg:'planet_observe',
+   color:'#0891B2', glow:'rgba(8,145,178,0.55)', angle:60, dist:380, prefDist:360, dur:'5s', delay:'-1s',
+   games:[
+    {id:'color_finder',    icon:'🎨', name:'색깔 찾기',      age:'2세+',  desc:'보여주는 색과 같은 색을 찾아요. 색 인식의 첫 걸음!',            tip:'아이들이 좋아하는 색깔부터 시작해 보세요.',              path:'age_2/color_finder/index.html'},
+    {id:'same_picture',    icon:'🖼️', name:'같은 그림 고르기',age:'2세+',  desc:'위에 보이는 그림과 똑같은 그림을 찾아요.',                      tip:'그림의 이름을 함께 말하며 진행하면 언어 발달에도 좋아요.', path:'age_2/same_picture/index.html'},
+    {id:'size_compare',    icon:'📏', name:'큰 것 작은 것',   age:'2세+',  desc:'큰 것과 작은 것을 비교해서 골라요.',                           tip:'\"어떤 게 더 클까?\" 질문을 함께 하며 비교 개념을 익혀요.', path:'age_2/size_compare/index.html'},
+    {id:'shadow_matching', icon:'🌑', name:'그림자 맞추기',   age:'3세+',  desc:'물건과 그림자를 연결해요. 형태 인식 훈련!',                     tip:'실제 물건을 전등에 비춰 그림자를 만드는 활동과 연계해 보세요.', path:'age_3/shadow_matching/index.html'},
+    {id:'shape_matching',  icon:'🔷', name:'모양 짝맞추기',   age:'3세+',  desc:'동그라미, 세모, 네모, 별을 구별해요.',                          tip:'교실에서 같은 모양의 물건을 찾아보는 활동과 연계해 보세요.', path:'age_3/shape_matching/index.html'},
+    {id:'hidden_object',   icon:'🔍', name:'숨은 물건 찾기',  age:'3세+',  desc:'여러 그림 중에서 숨어있는 물건을 찾아요!',                      tip:'\"어디 숨었을까?\" 하며 함께 찾아보면 더 재미있어요.',     path:'age_3/hidden_object/index.html'},
+    {id:'spot_difference', icon:'👀', name:'틀린 그림 찾기',  age:'4세+',  desc:'두 그림을 비교해서 다른 부분 5~7개를 찾아요! 관찰력 폭발!',     tip:'점점 많아지는 그림 속에서 집중력이 쑥쑥 자라요.',          path:'theme/spot_difference/index.html'},
+    {id:'hidden_picture',  icon:'🔎', name:'숨은 그림 찾기',  age:'전연령', desc:'장면 속에 숨어있는 물건들을 모두 찾아요!',                      tip:'동물원, 바다, 우주 등 다양한 테마로 즐겨보세요.',          path:'mixed/hidden_picture/index.html'},
+    {id:'classroom_search',icon:'🏫', name:'교실 물건 찾기',  age:'4세+',  desc:'교실에 흩어진 물건들 중 선생님이 말한 물건을 찾아요!',           tip:'실제 교실에서도 물건 찾기 놀이를 해보세요.',               path:'age_4/classroom_search/index.html'},
+  ]},
+  {id:'think', label:'사고력', icon:'💡', pImg:'planet_think',
+   color:'#D97706', glow:'rgba(217,119,6,0.55)', angle:120, dist:380, prefDist:340, dur:'4.5s', delay:'-2s',
+   games:[
+    {id:'color_basket',    icon:'🧺', name:'색깔 바구니',     age:'2세+',  desc:'같은 색 바구니에 물건을 넣어요. 색 분류+손-눈 협응!',           tip:'바구니의 색을 크게 외치며 아이들의 참여를 유도해 보세요.', path:'age_2/color_basket/index.html'},
+    {id:'home_matching',   icon:'🏠', name:'집 찾아주기',     age:'3세+',  desc:'물고기는 바다, 새는 둥지! 동물과 맞는 집을 찾아요.',           tip:'\"동물 친구들이 어디서 잠을 잘까요?\"라고 질문하며 시작해 보세요.', path:'age_3/home_matching/index.html'},
+    {id:'animal_food',     icon:'🐶', name:'동물 먹이 연결',  age:'3세+',  desc:'강아지는 뼈다귀, 토끼는 당근! 동물과 먹이를 연결해요.',         tip:'동물원 견학 후 어떤 먹이를 먹었는지 이야기 나눠보세요.',  path:'age_3/animal_food/index.html'},
+    {id:'opposite_game',   icon:'🔄', name:'반대 규칙',       age:'4세+',  desc:'사과가 나오면 바나나를! 반대로 선택하는 게임이에요.',            tip:'\"잠깐!\" 하고 멈추는 재미를 주세요.',                      path:'age_4/opposite_game/index.html'},
+    {id:'pattern_complete',icon:'🧩', name:'패턴 완성',       age:'4세+',  desc:'반복되는 규칙을 찾아 빈칸을 채워요. 논리적 사고의 시작!',       tip:'\"다음에 뭐가 올까?\" 질문으로 규칙 찾기를 유도해 보세요.', path:'age_4/pattern_complete/index.html'},
+    {id:'daily_routine_game',icon:'📅',name:'하루 일과 순서',  age:'5세+',  desc:'어린이집 일과를 올바른 순서로 맞춰요.',                         tip:'일과 시간표를 보며 다음 활동을 예측해 보는 습관을 길러줍니다.', path:'age_5/daily_routine/index.html'},
+    {id:'rule_switching',  icon:'🔀', name:'규칙 바꾸기',     age:'5세+',  desc:'색깔로 → 모양으로! 기준이 바뀌면 분류도 달라져요.',             tip:'\"이번에는 규칙이 바뀌었어요!\"라고 흥미를 유도하세요.',    path:'age_5/rule_switching/index.html'},
+    {id:'maze_treasure',   icon:'🗺️', name:'보물찾기 미로',   age:'전연령', desc:'미로를 탐험해서 보물을 찾아요! 별도 모아보세요.',               tip:'쉬운 미로부터 시작해서 어려운 미로에 도전해 보세요.',      path:'theme/maze_treasure/index.html'},
+    {id:'cooking_order',   icon:'🍰', name:'요리 순서 맞추기', age:'전연령', desc:'케이크, 피자, 김밥! 요리 순서를 올바르게 맞춰요.',              tip:'실제 간식 만들기 활동 전에 순서를 먼저 맞춰보세요.',       path:'theme/cooking_order/index.html'},
+    {id:'pet_care',        icon:'🐾', name:'동물 돌보기',      age:'전연령', desc:'배고픈 강아지에겐 밥을, 더러운 고양이에겐 목욕을!',             tip:'\"동물 친구가 뭘 원하는 걸까?\" 하며 공감 능력을 키워요.',  path:'theme/pet_care/index.html'},
+    {id:'dino_puzzle',     icon:'🦕', name:'공룡 퍼즐',        age:'전연령', desc:'공룡 그림을 조각조각! 퍼즐을 맞춰 공룡을 완성해요.',            tip:'쉬운 2x2부터 시작해서 3x3에 도전해 보세요.',              path:'theme/dino_puzzle/index.html'},
+    {id:'classroom_rules', icon:'📋', name:'교실 규칙',        age:'5세+',  desc:'상황을 보고 올바른 행동을 선택해요.',                           tip:'아이들과 함께 우리 반 규칙을 이야기하며 진행해 보세요.',    path:'age_5/classroom_rules/index.html'},
+    {id:'role_match',      icon:'🌟', name:'역할 맞추기',      age:'5세+',  desc:'청소 도우미는 뭘 할까? 역할과 하는 일을 연결해요.',             tip:'오늘의 도우미 활동과 연계하면 더 효과적이에요.',            path:'age_5/role_match/index.html'},
+  ]},
+  {id:'sound', label:'청각·언어', icon:'👂', pImg:'planet_sound',
+   color:'#059669', glow:'rgba(5,150,105,0.55)', angle:180, dist:380, prefDist:390, dur:'3.5s', delay:'-3s',
+   games:[
+    {id:'sound_match',   icon:'🔊', name:'소리 맞추기',   age:'2세+',  desc:'동물 소리를 듣고 어떤 동물인지 찾아요. 청각 인식 훈련!',     tip:'소리를 들려주고 아이와 함께 동물 흉내를 내보세요.',          path:'age_2/sound_match/index.html'},
+    {id:'vehicle_sound', icon:'🚂', name:'탈것 소리',     age:'전연령', desc:'부릉부릉, 칙칙폭폭! 소리를 듣고 어떤 탈것인지 맞춰요.',      tip:'실제 탈것을 봤을 때 소리를 흉내 내보는 활동과 연계하세요.', path:'theme/vehicle_sound/index.html'},
+    {id:'initial_match', icon:'ㄱ', name:'초성 연결',     age:'5세+',  desc:'사과의 초성은 ㅅㄱ! 단어와 초성을 연결해요.',               tip:'친구 이름의 초성도 함께 찾아보며 흥미를 높여보세요.',        path:'age_5/initial_match/index.html'},
+    {id:'dino_name',     icon:'🦖', name:'공룡 이름 맞추기',age:'전연령',desc:'힌트를 보고 어떤 공룡인지 맞춰요! 공룡 박사가 되어보자.',    tip:'공룡 도감과 함께 보면 더 재미있어요.',                       path:'theme/dino_name/index.html'},
+    {id:'word_end',      icon:'💬', name:'끝말잇기',        age:'5세+',  desc:'강아지→지렁이→이불... 끝말을 이어가요!',                        tip:'일상에서도 끝말잇기 놀이를 해보세요. 어휘가 쑥쑥!',           path:'theme/word_end/index.html'},
+    {id:'story_order',   icon:'📖', name:'이야기 순서',      age:'4세+',  desc:'그림 카드를 올바른 이야기 순서로 나열해요.',                    tip:'완성된 이야기를 소리 내어 읽어주면 더 효과적이에요.',          path:'theme/story_order/index.html'},
+    {id:'opposite_word', icon:'↔️', name:'반대말 게임',      age:'4세+',  desc:'크다↔작다, 빠르다↔느리다! 반대말을 빠르게 골라요.',            tip:'일상에서 반대말 찾기 놀이를 함께 해보세요.',                   path:'theme/opposite_word/index.html'},
+  ]},
+  {id:'create', label:'창의·전략', icon:'🎨', pImg:'planet_create',
+   color:'#DB2777', glow:'rgba(219,39,119,0.55)', angle:240, dist:380, prefDist:320, dur:'5.5s', delay:'-4s',
+   games:[
+    {id:'character_dress',icon:'👸', name:'캐릭터 꾸미기', age:'전연령', desc:'얼굴, 눈, 머리, 모자를 골라서 나만의 캐릭터를 만들어요!',     tip:'완성된 캐릭터에 이름을 지어주면 더 재미있어요.',    path:'theme/character_dress/index.html'},
+    {id:'flower_garden',  icon:'🌸', name:'꽃밭 꾸미기',   age:'전연령', desc:'예쁜 꽃을 심어서 나만의 정원을 만들어요! 미션도 있어요.',    tip:'바깥 놀이에서 꽃 이름을 찾아보는 활동과 연계하세요.',path:'theme/flower_garden/index.html'},
+    {id:'territory',      icon:'🏴', name:'땅따먹기',       age:'전연령', desc:'번갈아 칸을 차지하고, 상대 땅을 뒤집어요!',                 tip:'혼자서 컴퓨터와, 또는 친구와 둘이서 해보세요.',     path:'theme/territory/index.html'},
+    {id:'car_race',       icon:'🏎️', name:'자동차 경주',   age:'전연령', desc:'빠르게 터치해서 자동차를 앞으로! 컴퓨터를 이겨보세요.',      tip:'손가락을 빠르게 움직여 보세요. 누가 더 빠를까?',    path:'theme/car_race/index.html'},
+    {id:'robot_jump',     icon:'🤖', name:'로봇 점프',      age:'4세+',  desc:'꾹 누를수록 높이 점프! 판을 밟으며 끝없이 올라가요.',           tip:'길게 누르면 높이, 짧게 누르면 살짝! 조절이 포인트예요.',  path:'theme/robot_jump/index.html'},
+  ]},
+  // ── 수학·숫자 ──
+  {id:'math', label:'수학·숫자', icon:'🔢', pImg:null,
+   color:'#EA580C', glow:'rgba(234,88,12,0.55)', angle:330, dist:480, prefDist:410, dur:'4.8s', delay:'-1.5s',
+   games:[
+    {id:'number_frog',   icon:'🐸', name:'개구리 숫자 점프', age:'3세+',  desc:'연꽃 위 숫자를 순서대로 눌러요. 개구리가 첨벙!',               tip:'1부터 소리 내어 세면서 함께 눌러보세요.',                   path:'theme/number_frog/index.html'},
+    {id:'market_day',    icon:'🛒', name:'마트 장보기',      age:'4세+',  desc:'동전을 세어 물건을 사요. 덧셈의 첫 걸음!',                    tip:'실제 동전을 보여주며 연계하면 더 효과적이에요.',             path:'theme/market_day/index.html'},
+    {id:'shape_count',   icon:'🔺', name:'도형 세기',        age:'3세+',  desc:'복잡한 그림에서 세모는 몇 개? 도형을 세요.',                  tip:'손가락으로 하나씩 짚으며 세는 습관을 길러줘요.',             path:'theme/shape_count/index.html'},
+    {id:'balance_scale', icon:'⚖️', name:'무게 비교 저울',  age:'4세+',  desc:'시소 저울로 더 무거운 것을 맞춰요.',                          tip:'실제 저울이나 손으로 무게 느껴보기와 연계하세요.',           path:'theme/balance_scale/index.html'},
+    {id:'clock_game',    icon:'🕐', name:'시계 읽기',        age:'5세+',  desc:'몇 시예요? 바늘을 맞추거나 시간을 맞춰요.',                   tip:'교실 시계를 함께 보며 현재 시간도 읽어보세요.',              path:'theme/clock_game/index.html'},
+    {id:'number_order',  icon:'📊', name:'순서 나열',        age:'3세+',  desc:'작은 수부터 큰 수 순서로 놓아요.',                            tip:'물건을 크기순으로 직접 나열해보는 활동과 연계하세요.',       path:'theme/number_order/index.html'},
+  ]},
+  // ── 감정·사회성 ──
+  {id:'social', label:'감정·사회성', icon:'💛', pImg:null,
+   color:'#F97316', glow:'rgba(249,115,22,0.55)', angle:30, dist:480, prefDist:370, dur:'5.2s', delay:'-3.5s',
+   games:[
+    {id:'emotion_mirror', icon:'😊', name:'감정 거울',       age:'3세+',  desc:'표정을 보고 감정 이름을 맞춰요. 공감 능력의 시작!',           tip:'\"너는 이럴 때 어떤 기분이야?\" 하며 함께 이야기해 보세요.',  path:'theme/emotion_mirror/index.html'},
+    {id:'kindness_quest', icon:'🤝', name:'친절 선택',        age:'4세+',  desc:'상황을 보고 올바른 행동을 골라요. 사회성 훈련!',              tip:'선택 후 왜 그것이 친절한 행동인지 이야기 나눠보세요.',       path:'theme/kindness_quest/index.html'},
+    {id:'emotion_gauge',  icon:'🌡️', name:'감정 온도계',    age:'4세+',  desc:'지금 내 기분은 몇 도? 감정을 표현해요.',                      tip:'매일 아침 체크인 활동으로 활용해 보세요.',                   path:'theme/emotion_gauge/index.html'},
+    {id:'fair_share',     icon:'🍎', name:'공평하게 나누기', age:'4세+',  desc:'사과 6개를 3명이 공평하게 나눠요.',                           tip:'실제 간식 나누기 활동 전에 먼저 게임으로 연습해 보세요.',     path:'theme/fair_share/index.html'},
+    {id:'face_maker',     icon:'😄', name:'표정 만들기',      age:'3세+',  desc:'눈·코·입 조합해서 감정을 만들어요.',                          tip:'거울 앞에서 같은 표정을 지어보게 해주세요.',                 path:'theme/face_maker/index.html'},
+    {id:'friend_puzzle',  icon:'🧩', name:'협동 퍼즐',        age:'전연령', desc:'두 명이 힘을 합쳐야 완성되는 퍼즐이에요.',                    tip:'짝을 지어 서로 의논하며 맞추도록 안내해 주세요.',            path:'theme/friend_puzzle/index.html'},
+  ]},
+  // ── 집중력·반응속도 행성 ──
+  {id:'focus', label:'집중력', icon:'🎯', pImg:null,
+   color:'#DC2626', glow:'rgba(220,38,38,0.55)', angle:150, dist:480, prefDist:450, dur:'4.2s', delay:'-2.5s',
+   games:[
+    {id:'whack_mole',    icon:'🔨', name:'두더지 잡기',      age:'3세+',  desc:'불쑥 나오는 두더지를 빠르게 탭! 손-눈 협응과 반응속도를 길러요.', tip:'두더지가 나오자마자 탭해야 해요! 아이와 점수 경쟁해 보세요.',  path:'theme/whack_mole/index.html'},
+    {id:'color_stop',    icon:'🛑', name:'멈춰! 색깔 게임',  age:'3세+',  desc:'목표 색/도형만 탭하고 나머지는 참아요. 억제 조절 훈련!',         tip:'\"탭해도 돼? 말아야 해?\" 긴장감이 집중력을 키워줘요.',         path:'theme/color_stop/index.html'},
+    {id:'moving_target', icon:'🎯', name:'움직이는 과녁',    age:'4세+',  desc:'이리저리 움직이는 과녁 중앙을 정확히 탭해요!',                   tip:'정중앙을 맞출수록 고점수! 조준하는 습관이 생겨요.',             path:'theme/moving_target/index.html'},
+    {id:'reaction_game', icon:'⚡', name:'반응 속도',        age:'4세+',  desc:'초록 불 켜지는 순간 탭! 나의 반응 속도는 몇 ms?',               tip:'연습할수록 빨라져요. 치타처럼 빠른 반응을 목표로!',             path:'theme/reaction_game/index.html'},
+  ]},
+  // ── 공간지각 행성 ──
+  {id:'spatial', label:'공간지각', icon:'🧊', pImg:null,
+   color:'#7C3AED', glow:'rgba(124,58,237,0.55)', angle:210, dist:480, prefDist:480, dur:'5.8s', delay:'-1s',
+   games:[
+    {id:'tangram',       icon:'🔷', name:'탕그램',           age:'4세+',  desc:'조각을 돌리고 움직여서 실루엣을 완성해요. 공간 감각 훈련!',      tip:'틀려도 괜찮아요! 여러 번 돌려보며 맞춰보세요.',               path:'theme/tangram/index.html'},
+    {id:'block_stack',   icon:'🟫', name:'블록 쌓기',         age:'4세+',  desc:'내려오는 블록을 빈틈 없이 쌓아요. 한 줄 완성하면 사라져요!',    tip:'미리 한 줄을 완성할 계획을 세우며 쌓아보세요.',               path:'theme/block_stack/index.html'},
+    {id:'mirror_draw',   icon:'🪞', name:'거울 대칭',         age:'4세+',  desc:'왼쪽 그림을 거울에 비춘 모양을 찾아요. 대칭 감각 쑥쑥!',        tip:'눈에 보이는 방향 그대로 찾아보세요.',                          path:'theme/mirror_draw/index.html'},
+    {id:'what_side',     icon:'🧱', name:'위에서 보면?',      age:'5세+',  desc:'블록 탑을 위/옆에서 보면 어떤 모양일까요?',                     tip:'실제 블록을 쌓아보며 함께 확인해 보면 더 재미있어요.',         path:'theme/what_side/index.html'},
+  ]},
+  // ── 자연·과학 행성 ──
+  {id:'science', label:'자연·과학', icon:'🌿', pImg:null,
+   color:'#16A34A', glow:'rgba(22,163,74,0.55)', angle:90, dist:480, prefDist:460, dur:'5.4s', delay:'-3s',
+   games:[
+    {id:'color_mix',     icon:'🎨', name:'색 혼합 실험실',   age:'3세+',  desc:'파랑+노랑=? 물감을 섞으면 어떤 색이 될까요?',                   tip:'실제 물감이나 물 컵으로 직접 섞어보는 활동과 연계해 보세요.',   path:'theme/color_mix/index.html'},
+    {id:'animal_home',   icon:'🐟', name:'동물 서식지',      age:'3세+',  desc:'육지, 바다, 하늘 — 동물을 맞는 집에 보내줘요!',                 tip:'동물원이나 수족관 방문 후 연계 활동으로 활용해 보세요.',        path:'theme/animal_home/index.html'},
+    {id:'plant_grow',    icon:'🌱', name:'씨앗 키우기',      age:'3세+',  desc:'물을 주고 햇빛을 조절해서 꽃을 피워요!',                        tip:'실제 화분 키우기와 연계하면 자연 관찰 능력이 자라요.',          path:'theme/plant_grow/index.html'},
+    {id:'season_dress',  icon:'🌸', name:'계절 옷 입히기',   age:'3세+',  desc:'봄·여름·가을·겨울 날씨에 맞는 옷을 골라 입혀요.',               tip:'오늘의 날씨와 연결해서 \"오늘은 어떤 옷이 좋을까?\" 이야기해요.', path:'theme/season_dress/index.html'},
+    {id:'magnet_sort',   icon:'🧲', name:'자석 실험',        age:'4세+',  desc:'자석에 붙는 것과 안 붙는 것을 실험해요! 과학자 체험!',          tip:'집에서 냉장고 자석으로 직접 실험해 보세요.',                   path:'theme/magnet_sort/index.html'},
+  ]},
+  // ────────────────────────────────────────
+  {id:'routine', label:'루틴 도구', icon:'⏰', pImg:null,
+   color:'#0D9488', glow:'rgba(13,148,136,0.55)', angle:270, dist:380, prefDist:430, dur:'6s', delay:'-5s',
+   games:[
+    {id:'routine_hub',       icon:'⏰', name:'루틴 도구 모음', age:'선생님', desc:'정리 시간, 손씻기, 하루 일과, 역할 보드를 한곳에서 열어요.', tip:'수업 시작 전 미리 띄워두면 편리하게 사용할 수 있습니다.', path:'routine_tools/index.html'},
+    {id:'cleanup_timer',     icon:'🌈', name:'정리 타이머',    age:'선생님', desc:'무지개가 줄어드는 화면으로 정리 시간을 직관적으로 보여줍니다.', tip:'정리가 끝난 후 무지개가 완성되면 다 함께 박수를 쳐주세요.', path:'routine_tools/cleanup_timer/index.html'},
+    {id:'daily_schedule',    icon:'🗓️', name:'하루 일과판',    age:'선생님', desc:'지금, 다음, 그다음 활동을 큰 카드로 보여줍니다.',             tip:'활동 전환 시간에 아이들과 함께 다음 순서를 확인해 보세요.', path:'routine_tools/daily_schedule/index.html'},
+    {id:'handwashing_timer', icon:'🫧', name:'손씻기 타이머',  age:'선생님', desc:'손씻기 단계를 따라가며 20초/30초 타이머를 보여줍니다.',       tip:'식사 전이나 바깥놀이 후에 큰 화면에 띄워주세요.',            path:'routine_tools/handwashing_timer/index.html'},
+    {id:'helper_board',          icon:'⭐', name:'도우미 보드',          age:'선생님', desc:'출석, 간식, 정리 역할을 랜덤으로 정하고 큰 화면에 띄워요.',              tip:'매일 아침 도우미를 뽑는 시간을 아이들이 매우 기다릴 거예요!',             path:'routine_tools/helper_board/index.html'},
+    {id:'character_countdown',   icon:'🐻', name:'캐릭터 카운트다운',    age:'선생님', desc:'귀여운 캐릭터 친구와 함께 카운트다운! 아이들이 집중해요.',              tip:'게임 시작이나 활동 전환 전에 함께 카운트해보세요.',                       path:'routine_tools/character_countdown/index.html'},
+    {id:'cleanup_steps',         icon:'🌟', name:'정리 순서 보드',        age:'선생님', desc:'정리 순서를 단계별 카드로 보여줘요. 스스로 하는 정리 습관!',            tip:'정리 전에 먼저 보드를 보고 순서를 확인하게 해주세요.',                    path:'routine_tools/cleanup_steps/index.html'},
+    {id:'rainbow_countdown',     icon:'🌈', name:'무지개 카운트다운',    age:'선생님', desc:'무지개 색이 하나씩 나타나는 카운트다운 타이머예요.',                     tip:'색이 완성될 때까지 아이들과 함께 기다려보세요.',                          path:'routine_tools/rainbow_countdown/index.html'},
+    {id:'rocket_gauge',          icon:'🚀', name:'로켓 정리 타이머',     age:'선생님', desc:'로켓이 발사될 때까지 정리해요! 시각적 게이지로 남은 시간 표시.',         tip:'로켓 발사 목표가 아이들의 정리 동기를 높여줘요.',                        path:'routine_tools/rocket_gauge/index.html'},
+  ]},
+];
 
-  // 디바운스 유틸
-  function debounce(fn, ms) {
-    let timer;
-    return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
-  }
+// ── LocalStorage 위치 저장 ──
+const LS='orbit_v5';
+function loadPos(){try{return JSON.parse(localStorage.getItem(LS)||'{}')}catch{return {};}}
+function savePos(m){localStorage.setItem(LS,JSON.stringify(m));}
+const savedPos=loadPos();
 
-  const musicBtn = document.getElementById('musicBtn');
-  const musicStyleButtons = document.querySelectorAll('.hero-music-style');
-  const bgmAudio = document.getElementById('bgmAudio');
-
-  let bgmEnabled = localStorage.getItem('bgmEnabled') !== 'false';
-  let bgmStarted = false;
-  let selectedMusicStyle = localStorage.getItem('bgmStyle') || 'calm';
-  let bgmVolume = parseFloat(localStorage.getItem('bgmVolume') || '0.5');
-
-  // 배경음악 소스 경로 설정
-  const bgmSources = {
-    dreamy: './routine_tools/cleanup_timer/bgm-dreamy.mp3',
-    rainbow: './routine_tools/cleanup_timer/bgm-rainbow.mp3',
-    calm: './routine_tools/cleanup_timer/bgm-calm.mp3'
-  };
-
-  // 볼륨 슬라이더
-  const volumeSlider = document.getElementById('volumeSlider');
-  volumeSlider.value = bgmVolume * 100;
-
-  volumeSlider.addEventListener('input', (e) => {
-    bgmVolume = e.target.value / 100;
-    bgmAudio.volume = bgmVolume;
-    localStorage.setItem('bgmVolume', bgmVolume);
+// ── Force-directed 초기 배치 ──
+// localStorage에 저장된 위치가 없을 때 행성들이 겹치지 않게 자동 배치
+function computeForceLayout(){
+  const nodes=PLANETS.map(p=>{
+    const rad=p.angle*Math.PI/180;
+    return{id:p.id, x:Math.cos(rad)*p.prefDist, y:Math.sin(rad)*p.prefDist, pd:p.prefDist};
   });
-
-  // BGM 페이드 인/아웃
-  function fadeBgm(targetVol, duration, callback) {
-    const steps = 20;
-    const stepTime = duration / steps;
-    const startVol = bgmAudio.volume;
-    const diff = targetVol - startVol;
-    let step = 0;
-    const interval = setInterval(() => {
-      step++;
-      bgmAudio.volume = Math.max(0, Math.min(1, startVol + diff * (step / steps)));
-      if (step >= steps) {
-        clearInterval(interval);
-        if (callback) callback();
-      }
-    }, stepTime);
-  }
-
-  /**
-   * 게임 데이터 (games.json 인라인 — fetch 불필요, 로컬/서버 모두 동작)
-   */
-  const GAMES_DATA = [
-    // ─── 2세 (5개) ───
-    { id:"color_finder", title:"색깔 찾기", age:[2], area:"관찰력", desc:"보여주는 색과 같은 색을 찾아요. 색 인식의 첫 걸음!", tag:"색 인식", path:"age_2/color_finder/index.html", icon:"🎨", tip:"아이들이 좋아하는 색깔부터 시작해 보세요.", isNew:false },
-    { id:"same_picture", title:"같은 그림 고르기", age:[2], area:"관찰력", desc:"위에 보이는 그림과 똑같은 그림을 찾아요.", tag:"시각 변별", path:"age_2/same_picture/index.html", icon:"🖼️", tip:"그림의 이름을 함께 말하며 진행하면 언어 발달에도 좋아요.", isNew:false },
-    { id:"color_basket", title:"색깔 바구니 넣기", age:[2], area:"사고력", desc:"같은 색 바구니에 물건을 넣어요. 색 분류 + 손-눈 협응!", tag:"색 분류", path:"age_2/color_basket/index.html", icon:"🧺", tip:"바구니의 색을 크게 외치며 아이들의 참여를 유도해 보세요.", isNew:false },
-    { id:"size_compare", title:"큰 것 작은 것 고르기", age:[2], area:"관찰력", desc:"큰 것과 작은 것을 비교해서 골라요. 크기 비교의 첫 걸음!", tag:"크기 비교", path:"age_2/size_compare/index.html", icon:"📏", tip:"\"어떤 게 더 클까?\" 질문을 함께 하며 비교 개념을 익혀요.", isNew:true },
-    { id:"sound_match", title:"같은 소리 찾기", age:[2], area:"청각", desc:"동물 소리를 듣고 어떤 동물인지 찾아요. 청각 인식 훈련!", tag:"청각 인식", path:"age_2/sound_match/index.html", icon:"🔊", tip:"소리를 들려주고 아이와 함께 동물 흉내를 내보세요.", isNew:true },
-    // ─── 3세 (6개) ───
-    { id:"easy_matching", title:"쉬운 짝맞추기", age:[3], area:"기억력", desc:"4~5쌍의 카드를 뒤집어서 같은 그림을 찾아요.", tag:"기억력", path:"age_3/easy_matching/index.html", icon:"🃏", tip:"처음에는 카드를 모두 보여준 뒤 뒤집어서 시작하면 쉬워요.", isNew:false },
-    { id:"shadow_matching", title:"그림자 맞추기", age:[3], area:"관찰력", desc:"물건과 그림자를 연결해요. 형태 인식 훈련!", tag:"형태 인식", path:"age_3/shadow_matching/index.html", icon:"🌑", tip:"실제 물건을 전등에 비춰 그림자를 만드는 활동과 연계해 보세요.", isNew:false },
-    { id:"home_matching", title:"짝이 되는 집 찾기", age:[3], area:"사고력", desc:"물고기는 바다, 새는 둥지! 동물과 맞는 집을 찾아요.", tag:"연관 개념", path:"age_3/home_matching/index.html", icon:"🏠", tip:"\"동물 친구들이 어디서 잠을 잘까요?\"라고 질문하며 시작해 보세요.", isNew:false },
-    { id:"shape_matching", title:"모양 짝맞추기", age:[3], area:"관찰력", desc:"같은 모양을 찾아요! 동그라미, 세모, 네모, 별을 구별해요.", tag:"형태 인식", path:"age_3/shape_matching/index.html", icon:"🔷", tip:"교실에서 같은 모양의 물건을 찾아보는 활동과 연계해 보세요.", isNew:true },
-    { id:"animal_food", title:"동물 먹이 연결하기", age:[3], area:"사고력", desc:"강아지는 뼈다귀, 토끼는 당근! 동물과 먹이를 연결해요.", tag:"연관 개념", path:"age_3/animal_food/index.html", icon:"🐶", tip:"동물원 견학 후 어떤 먹이를 먹었는지 이야기 나눠보세요.", isNew:true },
-    { id:"hidden_object", title:"숨은 물건 찾기", age:[3], area:"관찰력", desc:"여러 그림 중에서 숨어있는 물건을 찾아요!", tag:"시각 탐색", path:"age_3/hidden_object/index.html", icon:"🔍", tip:"\"어디 숨었을까?\" 하며 함께 찾아보면 더 재미있어요.", isNew:true },
-    // ─── 4세 (6개) ───
-    { id:"position_memory", title:"위치 기억 게임", age:[4], area:"기억력", desc:"물건이 어디 있었는지 기억해서 맞춰요.", tag:"공간 기억", path:"age_4/position_memory/index.html", icon:"📍", tip:"손가락으로 위치를 짚어보게 하며 기억을 도와주세요.", isNew:false },
-    { id:"sequence_memory", title:"순서 기억 게임", age:[4], area:"기억력", desc:"순서대로 나온 그림을 같은 순서로 눌러요.", tag:"작업 기억", path:"age_4/sequence_memory/index.html", icon:"🔢", tip:"리듬감 있게 순서를 외우는 '말놀이'로 접근해 보세요.", isNew:false },
-    { id:"opposite_game", title:"반대 규칙 게임", age:[4], area:"사고력", desc:"사과가 나오면 바나나를! 반대로 선택하는 게임이에요.", tag:"억제 조절", path:"age_4/opposite_game/index.html", icon:"🔄", tip:"아이들이 무의식적으로 누르려 할 때 \"잠깐!\" 하고 멈추는 재미를 주세요.", isNew:false },
-    { id:"pattern_complete", title:"패턴 완성 게임", age:[4], area:"사고력", desc:"반복되는 규칙을 찾아 빈칸을 채워요. 논리적 사고의 시작!", tag:"패턴 인식", path:"age_4/pattern_complete/index.html", icon:"🧩", tip:"\"다음에 뭐가 올까?\" 질문으로 규칙 찾기를 유도해 보세요.", isNew:true },
-    { id:"spot_difference", title:"다른 그림 찾기", age:[4], area:"관찰력", desc:"똑같은 그림 속에서 하나만 다른 것을 찾아요!", tag:"시각 변별", path:"age_4/spot_difference/index.html", icon:"👀", tip:"점점 많아지는 그림 속에서 집중력이 쑥쑥 자라요.", isNew:true },
-    { id:"classroom_search", title:"교실 물건 찾기", age:[4], area:"관찰력", desc:"교실에 흩어진 물건들 중에서 선생님이 말한 물건을 찾아요!", tag:"시각 탐색", path:"age_4/classroom_search/index.html", icon:"🏫", tip:"실제 교실에서도 물건 찾기 놀이를 해보세요.", isNew:true },
-    // ─── 5세 (7개) ───
-    { id:"image_matching", title:"두뇌 쑥쑥 짝맞추기", age:[5], area:"기억력", desc:"기본 이모지·고급 이미지 전환 + 친구 얼굴 이름 매칭. 멀티플레이 지원!", tag:"기억력 · 집중력", path:"age_5/image_matching/index.html", icon:"🌈⭐", tip:"학기 초에 친구들의 이름을 익히는 활동으로 추천합니다.", isNew:false },
-    { id:"seat_memory", title:"자리 기억 게임", age:[5], area:"기억력", desc:"친구나 캐릭터가 어디 앉았는지 기억해서 맞춰요.", tag:"공간 기억", path:"age_5/seat_memory/index.html", icon:"🪑", tip:"교실 안 실제 친구들의 자리를 떠올리며 이야기 나누어 보세요.", isNew:false },
-    { id:"daily_routine_game", title:"하루 일과 순서 맞추기", age:[5], area:"사고력", desc:"어린이집 일과를 올바른 순서로 맞춰요.", tag:"순서 개념", path:"age_5/daily_routine/index.html", icon:"📅", tip:"일과 시간표를 보며 다음 활동을 예측해 보는 습관을 길러줍니다.", isNew:false },
-    { id:"rule_switching", title:"규칙 바꾸기 분류", age:[5], area:"사고력", desc:"색깔로 → 모양으로! 기준이 바뀌면 분류도 달라져요.", tag:"인지 유연성", path:"age_5/rule_switching/index.html", icon:"🔀", tip:"\"이번에는 대장님의 규칙이 바뀌었어요!\"라고 흥미를 유도하세요.", isNew:false },
-    { id:"classroom_rules", title:"교실 규칙 선택 게임", age:[5], area:"사고력", desc:"상황을 보고 올바른 행동을 선택해요. 교실 규칙을 배워요!", tag:"사회성", path:"age_5/classroom_rules/index.html", icon:"📋", tip:"아이들과 함께 우리 반 규칙을 이야기하며 진행해 보세요.", isNew:true },
-    { id:"initial_match", title:"이름과 초성 연결", age:[5], area:"언어", desc:"사과의 초성은 ㅅㄱ! 단어와 초성을 연결해요.", tag:"한글 학습", path:"age_5/initial_match/index.html", icon:"ㄱ", tip:"친구 이름의 초성도 함께 찾아보며 흥미를 높여보세요.", isNew:true },
-    { id:"role_match", title:"반 친구 역할 맞추기", age:[5], area:"사고력", desc:"청소 도우미는 뭘 할까? 역할과 하는 일을 연결해요.", tag:"역할 이해", path:"age_5/role_match/index.html", icon:"🌟", tip:"오늘의 도우미 활동과 연계하면 더 효과적이에요.", isNew:true },
-    // ─── 혼합 (5개) ───
-    { id:"difficulty_matching", title:"난이도 선택 짝맞추기", age:[0], area:"기억력", desc:"카드 수와 공개 시간을 조정해서 어떤 연령에도 맞춰요.", tag:"난이도 조절", path:"mixed/difficulty_matching/index.html", icon:"🎯", tip:"아이들의 수준에 맞춰 카드 개수를 조금씩 늘려가 보세요.", isNew:false },
-    { id:"friend_custom", title:"친구 맞춤 모드", age:[0], area:"기억력", desc:"쉬움: 얼굴-얼굴 / 어려움: 얼굴-이름. 연령에 맞게 선택!", tag:"맞춤 설정", path:"mixed/friend_custom/index.html", icon:"👫", tip:"우리 반 친구들의 사진을 활용해 더 친밀감을 높여보세요.", isNew:false },
-    { id:"rhythm_game", title:"리듬 따라하기", age:[0], area:"기억력", desc:"순서대로 빛나는 버튼을 같은 순서로 눌러요. 기억력 + 리듬!", tag:"작업 기억", path:"mixed/rhythm_game/index.html", icon:"🥁", tip:"박수를 치며 리듬을 먼저 익힌 뒤 게임을 시작하면 더 즐거워요.", isNew:false },
-    { id:"sequence_stages", title:"순서 기억 (단계 선택)", age:[0], area:"기억력", desc:"빛나는 순서를 기억해서 따라 눌러요! 난이도를 선택할 수 있어요.", tag:"작업 기억", path:"mixed/sequence_stages/index.html", icon:"🎵", tip:"쉬운 단계부터 시작해서 점점 도전해 보세요.", isNew:true },
-    { id:"hidden_picture", title:"숨은 그림 찾기", age:[0], area:"관찰력", desc:"장면 속에 숨어있는 물건들을 모두 찾아요! 난이도 선택 가능!", tag:"시각 탐색", path:"mixed/hidden_picture/index.html", icon:"🔎", tip:"동물원, 바다, 우주 등 다양한 테마로 즐겨보세요.", isNew:true },
-    // ─── 테마 (10개) ───
-    { id:"dino_puzzle", title:"공룡 퍼즐 맞추기", age:[0], area:"사고력", desc:"공룡 그림을 조각조각! 퍼즐을 맞춰 공룡을 완성해요.", tag:"퍼즐", path:"theme/dino_puzzle/index.html", icon:"🦕", tip:"쉬운 2x2부터 시작해서 3x3에 도전해 보세요.", isNew:true, isTheme:true },
-    { id:"dino_name", title:"공룡 이름 맞추기", age:[0], area:"지식", desc:"힌트를 보고 어떤 공룡인지 맞춰요! 공룡 박사가 되어보자.", tag:"공룡 지식", path:"theme/dino_name/index.html", icon:"🦖", tip:"공룡 도감과 함께 보면 더 재미있어요.", isNew:true, isTheme:true },
-    { id:"car_race", title:"자동차 경주", age:[0], area:"순발력", desc:"빠르게 터치해서 자동차를 앞으로! 컴퓨터를 이겨보세요.", tag:"터치 레이싱", path:"theme/car_race/index.html", icon:"🏎️", tip:"손가락을 빠르게 움직여 보세요. 누가 더 빠를까?", isNew:true, isTheme:true },
-    { id:"vehicle_sound", title:"탈것 소리 맞추기", age:[0], area:"청각", desc:"부릉부릉, 칙칙폭폭! 소리를 듣고 어떤 탈것인지 맞춰요.", tag:"청각 인식", path:"theme/vehicle_sound/index.html", icon:"🚂", tip:"실제 탈것을 봤을 때 소리를 흉내 내보는 활동과 연계하세요.", isNew:true, isTheme:true },
-    { id:"character_dress", title:"캐릭터 꾸미기", age:[0], area:"창의력", desc:"얼굴, 눈, 머리, 모자를 골라서 나만의 캐릭터를 만들어요!", tag:"창의 놀이", path:"theme/character_dress/index.html", icon:"👸", tip:"완성된 캐릭터에 이름을 지어주면 더 재미있어요.", isNew:true, isTheme:true },
-    { id:"cooking_order", title:"요리 순서 맞추기", age:[0], area:"사고력", desc:"케이크, 피자, 김밥! 요리 순서를 올바르게 맞춰요.", tag:"순서 개념", path:"theme/cooking_order/index.html", icon:"🍰", tip:"실제 간식 만들기 활동 전에 순서를 먼저 맞춰보세요.", isNew:true, isTheme:true },
-    { id:"flower_garden", title:"꽃밭 꾸미기", age:[0], area:"창의력", desc:"예쁜 꽃을 심어서 나만의 정원을 만들어요! 미션도 있어요.", tag:"창의 놀이", path:"theme/flower_garden/index.html", icon:"🌸", tip:"바깥 놀이에서 꽃 이름을 찾아보는 활동과 연계하세요.", isNew:true, isTheme:true },
-    { id:"pet_care", title:"동물 돌보기", age:[0], area:"사고력", desc:"배고픈 강아지에겐 밥을, 더러운 고양이에겐 목욕을! 동물을 돌봐요.", tag:"돌봄 학습", path:"theme/pet_care/index.html", icon:"🐾", tip:"\"동물 친구가 뭘 원하는 걸까?\" 하며 공감 능력을 키워요.", isNew:true, isTheme:true },
-    { id:"territory", title:"땅따먹기", age:[0], area:"전략", desc:"번갈아 칸을 차지하고, 상대 땅을 뒤집어요! 누가 더 많이 차지할까?", tag:"전략 게임", path:"theme/territory/index.html", icon:"🏴", tip:"혼자서 컴퓨터와, 또는 친구와 둘이서 해보세요.", isNew:true, isTheme:true },
-    { id:"maze_treasure", title:"보물찾기 미로", age:[0], area:"사고력", desc:"미로를 탐험해서 보물을 찾아요! 별도 모아보세요.", tag:"길 찾기", path:"theme/maze_treasure/index.html", icon:"🗺️", tip:"쉬운 미로부터 시작해서 어려운 미로에 도전해 보세요.", isNew:true, isTheme:true },
-    // ─── 루틴 (4개) ───
-    { id:"routine_hub", title:"생활 루틴 도구 모음", age:[0], area:"루틴", desc:"정리 시간, 손씻기, 하루 일과, 역할 보드를 한곳에서 바로 열 수 있습니다.", tag:"루틴 허브", path:"routine_tools/index.html", icon:"⏰", tip:"수업 시작 전 미리 띄워두면 편리하게 사용할 수 있습니다.", isNew:false },
-    { id:"cleanup_timer", title:"정리 시간 타이머", age:[0], area:"루틴", desc:"무지개가 줄어드는 화면으로 정리 시간을 직관적으로 보여줍니다.", tag:"3/5/10/15분", path:"routine_tools/cleanup_timer/index.html", icon:"🌈", tip:"정리가 끝난 후 무지개가 완성되면 다 함께 박수를 쳐주세요.", isNew:false },
-    { id:"daily_schedule", title:"하루 일과 순서판", age:[0], area:"루틴", desc:"지금, 다음, 그다음 활동을 큰 카드로 보여줘 아이들이 일과 흐름을 쉽게 이해합니다.", tag:"현재-다음-그다음", path:"routine_tools/daily_schedule/index.html", icon:"🗓️", tip:"활동 전환 시간에 아이들과 함께 다음 순서를 확인해 보세요.", isNew:false },
-    { id:"handwashing_timer", title:"손씻기 순서 타이머", age:[0], area:"루틴", desc:"손씻기 단계를 따라가며 20초 또는 30초 타이머를 함께 보여줍니다.", tag:"순서 + 시간 안내", path:"routine_tools/handwashing_timer/index.html", icon:"🫧", tip:"식사 전이나 바깥놀이 후에 큰 화면에 띄워주세요.", isNew:false },
-    { id:"helper_board", title:"오늘의 도우미 보드", age:[0], area:"루틴", desc:"출석, 간식, 정리 역할을 랜덤으로 정하고 큰 화면에 띄울 수 있습니다.", tag:"반 운영 도구", path:"routine_tools/helper_board/index.html", icon:"⭐", tip:"매일 아침 도우미를 뽑는 시간을 아이들이 매우 기다릴 거예요!", isNew:false }
-  ];
-
-  /**
-   * 초기화 함수: 인라인 데이터로 즉시 렌더링 (fetch 불필요)
-   */
-  function init() {
-    gameData = GAMES_DATA;
-    updateTabCounts();
-    // 저장된 캐릭터 복원
-    selectCharacter(currentCharacter);
-    renderGames();
-  }
-
-  /**
-   * 게임 목록 렌더링 함수: 현재 필터 상태에 따라 화면 업데이트
-   */
-  function renderGames() {
-    gameContainer.innerHTML = ''; // 기존 목록 초기화
-
-    // 복합 필터 로직 적용
-    const filtered = gameData.filter(game => {
-      // 1. 탭 필터 (검색 중에도 탭 필터 유지)
-      let tabMatch = false;
-      if (currentTab === 'all') tabMatch = true;
-      else if (currentTab === 'age2') tabMatch = game.age.includes(2);
-      else if (currentTab === 'age3') tabMatch = game.age.includes(3);
-      else if (currentTab === 'age4') tabMatch = game.age.includes(4);
-      else if (currentTab === 'age5') tabMatch = game.age.includes(5);
-      else if (currentTab === 'theme') tabMatch = !!game.isTheme;
-      else if (currentTab === 'mixed') tabMatch = game.age.includes(0) && !game.isTheme && game.area !== '루틴';
-      else if (currentTab === 'routine') tabMatch = game.area === '루틴';
-
-      // 2. 영역 필터 매칭
-      const areaMatch = (currentArea === 'all') || (game.area === currentArea);
-
-      // 3. 검색어 매칭 (대소문자 무시, 제목/설명/태그/영역 포함)
-      const q = searchQuery.toLowerCase();
-      const searchMatch = !q ||
-                          game.title.toLowerCase().includes(q) ||
-                          game.desc.toLowerCase().includes(q) ||
-                          game.tag.toLowerCase().includes(q) ||
-                          game.area.toLowerCase().includes(q);
-
-      return tabMatch && areaMatch && searchMatch;
-    });
-
-    // 검색 결과가 없는 경우 안내 메시지 표시
-    if (filtered.length === 0) {
-      gameContainer.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">🍎</div>
-          찾으시는 조건의 게임이 아직 없어요.<br>
-          <span style="font-size: 0.9rem;">검색어를 바꿔보거나 다른 연령대를 확인해 보세요!</span>
-        </div>`;
-      return;
-    }
-
-    // 필터링된 데이터를 바탕으로 카드 생성
-    filtered.forEach((game, idx) => {
-      // 연령/영역에 따른 카드 상단 색상 테마 결정
-      const ageClass = game.age.includes(2) ? 'age2' :
-                       game.age.includes(3) ? 'age3' :
-                       game.age.includes(4) ? 'age4' :
-                       game.age.includes(5) ? 'age5' :
-                       game.isTheme ? 'theme' :
-                       game.area === '루틴' ? 'routine' : 'mixed';
-
-      // 난이도 (연령 기반)
-      const diffStars = game.age.includes(2) ? '★☆☆' :
-                        game.age.includes(3) ? '★★☆' :
-                        game.age.includes(5) ? '★★★' :
-                        game.age.includes(4) ? '★★☆' : '★★☆';
-
-      // 플레이 횟수 (보상 데이터에서 가져오기)
-      const rData = getRewardData();
-      const playCount = rData.history.filter(h => h.gameId === game.id).length;
-
-      const card = document.createElement('a');
-      card.className = `game-card ${ageClass}`;
-      card.href = game.path;
-      card.innerHTML = `
-        ${game.isNew ? '<div class="new-badge">NEW</div>' : ''}
-        <div class="card-icon">${game.icon}</div>
-        <div class="card-name">${game.title}</div>
-        <div class="card-desc">${game.desc}</div>
-        <div class="card-meta">
-          <div class="card-tag">${game.tag}</div>
-          <div class="card-difficulty">${diffStars}</div>
-          ${playCount > 0 ? `<div class="card-played">🎮 ${playCount}회</div>` : ''}
-        </div>
-        <div class="tip-toggle" onclick="event.preventDefault();this.nextElementSibling.classList.toggle('open')">💡 선생님 팁</div>
-        <div class="teacher-tip">${game.tip}</div>
-      `;
-
-      // 순차 입장 애니메이션 딜레이
-      card.style.animationDelay = (idx * 0.06) + 's';
-      // 카드 클릭 시 사운드 + BGM 준비
-      card.addEventListener('mouseenter', startMainBgm, { passive: true });
-      card.addEventListener('click', () => { try { kbrSound.click(); } catch {} }, { passive: true });
-      gameContainer.appendChild(card);
-    });
-  }
-
-  // --- 이벤트 리스너 설정 ---
-
-  // 연령 탭 클릭 이벤트
-  tabs.forEach(btn => {
-    btn.addEventListener('click', () => {
-      tabs.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentTab = btn.dataset.tab;
-      renderGames();
-      // 콘텐츠 영역으로 부드럽게 스크롤
-      gameContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  });
-
-  // 영역별 서브 필터 버튼 클릭 이벤트
-  areaBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      areaBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentArea = btn.dataset.area;
-      renderGames();
-    });
-  });
-
-  // 검색창 입력 이벤트 (디바운스 적용 — 300ms)
-  const debouncedSearch = debounce(() => renderGames(), 300);
-  searchInput.addEventListener('input', (e) => {
-    searchQuery = e.target.value;
-    debouncedSearch();
-  });
-
-  // --- BGM 제어 및 설정 유지 로직 ---
-
-  /**
-   * 음악 On/Off 버튼 상태 및 텍스트 업데이트
-   */
-  function syncMusicButton() {
-    musicBtn.textContent = bgmEnabled ? '🎵' : '🔇';
-    musicBtn.classList.toggle('off', !bgmEnabled);
-
-    // 스타일 버튼들도 현재 선택된 스타일에 맞춰 활성화 표시
-    musicStyleButtons.forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.style === selectedMusicStyle);
-    });
-  }
-
-  /**
-   * 음악 파일 로드
-   */
-  function loadMainBgm() {
-    bgmAudio.pause();
-    bgmAudio.currentTime = 0;
-    bgmAudio.src = bgmSources[selectedMusicStyle];
-    bgmAudio.volume = bgmVolume;
-    bgmAudio.load();
-  }
-
-  /**
-   * 배경음악 재생 시작
-   */
-  function startMainBgm() {
-    if (!bgmEnabled) return;
-    if (bgmStarted) return;
-
-    bgmStarted = true;
-    bgmAudio.volume = 0;
-    bgmAudio.play().then(() => {
-      fadeBgm(bgmVolume, 800);
-    }).catch(() => {
-      bgmStarted = false;
-    });
-  }
-
-  // BGM floating button: toggle panel + on/off
-  let bgmPanelOpen = false;
-  musicBtn.addEventListener('click', () => {
-    const panel = document.getElementById('bgmPanel');
-    bgmPanelOpen = !bgmPanelOpen;
-    panel.classList.toggle('show', bgmPanelOpen);
-  });
-
-  // Close BGM panel when clicking outside
-  document.addEventListener('click', (e) => {
-    const panel = document.getElementById('bgmPanel');
-    if (bgmPanelOpen && !panel.contains(e.target) && e.target !== musicBtn) {
-      bgmPanelOpen = false;
-      panel.classList.remove('show');
-    }
-  });
-
-  // BGM on/off via double-click on the floating button
-  musicBtn.addEventListener('dblclick', (e) => {
-    e.preventDefault();
-    bgmEnabled = !bgmEnabled;
-    localStorage.setItem('bgmEnabled', bgmEnabled);
-    syncMusicButton();
-
-    if (bgmEnabled) {
-      bgmStarted = false;
-      startMainBgm();
-    } else {
-      fadeBgm(0, 500, () => {
-        bgmAudio.pause();
-        bgmStarted = false;
-      });
-    }
-  });
-
-  // BGM 스타일(분위기) 변경 버튼 클릭 이벤트
-  musicStyleButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      selectedMusicStyle = button.dataset.style;
-      localStorage.setItem('bgmStyle', selectedMusicStyle);
-      musicStyleButtons.forEach(item => item.classList.toggle('active', item === button));
-
-      if (bgmEnabled && bgmStarted) {
-        fadeBgm(0, 400, () => {
-          loadMainBgm();
-          bgmStarted = false;
-          startMainBgm();
-        });
-      } else {
-        loadMainBgm();
-        // Auto-start when selecting a style
-        if (bgmEnabled) {
-          bgmStarted = false;
-          startMainBgm();
+  const MIN=240; // 행성 간 최소 거리
+  for(let k=0;k<600;k++){
+    const f=nodes.map(()=>({x:0,y:0}));
+    // 행성 간 반발력
+    for(let i=0;i<nodes.length;i++){
+      for(let j=i+1;j<nodes.length;j++){
+        const dx=nodes[j].x-nodes[i].x, dy=nodes[j].y-nodes[i].y;
+        const d=Math.sqrt(dx*dx+dy*dy)||0.01;
+        if(d<MIN){
+          const s=(MIN-d)/d*1.5;
+          f[i].x-=dx*s; f[i].y-=dy*s;
+          f[j].x+=dx*s; f[j].y+=dy*s;
         }
       }
+    }
+    // 선호 궤도 거리로 당기는 힘 (소프트 스프링)
+    nodes.forEach((n,i)=>{
+      const d=Math.sqrt(n.x*n.x+n.y*n.y)||0.01;
+      const diff=(d-n.pd)*0.06;
+      f[i].x-=n.x/d*diff; f[i].y-=n.y/d*diff;
     });
-  });
-
-  // ─── 배경 장식 생성 ───
-
-  // Hero particles
-  (function() {
-    const container = document.getElementById('heroParticles');
-    const emojis = ['⭐','🌟','✨','💜','🎈','🎨','🎵','🌈','💡','🎯','🔮','🦋','💫','🎪','🎠','🍭'];
-    for (let i = 0; i < 20; i++) {
-      const el = document.createElement('span');
-      el.className = 'h-particle';
-      el.textContent = emojis[i % emojis.length];
-      el.style.left = (3 + Math.random() * 94) + '%';
-      el.style.top = (3 + Math.random() * 90) + '%';
-      el.style.setProperty('--dur', (4 + Math.random() * 6) + 's');
-      el.style.setProperty('--delay', (-Math.random() * 6) + 's');
-      el.style.fontSize = (0.8 + Math.random() * 1.2) + 'rem';
-      container.appendChild(el);
-    }
-  })();
-
-  // Background twinkling stars
-  (function() {
-    const container = document.getElementById('bgStars');
-    const starEmojis = ['✨','🌟','⭐','💫'];
-    for (let i = 0; i < 15; i++) {
-      const el = document.createElement('span');
-      el.className = 'bg-star';
-      el.textContent = starEmojis[Math.floor(Math.random() * starEmojis.length)];
-      el.style.left = (Math.random() * 100) + '%';
-      el.style.top = (Math.random() * 100) + '%';
-      el.style.fontSize = (0.6 + Math.random() * 1) + 'rem';
-      el.style.animationDuration = (2 + Math.random() * 4) + 's';
-      el.style.animationDelay = (-Math.random() * 4) + 's';
-      container.appendChild(el);
-    }
-  })();
-
-  // Background balloons
-  (function() {
-    const container = document.getElementById('bgBalloons');
-    const balloonEmojis = ['🎈','🎈','🎈','🎈','🎈','🎈'];
-    const colors = ['#FF1744','#FF6D00','#FFD600','#00C853','#2979FF','#AA00FF'];
-    for (let i = 0; i < 6; i++) {
-      const el = document.createElement('span');
-      el.className = 'balloon';
-      el.textContent = '🎈';
-      el.style.left = (5 + Math.random() * 90) + '%';
-      el.style.fontSize = (1.2 + Math.random() * 1.2) + 'rem';
-      el.style.animationDuration = (15 + Math.random() * 20) + 's';
-      el.style.animationDelay = (-Math.random() * 20) + 's';
-      el.style.opacity = 0.3 + Math.random() * 0.3;
-      container.appendChild(el);
-    }
-  })();
-
-  // ─── 마스코트 대사 ───
-  const MASCOT_GREETINGS = [
-    '안녕! 오늘도 같이 놀자!', '오늘은 어떤 게임 할까?',
-    '와! 또 왔구나! 반가워!', '오늘도 재미있게 놀자!',
-    '오늘도 열심히 놀아보자!', '같이 재미있는 거 하자!',
-    '같이 놀면 재미있어!', '어떤 게임이 좋을까?'
-  ];
-  const MASCOT_REWARD_MSGS = [
-    '와! 별을 {n}개나 모았어!', '대단해! 벌써 {n}개!',
-    '{n}개의 별이 반짝반짝!'
-  ];
-
-  function updateMascotSpeech() {
-    const data = getRewardData();
-    const speech = document.getElementById('mascotSpeech');
-    const todayCount = getTodayCount(data);
-
-    if (todayCount > 0 && data.totalStars > 0) {
-      const msgs = MASCOT_REWARD_MSGS;
-      speech.textContent = msgs[Math.floor(Math.random() * msgs.length)].replace('{n}', data.totalStars);
-    } else {
-      speech.textContent = MASCOT_GREETINGS[Math.floor(Math.random() * MASCOT_GREETINGS.length)];
-    }
+    // 적용 (감쇠)
+    nodes.forEach((n,i)=>{n.x+=f[i].x*0.25; n.y+=f[i].y*0.25;});
   }
+  const result={};
+  nodes.forEach(n=>{result['planet_'+n.id]={x:CX+n.x, y:CY+n.y};});
+  return result;
+}
 
-  document.getElementById('mascot').addEventListener('click', () => {
-    const speech = document.getElementById('mascotSpeech');
-    speech.textContent = MASCOT_GREETINGS[Math.floor(Math.random() * MASCOT_GREETINGS.length)];
-    speech.style.animation = 'none';
-    speech.offsetHeight;
-    speech.style.animation = 'speechIn 0.4s ease-out';
-  });
+// 저장된 행성 위치가 하나도 없으면 force layout으로 초기값 계산
+const hasSavedPlanets=PLANETS.some(p=>savedPos['planet_'+p.id]);
+const forcePos=hasSavedPlanets?{}:computeForceLayout();
 
-  // ─── 보상 시스템 ───
+function getPos(key,dx,dy){
+  if(savedPos[key])return{x:savedPos[key].x,y:savedPos[key].y};
+  if(forcePos[key])return{x:forcePos[key].x,y:forcePos[key].y};
+  return{x:dx,y:dy};
+}
+function setPos(key,x,y){savedPos[key]={x,y};savePos(savedPos);}
 
-  const BADGE_DEFS = [
-    { id: 'first_game',   icon: '🌟', name: '첫 도전!',       desc: '첫 번째 게임을 완료했어요',      condition: s => s.totalGames >= 1 },
-    { id: 'five_games',   icon: '🎯', name: '다섯 고개',      desc: '게임을 5번 완료했어요',          condition: s => s.totalGames >= 5 },
-    { id: 'ten_games',    icon: '🏆', name: '열 번의 도전',    desc: '게임을 10번 완료했어요',         condition: s => s.totalGames >= 10 },
-    { id: 'twenty_games', icon: '👑', name: '스무 번 영웅',    desc: '게임을 20번 완료했어요',         condition: s => s.totalGames >= 20 },
-    { id: 'fifty_games',  icon: '💎', name: '반짝반짝 보석',   desc: '게임을 50번 완료했어요',         condition: s => s.totalGames >= 50 },
-    { id: 'star_10',      icon: '⭐', name: '별 10개',         desc: '별을 10개 모았어요',            condition: s => s.totalStars >= 10 },
-    { id: 'star_50',      icon: '🌠', name: '별 50개',         desc: '별을 50개 모았어요',            condition: s => s.totalStars >= 50 },
-    { id: 'star_100',     icon: '🌌', name: '별 100개',        desc: '별을 100개 모았어요',           condition: s => s.totalStars >= 100 },
-    { id: 'streak_3',     icon: '🔥', name: '3일 연속!',       desc: '3일 연속 놀러 왔어요',          condition: s => s.streak >= 3 },
-    { id: 'streak_7',     icon: '🌈', name: '일주일 연속!',    desc: '7일 연속 놀러 왔어요',          condition: s => s.streak >= 7 },
-    { id: 'all_areas',    icon: '🧩', name: '골고루 박사',     desc: '모든 영역 게임을 해봤어요',      condition: s => s.areasPlayed && s.areasPlayed.size >= 4 },
-    { id: 'today_3',      icon: '💪', name: '오늘의 챔피언',   desc: '하루에 게임 3개를 완료했어요',    condition: s => s.todayCount >= 3 },
-  ];
+// ── DOM ──
+const stage=document.getElementById('stage');
+const svgEl=document.getElementById('lines');
+let activePlanetId=null, editMode=false, teacherMode=false;
+const allGameEls=[];
+const planetData={};
 
-  function getRewardData() {
-    try {
-      return JSON.parse(localStorage.getItem('kbr.rewards') || 'null') || {
-        totalStars: 0, totalGames: 0, badges: [],
-        history: [], streak: 0, lastDate: null
-      };
-    } catch { return { totalStars: 0, totalGames: 0, badges: [], history: [], streak: 0, lastDate: null }; }
+// 태양
+const sunEl=document.createElement('div');sunEl.className='sun';
+sunEl.innerHTML=`<div class="sun-core"><span class="sun-emoji">🌟</span></div><div class="sun-label">쑥쑥 놀이터</div>`;
+stage.appendChild(sunEl);
+
+// ── 선 그리기 ──
+function getPosFromEl(el){return{x:parseFloat(el.style.left),y:parseFloat(el.style.top)};}
+function redrawLines(){
+  svgEl.innerHTML='';
+  const ns='http://www.w3.org/2000/svg';
+  function line(x1,y1,x2,y2,stroke,dash){
+    const l=document.createElementNS(ns,'line');
+    l.setAttribute('x1',x1);l.setAttribute('y1',y1);
+    l.setAttribute('x2',x2);l.setAttribute('y2',y2);
+    l.setAttribute('stroke',stroke);l.setAttribute('stroke-width','1.5');
+    if(dash)l.setAttribute('stroke-dasharray',dash);
+    svgEl.appendChild(l);
   }
-
-  function saveRewardData(data) {
-    try { localStorage.setItem('kbr.rewards', JSON.stringify(data)); } catch {}
-  }
-
-  function updateStreak(data) {
-    const today = new Date().toISOString().slice(0, 10);
-    if (data.lastDate === today) return;
-
-    if (data.lastDate) {
-      const last = new Date(data.lastDate);
-      const now = new Date(today);
-      const diff = Math.floor((now - last) / 86400000);
-      data.streak = diff === 1 ? data.streak + 1 : 1;
-    } else {
-      data.streak = 1;
-    }
-    data.lastDate = today;
-    saveRewardData(data);
-  }
-
-  function getTodayCount(data) {
-    const today = new Date().toISOString().slice(0, 10);
-    return data.history.filter(h => h.date === today).length;
-  }
-
-  function getAreasPlayed(data) {
-    return new Set(data.history.map(h => h.area).filter(Boolean));
-  }
-
-  function renderRewardDashboard() {
-    const data = getRewardData();
-    updateStreak(data);
-    const todayCount = getTodayCount(data);
-
-    document.getElementById('totalStars').textContent = data.totalStars;
-    document.getElementById('todayCount').textContent = todayCount;
-    document.getElementById('streakCount').textContent = data.streak;
-
-    // 최근 플레이
-    const recentSection = document.getElementById('recentSection');
-    const recentList = document.getElementById('recentList');
-    if (data.history.length > 0) {
-      recentSection.style.display = 'block';
-      recentList.innerHTML = '';
-      const recent = data.history.slice(0, 8);
-      recent.forEach(h => {
-        const game = gameData.find(g => g.id === h.gameId);
-        if (!game) return;
-        const stars = '⭐'.repeat(h.stars || 1) + '☆'.repeat(3 - (h.stars || 1));
-        const timeAgo = getTimeAgo(h.timestamp);
-        const a = document.createElement('a');
-        a.className = 'recent-item';
-        a.href = game.path;
-        a.innerHTML = `
-          <span class="ri-icon">${game.icon}</span>
-          <span class="ri-info">
-            <span class="ri-name">${game.title}</span>
-            <span class="ri-stars">${stars}</span>
-            <span class="ri-time">${timeAgo}</span>
-          </span>`;
-        recentList.appendChild(a);
+  PLANETS.forEach(p=>{
+    const pe=planetData[p.id];if(!pe)return;
+    const{x:px,y:py}=getPosFromEl(pe.el);
+    line(CX,CY,px,py,'rgba(255,255,255,0.09)',null);
+    const show=activePlanetId===p.id||editMode;
+    if(show){
+      allGameEls.filter(g=>g.planetId===p.id).forEach(g=>{
+        const{x:gx,y:gy}=getPosFromEl(g.el);
+        line(px,py,gx,gy,p.glow.replace('0.55','0.45'),'7 4');
       });
-    } else {
-      recentSection.style.display = 'none';
     }
+  });
+}
 
-    // 뱃지
-    const badgeGrid = document.getElementById('badgeGrid');
-    badgeGrid.innerHTML = '';
-    const stats = {
-      totalStars: data.totalStars,
-      totalGames: data.totalGames,
-      streak: data.streak,
-      todayCount,
-      areasPlayed: getAreasPlayed(data)
+// ── 드래그 헬퍼 ──
+function makeDraggable(triggerEl,el,onEnd,canDrag){
+  let ox,oy,sl,st,moved=false;
+  triggerEl.addEventListener('mousedown',ev=>{
+    if(!canDrag())return;
+    ev.stopPropagation();moved=false;
+    ox=ev.clientX;oy=ev.clientY;
+    sl=parseFloat(el.style.left);st=parseFloat(el.style.top);
+    el.classList.add('dragging-item');
+    const mm=me=>{
+      const dx=(me.clientX-ox)/scale,dy=(me.clientY-oy)/scale;
+      if(Math.abs(dx)>3||Math.abs(dy)>3)moved=true;
+      el.style.left=(sl+dx)+'px';el.style.top=(st+dy)+'px';
+      redrawLines();
     };
-    let earnedCount = 0;
-
-    BADGE_DEFS.forEach(bd => {
-      const earned = data.badges.includes(bd.id);
-      if (earned) earnedCount++;
-      const div = document.createElement('div');
-      div.className = `badge-item${earned ? '' : ' locked'}`;
-      div.innerHTML = `
-        ${bd.icon}
-        ${earned ? '<span class="badge-check">✓</span>' : ''}
-        <span class="badge-tooltip">${earned ? bd.name : '???'}</span>`;
-      badgeGrid.appendChild(div);
-    });
-    document.getElementById('badgeCount').textContent = earnedCount;
-
-    // 새로운 뱃지 획득 체크
-    checkNewBadges(data, stats);
-  }
-
-  function checkNewBadges(data, stats) {
-    const newBadges = [];
-    BADGE_DEFS.forEach(bd => {
-      if (!data.badges.includes(bd.id) && bd.condition(stats)) {
-        data.badges.push(bd.id);
-        newBadges.push(bd);
-      }
-    });
-    if (newBadges.length > 0) {
-      saveRewardData(data);
-      showMilestone(newBadges[0]);
-    }
-  }
-
-  function showMilestone(badge) {
-    document.getElementById('mcIcon').textContent = badge.icon;
-    document.getElementById('mcTitle').textContent = '뱃지 획득! ' + badge.name;
-    document.getElementById('mcDesc').textContent = badge.desc;
-    document.getElementById('milestoneOverlay').classList.add('show');
-  }
-
-  function closeMilestone() {
-    document.getElementById('milestoneOverlay').classList.remove('show');
-    renderRewardDashboard();
-  }
-
-  function getTimeAgo(ts) {
-    const diff = Date.now() - ts;
-    const min = Math.floor(diff / 60000);
-    if (min < 1) return '방금 전';
-    if (min < 60) return min + '분 전';
-    const hr = Math.floor(min / 60);
-    if (hr < 24) return hr + '시간 전';
-    const day = Math.floor(hr / 24);
-    return day + '일 전';
-  }
-
-  // ─── 학부모 대시보드 ───
-  const parentToggle = document.getElementById('parentToggle');
-  const parentPanel = document.getElementById('parentPanel');
-  const parentClose = document.getElementById('parentClose');
-
-  parentToggle.addEventListener('click', () => {
-    renderParentDashboard();
-    parentPanel.classList.add('show');
+    const mu=()=>{
+      window.removeEventListener('mousemove',mm);
+      window.removeEventListener('mouseup',mu);
+      el.classList.remove('dragging-item');
+      if(moved&&onEnd)onEnd(parseFloat(el.style.left),parseFloat(el.style.top));
+    };
+    window.addEventListener('mousemove',mm);
+    window.addEventListener('mouseup',mu);
   });
-  parentClose.addEventListener('click', () => parentPanel.classList.remove('show'));
-  parentPanel.addEventListener('click', (e) => {
-    if (e.target === parentPanel) parentPanel.classList.remove('show');
-  });
+  return ()=>moved;
+}
 
-  function renderParentDashboard() {
-    const data = getRewardData();
-    const todayCount = getTodayCount(data);
-    const today = new Date().toISOString().slice(0, 10);
-
-    // 이번 주 플레이 수
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekStr = weekAgo.toISOString().slice(0, 10);
-    const weekCount = data.history.filter(h => h.date >= weekStr).length;
-
-    // 평균 별점
-    const avgStars = data.history.length > 0
-      ? (data.history.reduce((s, h) => s + (h.stars || 0), 0) / data.history.length).toFixed(1)
-      : '0';
-
-    // 가장 많이 한 게임
-    const gameCounts = {};
-    data.history.forEach(h => { gameCounts[h.gameId] = (gameCounts[h.gameId] || 0) + 1; });
-    const topGameId = Object.keys(gameCounts).sort((a, b) => gameCounts[b] - gameCounts[a])[0];
-    const topGame = topGameId ? (gameData.find(g => g.id === topGameId) || {}) : {};
-
-    // 요약 카드
-    document.getElementById('parentSummary').innerHTML = `
-      <div class="ps-card"><div class="ps-val">${data.totalGames}</div><div class="ps-label">총 플레이 횟수</div></div>
-      <div class="ps-card"><div class="ps-val">${data.totalStars}</div><div class="ps-label">총 획득 별</div></div>
-      <div class="ps-card"><div class="ps-val">${todayCount}</div><div class="ps-label">오늘 플레이</div></div>
-      <div class="ps-card"><div class="ps-val">${weekCount}</div><div class="ps-label">이번 주 플레이</div></div>
-      <div class="ps-card"><div class="ps-val">${avgStars}</div><div class="ps-label">평균 별점</div></div>
-      <div class="ps-card"><div class="ps-val">${data.streak}일</div><div class="ps-label">연속 출석</div></div>
-      <div class="ps-card"><div class="ps-val">${topGame.title || '-'}</div><div class="ps-label">가장 좋아하는 게임</div></div>
-      <div class="ps-card"><div class="ps-val">${data.badges.length}/${BADGE_DEFS.length}</div><div class="ps-label">뱃지 달성</div></div>
-    `;
-
-    // 영역별 차트
-    const areaCounts = {};
-    data.history.forEach(h => {
-      if (h.area) areaCounts[h.area] = (areaCounts[h.area] || 0) + 1;
-    });
-    const maxArea = Math.max(...Object.values(areaCounts), 1);
-    const areaLabels = { '기억력': '💭', '관찰력': '👁️', '사고력': '💡', '청각': '👂', '언어': '📝', '창의력': '🎨', '순발력': '⚡', '전략': '♟️', '지식': '📚', '루틴': '⏰' };
-
-    let areaHTML = '<h4>영역별 활동 분포</h4>';
-    ['기억력', '관찰력', '사고력', '청각', '언어', '창의력', '순발력', '전략', '지식', '루틴'].forEach(area => {
-      const count = areaCounts[area] || 0;
-      const pct = Math.round((count / maxArea) * 100);
-      areaHTML += `
-        <div class="area-bar-row">
-          <span class="area-bar-label">${areaLabels[area] || ''} ${area}</span>
-          <div class="area-bar-track"><div class="area-bar-fill" style="width:${pct}%"></div></div>
-          <span class="area-bar-count">${count}회</span>
-        </div>`;
-    });
-    document.getElementById('areaChart').innerHTML = areaHTML;
-
-    // 최근 활동 로그
-    const logContainer = document.getElementById('activityLog');
-    if (data.history.length === 0) {
-      logContainer.innerHTML = '<h4>최근 활동</h4><p style="color:#aaa;font-size:0.85rem;">아직 플레이 기록이 없어요.</p>';
-      return;
-    }
-
-    let logHTML = '<h4>최근 활동 (최근 20개)</h4>';
-    data.history.slice(0, 20).forEach(h => {
-      const game = gameData.find(g => g.id === h.gameId);
-      if (!game) return;
-      const stars = '⭐'.repeat(h.stars || 1);
-      const dateStr = h.date === today ? '오늘' : h.date;
-      logHTML += `
-        <div class="log-item">
-          <span class="log-icon">${game.icon}</span>
-          <span class="log-info">
-            <div class="log-name">${game.title}</div>
-            <div class="log-detail">${dateStr} · ${game.area}</div>
-          </span>
-          <span class="log-stars">${stars}</span>
-        </div>`;
-    });
-    logContainer.innerHTML = logHTML;
-  }
-
-  // ─── 오늘의 추천 게임 ───
-  function renderTodayPick() {
-    const today = new Date();
-    const dayIndex = today.getFullYear() * 366 + today.getMonth() * 31 + today.getDate();
-    const pick = GAMES_DATA.filter(g => g.area !== '루틴')[dayIndex % GAMES_DATA.filter(g => g.area !== '루틴').length];
-    if (!pick) return;
-
-    document.getElementById('todayPickCard').href = pick.path;
-    document.getElementById('tpIcon').textContent = pick.icon;
-    document.getElementById('tpName').textContent = pick.title;
-    document.getElementById('tpDesc').textContent = pick.desc;
-    document.getElementById('tpTag').textContent = pick.tag;
-
-    // GSAP 스프링 등장
-    if (typeof gsap !== 'undefined') {
-      gsap.from('#todayPickCard', {
-        scale: 0.8, opacity: 0, y: 30, duration: 0.7,
-        ease: 'elastic.out(1,0.5)', delay: 0.3
-      });
-    }
-  }
-
-  // ─── GSAP 카드 애니메이션 오버라이드 ───
-  const _origRenderGames = renderGames;
-  renderGames = function() {
-    _origRenderGames();
-    // GSAP 스프링 카드 등장
-    if (typeof gsap !== 'undefined') {
-      gsap.from('.game-card', {
-        scale: 0.5, opacity: 0, y: 40,
-        duration: 0.5,
-        stagger: 0.04,
-        ease: 'elastic.out(1,0.6)',
-        clearProps: 'all',
-      });
-    }
+// ── 위성 기본 위치 계산 (행성 중심 기준 방사형 배치) ──
+// planetX/Y: 실제 행성 위치, idx/total: 몇 번째 / 전체 수
+function calcSatPos(planetX, planetY, idx, total){
+  // 행성에서 태양 방향의 반대쪽을 기준으로 퍼뜨림
+  const toSunAngle = Math.atan2(CY - planetY, CX - planetX);
+  const awayAngle  = toSunAngle + Math.PI; // 태양 반대 방향
+  const spread     = total <= 4 ? Math.PI * 0.9
+                   : total <= 7 ? Math.PI * 1.1
+                   : total <= 10? Math.PI * 1.3
+                   :              Math.PI * 1.5;
+  const step = total > 1 ? spread / (total - 1) : 0;
+  const a    = awayAngle - spread/2 + step*idx;
+  const r    = total <= 5 ? 155 : total <= 9 ? 170 : 185;
+  const jitter = (idx % 2 === 0 ? 0 : 22); // 지그재그
+  return{
+    x: planetX + Math.cos(a) * (r + jitter),
+    y: planetY + Math.sin(a) * (r + jitter)
   };
+}
 
-  // ─── 카드 클릭 시 스쿼시 + 사운드 ───
-  document.addEventListener('click', (e) => {
-    const card = e.target.closest('.game-card, .today-pick-card');
-    if (card) {
-      if (typeof GameSound !== 'undefined') GameSound.click();
-      if (typeof GameAnim !== 'undefined') GameAnim.squash(card);
+// ── 행성 생성 ──
+PLANETS.forEach(p=>{
+  const rad=p.angle*Math.PI/180;
+  const defX=CX+Math.cos(rad)*p.dist, defY=CY+Math.sin(rad)*p.dist;
+  const{x:px,y:py}=getPos('planet_'+p.id,defX,defY);
+
+  const el=document.createElement('div');
+  el.className='planet';el.id='planet-'+p.id;
+  el.style.cssText=`left:${px}px;top:${py}px;--glow:${p.glow};--dur:${p.dur};--delay:${p.delay};`;
+
+  const bg=`background:radial-gradient(circle at 35% 35%,${p.color}cc,${p.color}66);box-shadow:0 0 36px 10px ${p.glow};`;
+  if(p.spare) el.classList.add('spare');
+  el.innerHTML=`
+    <div class="planet-body" style="${bg}">${imgEl(p.pImg||'',p.icon,70,70)}</div>
+    <div class="planet-label">${p.label}</div>
+    ${p.spare?'<div class="planet-count">곧 추가</div>':`<div class="planet-count">${p.games.length}개</div>`}`;
+
+  let wasMoved=false;
+  makeDraggable(el,el,(nx,ny)=>{
+    wasMoved=true;setPos('planet_'+p.id,nx,ny);
+    setTimeout(()=>{wasMoved=false;},80);
+  },()=>editMode);
+
+  el.addEventListener('click',ev=>{
+    if(editMode||wasMoved)return;
+    ev.stopPropagation();
+    const isOpen=activePlanetId===p.id;
+    collapseAll();
+    if(!isOpen){
+      activePlanetId=p.id;
+      el.classList.add('active');
+      allGameEls.filter(g=>g.planetId===p.id).forEach(g=>g.el.classList.add('visible'));
+      document.querySelectorAll('.cat-chip').forEach(c=>c.classList.toggle('active',c.dataset.id===p.id));
     }
+    closePanel();redrawLines();
   });
 
-  // ─── 이스터에그: 히어로 로고 10회 클릭 시 선글라스 ───
-  let _eggClicks = 0;
-  const _heroLogo = document.querySelector('.hero-logo');
-  if (_heroLogo) {
-    _heroLogo.addEventListener('click', () => {
-      _eggClicks++;
-      if (_eggClicks >= 10) {
-        _heroLogo.innerHTML = '<span style="font-size:4rem;">😎</span>';
-        if (typeof GameParticle !== 'undefined') GameParticle.celebrateBurst();
-        if (typeof GameSound !== 'undefined') GameSound.complete();
-        _eggClicks = 0;
-        setTimeout(() => location.reload(), 3000);
-      } else if (_eggClicks >= 5) {
-        _heroLogo.style.animation = 'wiggle 0.3s ease-in-out';
-        if (typeof GameSound !== 'undefined') GameSound.bubble();
-      }
+  stage.appendChild(el);
+  planetData[p.id]={el,data:p};
+
+  // 위성 (행성의 실제 배치 위치 기준으로 계산)
+  p.games.forEach((g,i)=>{
+    const sKey=`sat_${p.id}_${g.id}`;
+    const{x:defGX,y:defGY}=calcSatPos(px,py,i,p.games.length);
+    const{x:gx,y:gy}=getPos(sKey,defGX,defGY);
+
+    const gel=document.createElement('div');
+    gel.className='game-dot';gel.style.cssText=`left:${gx}px;top:${gy}px;`;
+    gel.innerHTML=`
+      <div class="game-dot-body">${imgEl(g.id,g.icon,48,48)}</div>
+      <div class="game-dot-name">${g.name}</div>`;
+
+    let satMoved=false;
+    makeDraggable(gel,gel,(nx,ny)=>{
+      satMoved=true;setPos(sKey,nx,ny);
+      setTimeout(()=>{satMoved=false;},80);
+    },()=>editMode);
+
+    gel.addEventListener('click',ev=>{
+      if(editMode||satMoved)return;
+      ev.stopPropagation();openPanel(g,p);
     });
+
+    stage.appendChild(gel);
+    allGameEls.push({planetId:p.id,gameId:g.id,el:gel});
+  });
+
+  // 카테고리 칩 (예비 행성 제외)
+  if(p.spare)return;
+  const chip=document.createElement('div');
+  chip.className='cat-chip';chip.dataset.id=p.id;
+  const ci=tUrl(p.pImg)?`<img src="${tUrl(p.pImg)}" alt="" onerror="this.style.display='none'">`:p.icon;
+  chip.innerHTML=`${ci}<span>${p.label}</span>`;
+  chip.addEventListener('click',()=>el.click());
+  document.getElementById('cat-bar').appendChild(chip);
+});
+
+redrawLines();
+stage.addEventListener('click',()=>{collapseAll();closePanel();});
+
+function collapseAll(){
+  allGameEls.forEach(g=>g.el.classList.remove('visible'));
+  document.querySelectorAll('.planet').forEach(pe=>pe.classList.remove('active'));
+  document.querySelectorAll('.cat-chip').forEach(c=>c.classList.remove('active'));
+  activePlanetId=null;redrawLines();
+}
+
+// ── 패널 ──
+function openPanel(g,p){
+  const url=tUrl(g.id);
+  const img=document.getElementById('pImg'),fi=document.getElementById('pFi'),bg=document.getElementById('pBg');
+  if(url){img.src=url;img.style.display='block';fi.style.display='none';bg.style.backgroundImage=`url(${url})`;}
+  else{img.style.display='none';fi.textContent=g.icon;fi.style.display='block';bg.style.backgroundImage='none';}
+  bg.style.backgroundColor=p.color+'55';
+  document.getElementById('pBadge').innerHTML=`<span>${p.label}</span><span>·</span><span>${g.age}</span>`;
+  document.getElementById('pTitle').textContent=g.name;
+  document.getElementById('pDesc').textContent=g.desc;
+  const tipEl=document.getElementById('pTip');
+  if(g.tip){tipEl.textContent='💡 '+g.tip;tipEl.style.display='block';}
+  else tipEl.style.display='none';
+  document.getElementById('pLink').href=g.path;
+  document.getElementById('panel').classList.add('open');
+}
+function closePanel(){document.getElementById('panel').classList.remove('open');}
+
+// ── 편집 모드 ──
+function toggleEdit(){
+  editMode=!editMode;
+  const btn=document.getElementById('editBtn');
+  const banner=document.getElementById('edit-banner');
+  btn.textContent=editMode?'✓ 완료':'✏️ 편집';
+  btn.classList.toggle('edit-on',editMode);
+  banner.classList.toggle('on',editMode);
+  document.getElementById('world').classList.toggle('edit-mode',editMode);
+  document.querySelectorAll('.planet').forEach(pe=>pe.classList.toggle('edit-handle',editMode));
+  allGameEls.forEach(g=>{
+    g.el.classList.toggle('edit-handle',editMode);
+    if(editMode)g.el.classList.add('visible');
+  });
+  if(!editMode&&!activePlanetId)collapseAll();
+  redrawLines();
+}
+
+function resetPositions(){
+  if(!confirm('배치를 처음 상태로 되돌릴까요?'))return;
+  localStorage.removeItem(LS);location.reload();
+}
+
+function toggleTeacher(){
+  teacherMode=!teacherMode;
+  const btn=document.querySelector('.ui-btn.gold');
+  btn.textContent=teacherMode?'✓ 선생님 모드':'👩‍🏫 선생님';
+  document.getElementById('pTip').style.display=teacherMode&&document.getElementById('pTip').textContent?'block':'none';
+}
+
+// ── 월드 드래그/줌 ──
+const world=document.getElementById('world');
+let wDrag=false,wSX=0,wSY=0,curX=0,curY=0,scale=1;
+
+world.addEventListener('mousedown',e=>{
+  if(editMode)return;
+  wDrag=true;world.classList.add('dragging');wSX=e.clientX-curX;wSY=e.clientY-curY;
+});
+window.addEventListener('mousemove',e=>{if(!wDrag)return;curX=e.clientX-wSX;curY=e.clientY-wSY;applyT();});
+window.addEventListener('mouseup',()=>{wDrag=false;world.classList.remove('dragging');});
+world.addEventListener('wheel',e=>{
+  e.preventDefault();scale=Math.min(1.9,Math.max(0.3,scale-e.deltaY*0.001));applyT();
+},{passive:false});
+
+let tDrag=false,tSX=0,tSY=0,lastTD=0;
+world.addEventListener('touchstart',e=>{
+  if(editMode)return;
+  if(e.touches.length===1){tDrag=true;tSX=e.touches[0].clientX-curX;tSY=e.touches[0].clientY-curY;}
+  else if(e.touches.length===2){tDrag=false;lastTD=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);}
+},{passive:true});
+world.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(e.touches.length===1&&tDrag){curX=e.touches[0].clientX-tSX;curY=e.touches[0].clientY-tSY;applyT();}
+  else if(e.touches.length===2){
+    const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    scale=Math.min(1.9,Math.max(0.3,scale*(d/lastTD)));lastTD=d;applyT();
   }
+},{passive:false});
+world.addEventListener('touchend',()=>{tDrag=false;});
 
-  // ─── Day/Night 테마 적용 ───
-  if (typeof GameTheme !== 'undefined') GameTheme.apply();
-
-  // 초기 로드 시 실행
-  init();
-  renderRewardDashboard();
-  updateMascotSpeech();
-  loadMainBgm();
-  syncMusicButton();
-  renderTodayPick();
+function applyT(){stage.style.transform=`translate(calc(-50% + ${curX}px),calc(-50% + ${curY}px)) scale(${scale})`;}
+function resetView(){
+  curX=0;curY=0;scale=1;applyT();
+  collapseAll();closePanel();
+  if(editMode)toggleEdit();
+}
 </script>
-
 </body>
 </html>
