@@ -132,11 +132,12 @@
     }
     #start-screen {
       position: absolute;
-      bottom: 0; left: 0; right: 0; height: 160px;
-      background: transparent;
+      bottom: 0; left: 0; right: 0; height: 220px;
+      background: linear-gradient(to top, rgba(5,0,16,0.9) 60%, transparent);
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      z-index: 50; gap: 12px;
+      align-items: center; justify-content: flex-end;
+      padding-bottom: 28px;
+      z-index: 50; gap: 10px;
     }
     #result-screen, #gameover-screen { display: none; }
     .screen-title {
@@ -224,8 +225,6 @@
   <!-- Start screen -->
   <div id="start-screen">
     <div class="screen-title">로봇 점프!</div>
-    <div class="screen-sub">화면을 꾹 누르면 로봇이 차징해요!<br>손을 떼면 점프!</div>
-    <div class="how-to">꾹 누를수록 더 높이 점프!</div>
     <button class="btn-start" onclick="startGame()">시작!</button>
   </div>
 
@@ -475,8 +474,7 @@ function update(dt) {
     if (screenY < H * 0.4) {
       cameraY = robot.y - H * 0.4;
     }
-    // Gravity pull camera down slightly
-    cameraY += CAMERA_SCROLL_SPEED;
+    // Camera does not auto-scroll down; robot falling below viewport triggers death
   }
 
   // Trail
@@ -713,123 +711,208 @@ function render() {
 function drawRobot() {
   const rx = robot.x;
   const ry = robot.y - cameraY;
-  const sq = robot.squish;
-  const w = ROBOT_W;
-  const h = ROBOT_H;
+  const sq = robot.squish; // 1 = normal, <1 = squished while charging
+  const isCharging = charging && robot.onGround;
+  const isJumping = robot.vy < -2;
+  const chargePct = isCharging
+    ? Math.min((performance.now() - chargeStart) / MAX_CHARGE_TIME, 1)
+    : 0;
+
+  // Dimensions
+  const HW = 17; // head half-width  (head = 34px)
+  const HH = 15; // head half-height (head = 30px)
+  const BW = 13; // body half-width  (body = 26px)
+  const BH = 11; // body half-height (body = 22px)
+
+  // Pivot: bottom-center of robot footprint
+  const pivotX = rx + ROBOT_W / 2;
+  const pivotY = ry + ROBOT_H;
 
   ctx.save();
-  ctx.translate(rx + w/2, ry + h/2);
-  ctx.scale(1, sq); // squish on charge
+  ctx.translate(pivotX, pivotY);
 
-  const hw = w/2, hh = h/2;
+  // --- Feet & Legs (drawn before squish so feet widen correctly) ---
+  // When squishing, feet spread out (inverse squish)
+  const footScaleY = isCharging ? (1 + (1 - sq) * 0.8) : 1;
+  ctx.save();
+  ctx.scale(1, footScaleY);
+  const footY = -6 / footScaleY; // keep feet near ground
+  // Feet ovals
+  ctx.fillStyle = '#0369a1';
+  ctx.beginPath(); ctx.ellipse(-9, footY, 9, 4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse( 9, footY, 9, 4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 
-  // Body glow
-  ctx.shadowColor = '#a855f7';
-  ctx.shadowBlur = 16;
-
-  // Body
-  ctx.fillStyle = '#1e1b4b';
-  ctx.strokeStyle = '#a855f7';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.roundRect(-hw, -hh + 8, w, h - 8, 6);
-  ctx.fill();
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  // Head
-  ctx.fillStyle = '#312e81';
-  ctx.strokeStyle = '#818cf8';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect(-hw + 3, -hh, w - 6, 20, 5);
-  ctx.fill();
-  ctx.stroke();
-
-  // Antenna
-  ctx.strokeStyle = '#c4b5fd';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, -hh);
-  ctx.lineTo(0, -hh - 10);
-  ctx.stroke();
-  ctx.fillStyle = '#ec4899';
-  ctx.beginPath();
-  ctx.arc(0, -hh - 12, 3.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Eyes
-  ctx.fillStyle = '#06b6d4';
-  ctx.shadowColor = '#06b6d4';
-  ctx.shadowBlur = 8;
-  ctx.beginPath();
-  ctx.ellipse(-7, -hh + 9, 4, 5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(7, -hh + 9, 4, 5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-
-  // Eye shine
-  ctx.fillStyle = 'white';
-  ctx.beginPath(); ctx.arc(-6, -hh + 7, 1.5, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(8, -hh + 7, 1.5, 0, Math.PI * 2); ctx.fill();
-
-  // Battery gauge on chest
-  const bx = -hw + 6, by = -hh + 22, bw = w - 12, bh = 7;
-  ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.roundRect(bx, by, bw, bh, 3);
-  ctx.fill(); ctx.stroke();
-
-  if (charging && robot.onGround) {
-    const pct = Math.min((performance.now() - chargeStart) / MAX_CHARGE_TIME, 1);
-    const gradient = ctx.createLinearGradient(bx, 0, bx + bw, 0);
-    gradient.addColorStop(0, '#a855f7');
-    gradient.addColorStop(1, '#06b6d4');
-    ctx.fillStyle = gradient;
-    ctx.shadowColor = '#a855f7';
-    ctx.shadowBlur = 6;
-    ctx.beginPath();
-    ctx.roundRect(bx + 1, by + 1, (bw - 2) * pct, bh - 2, 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-  }
-
-  // Arms
-  ctx.strokeStyle = '#a855f7';
+  // Legs (short lines)
+  ctx.strokeStyle = '#38bdf8';
   ctx.lineWidth = 5;
   ctx.lineCap = 'round';
-  const armY = -hh + 26;
+  const legTopY = -(6 + BH * 2 * sq); // top of leg = bottom of body after squish
+  ctx.save();
+  ctx.scale(1, sq);
+  const legLocalTop = -(6 / sq + BH * 2);
   ctx.beginPath();
-  ctx.moveTo(-hw, armY);
-  ctx.lineTo(-hw - 10, armY + (charging ? -10 : 10));
+  ctx.moveTo(-9, -BH); ctx.lineTo(-9, -BH - 10);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(hw, armY);
-  ctx.lineTo(hw + 10, armY + (charging ? -10 : 10));
+  ctx.moveTo( 9, -BH); ctx.lineTo( 9, -BH - 10);
   ctx.stroke();
-
-  // Legs
-  ctx.lineWidth = 6;
-  const legY = hh;
-  ctx.beginPath();
-  ctx.moveTo(-8, legY - 6);
-  ctx.lineTo(-8, legY + 6);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(8, legY - 6);
-  ctx.lineTo(8, legY + 6);
-  ctx.stroke();
-
-  // Feet
-  ctx.fillStyle = '#7c3aed';
-  ctx.beginPath(); ctx.roundRect(-13, legY + 3, 12, 6, 3); ctx.fill();
-  ctx.beginPath(); ctx.roundRect(3, legY + 3, 12, 6, 3); ctx.fill();
-
   ctx.restore();
+
+  // Apply vertical squish for upper body
+  ctx.save();
+  ctx.scale(1, sq);
+
+  // Offset so the whole upper body sits above the legs
+  const bodyBaseY = -(BH * 2 + 10); // bottom of body
+  const bodyCY    = bodyBaseY - BH;  // center of body
+  const headBaseY = bodyCY - BH - 2; // bottom of head
+  const headCY    = headBaseY - HH;  // center of head
+
+  // --- Body ---
+  ctx.shadowColor = '#38bdf8';
+  ctx.shadowBlur = 14;
+  ctx.fillStyle = '#38bdf8';
+  ctx.beginPath();
+  ctx.roundRect(-BW, bodyCY - BH, BW * 2, BH * 2, 5);
+  ctx.fill();
+
+  // Body highlight (top sheen)
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.beginPath();
+  ctx.roundRect(-BW + 3, bodyCY - BH + 2, BW * 2 - 6, 5, 3);
+  ctx.fill();
+
+  // Body shadow side
+  ctx.fillStyle = '#0369a1';
+  ctx.beginPath();
+  ctx.roundRect(BW - 5, bodyCY - BH + 4, 4, BH * 2 - 8, 2);
+  ctx.fill();
+
+  // Arms
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  const armY = bodyCY;
+  ctx.beginPath();
+  ctx.moveTo(-BW, armY);
+  ctx.lineTo(-BW - 10, armY + (isCharging ? -8 : 6));
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo( BW, armY);
+  ctx.lineTo( BW + 10, armY + (isCharging ? -8 : 6));
+  ctx.stroke();
+
+  // Chest heart
+  const heartX = 0, heartY = bodyCY + 1;
+  const heartScale = isCharging ? 1 + chargePct * 0.6 : 1;
+  const heartColor = isCharging ? `hsl(${50 - chargePct * 10},100%,60%)` : '#ef4444';
+  ctx.save();
+  ctx.translate(heartX, heartY);
+  ctx.scale(heartScale, heartScale);
+  ctx.fillStyle = heartColor;
+  if (isCharging) { ctx.shadowColor = heartColor; ctx.shadowBlur = 8 * chargePct; }
+  ctx.beginPath();
+  ctx.moveTo(0, 3);
+  ctx.bezierCurveTo(-5, -1, -8, -5, -5, -7);
+  ctx.bezierCurveTo(-2, -9,  0, -6,  0, -4);
+  ctx.bezierCurveTo( 0, -6,  2, -9,  5, -7);
+  ctx.bezierCurveTo( 8, -5,  5, -1,  0,  3);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+
+  // --- Head ---
+  ctx.shadowColor = '#38bdf8';
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = '#38bdf8';
+  ctx.beginPath();
+  ctx.roundRect(-HW, headCY - HH, HW * 2, HH * 2, 7);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Head highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.beginPath();
+  ctx.roundRect(-HW + 4, headCY - HH + 3, HW * 2 - 8, 6, 3);
+  ctx.fill();
+
+  // Head shadow side
+  ctx.fillStyle = '#0369a1';
+  ctx.beginPath();
+  ctx.roundRect(HW - 6, headCY - HH + 5, 5, HH * 2 - 10, 2);
+  ctx.fill();
+
+  // Ear bolts
+  ctx.fillStyle = '#0369a1';
+  ctx.beginPath(); ctx.arc(-HW,     headCY, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc( HW,     headCY, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.beginPath(); ctx.arc(-HW + 1, headCY - 1, 1.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc( HW - 1, headCY - 1, 1.5, 0, Math.PI * 2); ctx.fill();
+
+  // Eyes
+  const eyeY = headCY - 2;
+  // eye whites
+  ctx.fillStyle = 'white';
+  ctx.shadowColor = '#fff';
+  ctx.shadowBlur = 4;
+  ctx.beginPath(); ctx.ellipse(-7, eyeY, 5, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse( 7, eyeY, 5, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // pupils
+  const pupilOffset = isCharging ? 1 : 0; // squint effect
+  ctx.fillStyle = '#111';
+  ctx.beginPath(); ctx.ellipse(-7, eyeY + pupilOffset, 3, isCharging ? 2 : 4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse( 7, eyeY + pupilOffset, 3, isCharging ? 2 : 4, 0, 0, Math.PI * 2); ctx.fill();
+
+  // eye highlight dots
+  ctx.fillStyle = 'white';
+  ctx.beginPath(); ctx.arc(-9, eyeY - 2, 1.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(  5, eyeY - 2, 1.5, 0, Math.PI * 2); ctx.fill();
+
+  // Mouth expression
+  ctx.strokeStyle = '#0369a1';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  const mouthY = headCY + HH - 5;
+  ctx.beginPath();
+  if (isJumping) {
+    // Surprised O
+    ctx.ellipse(0, mouthY, 3.5, 4, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (isCharging) {
+    // Clenched straight line
+    ctx.moveTo(-5, mouthY); ctx.lineTo(5, mouthY);
+    ctx.stroke();
+  } else {
+    // Happy U curve
+    ctx.moveTo(-5, mouthY - 2);
+    ctx.quadraticCurveTo(0, mouthY + 4, 5, mouthY - 2);
+    ctx.stroke();
+  }
+
+  // Antenna
+  ctx.strokeStyle = '#7dd3fc';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, headCY - HH);
+  ctx.lineTo(0, headCY - HH - 10);
+  ctx.stroke();
+  // Antenna tip: glowing yellow circle
+  ctx.fillStyle = '#fde047';
+  ctx.shadowColor = '#fde047';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.arc(0, headCY - HH - 13, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.restore(); // end squish scale
+
+  ctx.restore(); // end translate
 }
 
 function goHome() { window.location.href = '../../index.html'; }
