@@ -122,7 +122,7 @@
     }
 
     /* Start / Result screens */
-    #start-screen, #result-screen, #gameover-screen {
+    #result-screen, #gameover-screen {
       position: absolute; inset: 0;
       background: rgba(5,0,16,0.92);
       border-radius: 24px;
@@ -130,7 +130,14 @@
       align-items: center; justify-content: center;
       z-index: 50; gap: 16px;
     }
-    #start-screen { display: flex; }
+    #start-screen {
+      position: absolute;
+      bottom: 0; left: 0; right: 0; height: 160px;
+      background: transparent;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 50; gap: 12px;
+    }
     #result-screen, #gameover-screen { display: none; }
     .screen-title {
       font-size: 2rem; font-weight: 900;
@@ -252,6 +259,7 @@ const ctx = canvas.getContext('2d');
 const W = 360, H = 640;
 
 // Game constants
+const AUTO_VX = 2.5;
 const GRAVITY = 0.45;
 const CAMERA_SCROLL_SPEED = 0.35; // pixels per frame downward push
 const MAX_CHARGE_TIME = 1200; // ms
@@ -292,7 +300,7 @@ function createRobot() {
   return {
     x: W / 2 - ROBOT_W / 2,
     y: H - 80 - ROBOT_H,
-    vx: 0,
+    vx: AUTO_VX,
     vy: 0,
     onGround: true,
     squish: 1, // for charge animation
@@ -344,14 +352,12 @@ function startGame() {
   gameState = 'playing';
   robot = createRobot();
   platforms = createPlatforms();
-  cameraY = 0;
+  cameraY = robot.y - H * 0.7;
   score = 0;
   chargeStart = 0;
   charging = false;
   particles = [];
-  if (frameId) cancelAnimationFrame(frameId);
   updateRecordDisplay();
-  loop();
 }
 
 function stopGame() {
@@ -436,42 +442,46 @@ function loop(ts = 0) {
 }
 
 function update(dt) {
-  if (gameState !== 'playing') return;
+  if (gameState === 'dead') return;
 
-  // Charge visual
-  if (charging && robot.onGround) {
-    const held = performance.now() - chargeStart;
-    const t = Math.min(held / MAX_CHARGE_TIME, 1);
-    document.getElementById('charge-fill').style.height = `${t * 100}%`;
-    robot.squish = 1 - t * 0.35;
-    robot.batteryPct = t;
-  } else {
-    robot.batteryPct = 0;
+  // Auto movement (always active, idle and playing)
+  robot.vx = robot.facing * AUTO_VX;
+
+  // Charge visual (playing only)
+  if (gameState === 'playing') {
+    if (charging && robot.onGround) {
+      const held = performance.now() - chargeStart;
+      const t = Math.min(held / MAX_CHARGE_TIME, 1);
+      document.getElementById('charge-fill').style.height = `${t * 100}%`;
+      robot.squish = 1 - t * 0.35;
+      robot.batteryPct = t;
+    } else {
+      robot.batteryPct = 0;
+    }
   }
 
   // Physics
   robot.vy += GRAVITY;
   robot.x += robot.vx;
   robot.y += robot.vy;
-  if (robot.vx > 0) robot.facing = 1;
-  if (robot.vx < 0) robot.facing = -1;
-  robot.vx *= 0.94;
 
-  // Camera scroll (slow downward push)
-  const screenY = robot.y - cameraY;
-  if (screenY < H * 0.35) {
-    cameraY = robot.y - H * 0.35;
+  // Boundary (walls) — reverse direction on hit
+  if (robot.x <= 0) { robot.x = 0; robot.facing = 1; }
+  if (robot.x + ROBOT_W >= W) { robot.x = W - ROBOT_W; robot.facing = -1; }
+
+  // Camera scroll (playing only)
+  if (gameState === 'playing') {
+    const screenY = robot.y - cameraY;
+    if (screenY < H * 0.4) {
+      cameraY = robot.y - H * 0.4;
+    }
+    // Gravity pull camera down slightly
+    cameraY += CAMERA_SCROLL_SPEED;
   }
-  // Gravity pull camera down slightly
-  cameraY += CAMERA_SCROLL_SPEED;
 
   // Trail
   robot.trailPts.push({ x: robot.x + ROBOT_W/2, y: robot.y + ROBOT_H/2 });
   if (robot.trailPts.length > 12) robot.trailPts.shift();
-
-  // Boundary (walls)
-  if (robot.x < 0) { robot.x = 0; robot.vx = Math.abs(robot.vx) * 0.6; }
-  if (robot.x + ROBOT_W > W) { robot.x = W - ROBOT_W; robot.vx = -Math.abs(robot.vx) * 0.6; }
 
   // Platform collision
   robot.onGround = false;
@@ -539,13 +549,15 @@ function update(dt) {
     p.vy += 0.12; p.life -= p.decay;
   });
 
-  // Height display
-  const meters = Math.round(Math.abs(cameraY) / 10);
-  document.getElementById('height-display').textContent = `${meters} m`;
+  if (gameState === 'playing') {
+    // Height display
+    const meters = Math.round(Math.abs(cameraY) / 10);
+    document.getElementById('height-display').textContent = `${meters} m`;
 
-  // Death check: robot falls below camera bottom
-  if (robot.y - cameraY > H + 60) {
-    stopGame();
+    // Death check: robot falls below camera bottom
+    if (robot.y - cameraY > H + 120) {
+      stopGame();
+    }
   }
 }
 
@@ -802,8 +814,15 @@ function drawRobot() {
 
 function goHome() { window.location.href = '../../index.html'; }
 
-// Record display
+// Init: render game world immediately on page load
+robot = createRobot();
+platforms = createPlatforms();
+cameraY = robot.y - H * 0.7;
+score = 0;
+chargeStart = 0;
+charging = false;
 updateRecordDisplay();
+loop();
 </script>
 </body>
 </html>
