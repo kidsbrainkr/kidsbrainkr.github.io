@@ -212,8 +212,8 @@
       홈
     </a>
     <div class="hud-right">
-      <div class="height-display" id="height-display">0 m</div>
-      <div class="record-display" id="record-display">최고: 0 m</div>
+      <div class="height-display" id="height-display">1층</div>
+      <div class="record-display" id="record-display">최고: 0층</div>
     </div>
   </div>
 
@@ -266,6 +266,7 @@ const MAX_JUMP_VY = -22;
 const MIN_JUMP_VY = -7;
 const ROBOT_W = 36, ROBOT_H = 44;
 const PLATFORM_H = 12;
+const FLOOR_HEIGHT = 200; // 200px 올라갈 때마다 1층
 
 // Platform types
 const PT = {
@@ -283,6 +284,7 @@ let walkFrame = 0;
 let particles = [];
 let bestScore = parseInt(localStorage.getItem('rj_best') || '0');
 let bgStars = [];
+let floorNum = 1;
 
 // Init background stars
 (function initBgStars() {
@@ -362,18 +364,18 @@ function startGame() {
 
 function stopGame() {
   gameState = 'dead';
-  const m = Math.round(Math.abs(cameraY) / 10);
-  if (m > bestScore) {
-    bestScore = m;
+  const f = floorNum;
+  if (f > bestScore) {
+    bestScore = f;
     localStorage.setItem('rj_best', bestScore);
   }
-  document.getElementById('final-height').textContent = `${m} m 도달`;
-  document.getElementById('record-stat').textContent = `최고 기록: ${bestScore} m`;
+  document.getElementById('final-height').textContent = `${f}층 도달`;
+  document.getElementById('record-stat').textContent = `최고 기록: ${bestScore}층`;
   document.getElementById('gameover-screen').style.display = 'flex';
 }
 
 function updateRecordDisplay() {
-  document.getElementById('record-display').textContent = `최고: ${bestScore} m`;
+  document.getElementById('record-display').textContent = `최고: ${bestScore}층`;
 }
 
 // Input handling
@@ -475,10 +477,14 @@ function update(dt) {
   // Camera scroll (playing only)
   if (gameState === 'playing') {
     const screenY = robot.y - cameraY;
+    // 위로 올라갈 때: 즉시 스냅
     if (screenY < H * 0.4) {
       cameraY = robot.y - H * 0.4;
     }
-    // Camera does not auto-scroll down; robot falling below viewport triggers death
+    // 아래로 떨어질 때: 부드럽게 따라옴 (로봇이 화면 아래 60% 아래로 가면)
+    else if (screenY > H * 0.65) {
+      cameraY += (robot.y - H * 0.65 - cameraY) * 0.08;
+    }
   }
 
   // Trail
@@ -529,13 +535,23 @@ function update(dt) {
   // Generate more platforms if needed
   const topPlatY = Math.min(...platforms.filter(p=>!p.crumbled).map(p=>p.y));
   if (topPlatY > cameraY - 200) {
+    const diffMod = Math.min(floorNum, 12);
     let y = topPlatY - (55 + Math.random() * 50);
     for (let i = 0; i < 5; i++) {
-      y -= 55 + Math.random() * 50;
+      const gap = 55 + diffMod * 4 + Math.random() * 35;
+      y -= gap;
       const x = 20 + Math.random() * (W - 120);
-      const w = 55 + Math.random() * 65;
+      const w = Math.max(45, 110 - diffMod * 4) + Math.random() * 25;
       const r = Math.random();
-      let type = r < 0.35 ? PT.MOVING : r < 0.55 ? PT.CRUMBLE : r < 0.65 ? PT.CONVEYOR : r < 0.72 ? PT.SPRING : PT.NORMAL;
+      // 난이도가 높을수록 특수 블록 비율 증가
+      const normalThresh = Math.max(0.05, 0.5 - diffMod * 0.03);
+      let type;
+      if (r < normalThresh) type = PT.NORMAL;
+      else if (r < normalThresh + 0.25) type = PT.MOVING;
+      else if (r < normalThresh + 0.45) type = PT.CRUMBLE;
+      else if (r < normalThresh + 0.58) type = PT.CONVEYOR;
+      else if (r < normalThresh + 0.66) type = PT.SPRING;
+      else type = PT.NORMAL;
       platforms.push({ x, y, w, h: PLATFORM_H, type, moveDir: 1, moveRange: 60 + Math.random() * 60,
         origX: x, crumbleTimer: 0, crumbled: false });
     }
@@ -553,11 +569,11 @@ function update(dt) {
 
   if (gameState === 'playing') {
     // Height display
-    const meters = Math.round(Math.abs(cameraY) / 10);
-    document.getElementById('height-display').textContent = `${meters} m`;
+    floorNum = Math.max(1, Math.floor(Math.abs(Math.min(0, cameraY)) / FLOOR_HEIGHT) + 1);
+    document.getElementById('height-display').textContent = `${floorNum}층`;
 
     // Death check: robot falls below camera bottom
-    if (robot.y - cameraY > H + 120) {
+    if (robot.y - cameraY > H + 40) {
       stopGame();
     }
   }
@@ -573,25 +589,96 @@ function spawnPlatformParticles(p, color) {
   }
 }
 
+function drawBackground(floor) {
+  const themes = [
+    null,
+    ['#87CEEB','#98FB98'], // 1: 초원
+    ['#87CEEB','#90EE90'], // 2: 초원
+    ['#4a7c3f','#2d5a1b'], // 3: 숲
+    ['#3d6b35','#1a4012'], // 4: 숲
+    ['#8B7355','#696969'], // 5: 산
+    ['#9E9E9E','#757575'], // 6: 산
+    ['#B0C4DE','#E8F4FD'], // 7: 설산
+    ['#C5DDF4','#FFFFFF'], // 8: 설산
+    ['#87CEEB','#E0F7FF'], // 9: 구름
+    ['#7EC8E3','#B8E6F0'], // 10: 구름
+    ['#1a1a4e','#0d0d2b'], // 11: 우주진입
+    ['#050010','#000000'], // 12+: 우주
+  ];
+  const idx = Math.min(floor, themes.length - 1);
+  const [top, bot] = themes[idx] || themes[themes.length - 1];
+
+  const grd = ctx.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0, top);
+  grd.addColorStop(1, bot);
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+
+  if (floor <= 2) {
+    ctx.fillStyle = '#5cb85c';
+    ctx.beginPath();
+    ctx.ellipse(80, H + 10, 120, 50, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#4cae4c';
+    ctx.beginPath();
+    ctx.ellipse(280, H + 15, 100, 45, 0, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (floor <= 4) {
+    [[40, H - 30], [160, H - 20], [300, H - 35]].forEach(([tx, ty]) => {
+      ctx.fillStyle = '#2d5a1b';
+      ctx.beginPath();
+      ctx.moveTo(tx, ty); ctx.lineTo(tx - 25, ty + 60); ctx.lineTo(tx + 25, ty + 60);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(tx, ty - 20); ctx.lineTo(tx - 18, ty + 20); ctx.lineTo(tx + 18, ty + 20);
+      ctx.closePath(); ctx.fill();
+    });
+  } else if (floor <= 6) {
+    ctx.fillStyle = '#757575';
+    ctx.beginPath();
+    ctx.moveTo(0, H); ctx.lineTo(100, H - 120); ctx.lineTo(200, H - 80);
+    ctx.lineTo(310, H - 140); ctx.lineTo(W, H);
+    ctx.closePath(); ctx.fill();
+  } else if (floor <= 8) {
+    ctx.fillStyle = '#9E9E9E';
+    ctx.beginPath();
+    ctx.moveTo(0, H); ctx.lineTo(90, H - 100); ctx.lineTo(180, H - 60);
+    ctx.lineTo(280, H - 130); ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.moveTo(90, H - 100); ctx.lineTo(65, H - 70); ctx.lineTo(115, H - 70);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(280, H - 130); ctx.lineTo(255, H - 95); ctx.lineTo(305, H - 95);
+    ctx.closePath(); ctx.fill();
+  } else if (floor <= 10) {
+    [[80, H * 0.7], [250, H * 0.5]].forEach(([cx, cy]) => {
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 30, 0, Math.PI * 2); ctx.fill();
+      ctx.arc(cx + 25, cy - 10, 22, 0, Math.PI * 2); ctx.fill();
+      ctx.arc(cx - 25, cy - 5, 20, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+}
+
 // Render
 function render() {
   ctx.clearRect(0, 0, W, H);
 
   // Background
-  const grd = ctx.createLinearGradient(0, 0, 0, H);
-  grd.addColorStop(0, '#020010');
-  grd.addColorStop(1, '#0a0118');
-  ctx.fillStyle = grd;
-  ctx.fillRect(0, 0, W, H);
+  drawBackground(floorNum);
 
-  // BG stars (scroll slowly)
-  bgStars.forEach(s => {
-    const sy = ((s.y - cameraY * 0.2) % (H * 3) + H * 3) % (H * 3) - H;
-    ctx.beginPath();
-    ctx.arc(s.x, sy, s.r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255,255,255,${s.op})`;
-    ctx.fill();
-  });
+  // BG stars (11층 이상에서만)
+  if (floorNum >= 11) {
+    bgStars.forEach(s => {
+      const sy = ((s.y - cameraY * 0.2) % (H * 3) + H * 3) % (H * 3) - H;
+      ctx.beginPath();
+      ctx.arc(s.x, sy, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${s.op})`;
+      ctx.fill();
+    });
+  }
 
   // Platforms
   platforms.forEach(p => {
@@ -626,51 +713,83 @@ function render() {
       return;
     }
 
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.beginPath();
-    ctx.roundRect(p.x + 3, sy + 6, p.w, PLATFORM_H, 6);
-    ctx.fill();
-
-    // Platform body
-    ctx.fillStyle = t.color;
-    ctx.shadowColor = t.color;
-    ctx.shadowBlur = 8;
-    ctx.beginPath();
-    ctx.roundRect(p.x, sy, p.w, PLATFORM_H, 6);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    // Sheen line
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.beginPath();
-    ctx.roundRect(p.x + 4, sy + 2, p.w - 8, 3, 2);
-    ctx.fill();
-
-    // Label / arrows
-    if (t === PT.SPRING) {
-      // Spring coils
-      ctx.strokeStyle = '#bbf7d0';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([3, 3]);
+    // ── 일반 블록: 벽돌 패턴
+    if (t === PT.NORMAL) {
+      ctx.fillStyle = '#c8822a';
+      ctx.strokeStyle = '#7a4f1a';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect(p.x, sy, p.w, PLATFORM_H, 3); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(p.x + 2, sy + PLATFORM_H / 2); ctx.lineTo(p.x + p.w - 2, sy + PLATFORM_H / 2); ctx.stroke();
+      const brickW = 18;
+      for (let bx = p.x + 4; bx < p.x + p.w - 4; bx += brickW) {
+        ctx.beginPath(); ctx.moveTo(bx, sy + 2); ctx.lineTo(bx, sy + PLATFORM_H / 2); ctx.stroke();
+      }
+      for (let bx = p.x + 4 + brickW / 2; bx < p.x + p.w - 4; bx += brickW) {
+        ctx.beginPath(); ctx.moveTo(bx, sy + PLATFORM_H / 2); ctx.lineTo(bx, sy + PLATFORM_H - 2); ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.beginPath(); ctx.roundRect(p.x + 3, sy + 2, p.w - 6, 3, 1); ctx.fill();
+    }
+    // ── 이동 블록: 컨베이어 벨트
+    else if (t === PT.MOVING) {
+      ctx.fillStyle = '#1d4ed8';
+      ctx.strokeStyle = '#1e3a8a';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect(p.x, sy, p.w, PLATFORM_H, 3); ctx.fill(); ctx.stroke();
+      const stripeOffset = (walkFrame * p.moveDir * 0.8) % 12;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(p.x + 2, sy + 1, p.w - 4, PLATFORM_H - 2); ctx.clip();
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 3;
+      for (let sx2 = p.x - 12 + stripeOffset; sx2 < p.x + p.w + 12; sx2 += 12) {
+        ctx.beginPath(); ctx.moveTo(sx2, sy + 1); ctx.lineTo(sx2 + 8, sy + PLATFORM_H - 1); ctx.stroke();
+      }
+      ctx.restore();
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.font = 'bold 8px Nunito';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(p.moveDir > 0 ? '▶▶' : '◀◀', p.x + p.w / 2, sy + PLATFORM_H / 2);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    }
+    // ── 부서지는 블록: 균열 벽돌
+    else if (t === PT.CRUMBLE) {
+      const alpha2 = p.crumbleTimer > 0 ? Math.min(1, p.crumbleTimer / 800) : 1;
+      ctx.save(); ctx.globalAlpha *= alpha2;
+      ctx.fillStyle = '#f97316'; ctx.strokeStyle = '#c2410c'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect(p.x, sy, p.w, PLATFORM_H, 3); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(p.x + 8, sy);
-      ctx.lineTo(p.x + 8, sy - 8);
-      ctx.moveTo(p.x + p.w - 8, sy);
-      ctx.lineTo(p.x + p.w - 8, sy - 8);
+      ctx.moveTo(p.x + p.w * 0.3, sy); ctx.lineTo(p.x + p.w * 0.2, sy + PLATFORM_H);
+      ctx.moveTo(p.x + p.w * 0.6, sy + 2); ctx.lineTo(p.x + p.w * 0.7, sy + PLATFORM_H - 2);
       ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.beginPath(); ctx.roundRect(p.x + 3, sy + 2, p.w - 6, 3, 1); ctx.fill();
+      ctx.restore();
     }
-    if (t === PT.CONVEYOR) {
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = '8px Nunito, sans-serif';
-      const arrows = p.moveDir > 0 ? '→→→' : '←←←';
-      ctx.fillText(arrows, p.x + 4, sy + 9);
+    // ── 컨베이어 블록
+    else if (t === PT.CONVEYOR) {
+      ctx.fillStyle = '#ca8a04'; ctx.strokeStyle = '#92400e'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect(p.x, sy, p.w, PLATFORM_H, 3); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.font = 'bold 8px Nunito';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(p.moveDir > 0 ? '▷▷▷' : '◁◁◁', p.x + p.w / 2, sy + PLATFORM_H / 2);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     }
-    if (t === PT.MOVING) {
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.fillRect(p.x, sy, 4, PLATFORM_H);
-      ctx.fillRect(p.x + p.w - 4, sy, 4, PLATFORM_H);
+    // ── 스프링 블록: 트램펄린
+    else if (t === PT.SPRING) {
+      ctx.fillStyle = '#16a34a'; ctx.strokeStyle = '#14532d'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect(p.x, sy + PLATFORM_H - 5, p.w, 5, 2); ctx.fill(); ctx.stroke();
+      const coilX = p.x + p.w / 2;
+      ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(coilX - 6, sy + PLATFORM_H - 5);
+      ctx.lineTo(coilX + 6, sy + PLATFORM_H - 9);
+      ctx.lineTo(coilX - 6, sy + PLATFORM_H - 13);
+      ctx.lineTo(coilX + 6, sy + PLATFORM_H - 17);
+      ctx.lineTo(coilX, sy + PLATFORM_H - 20);
+      ctx.stroke();
+      ctx.fillStyle = '#22c55e'; ctx.strokeStyle = '#14532d'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(coilX, sy + 2, p.w * 0.35, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     }
 
     ctx.restore();
