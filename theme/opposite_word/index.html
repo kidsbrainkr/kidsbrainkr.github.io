@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>반대말 게임 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#0a0118;--card:rgba(255,255,255,0.06);--card-border:rgba(255,255,255,0.12);
+      --purple:#a855f7;--pink:#ec4899;--grad:linear-gradient(135deg,#a855f7,#ec4899);
+      --text:#f0e8ff;--text-dim:rgba(240,232,255,0.55);
+      --correct:#22c55e;--wrong:#ef4444;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      font-family:'Nunito','Apple SD Gothic Neo',sans-serif;
+      background:var(--bg);color:var(--text);
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;overflow:hidden;
+    }
+    .stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+    .star{position:absolute;border-radius:50%;background:white;
+      animation:twinkle var(--d,3s) var(--delay,0s) infinite alternate ease-in-out;}
+    @keyframes twinkle{from{opacity:var(--min-op,.2);transform:scale(1);}to{opacity:var(--max-op,.9);transform:scale(1.4);}}
+
+    #game-area{
+      position:relative;z-index:1;width:800px;height:600px;
+      background:rgba(10,1,24,0.9);border:1px solid var(--card-border);
+      border-radius:28px;overflow:hidden;display:flex;flex-direction:column;
+    }
+    .hud{display:flex;justify-content:space-between;align-items:center;padding:14px 20px 10px;flex-shrink:0;}
+    .btn-back{
+      display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
+      background:var(--card);border:1px solid var(--card-border);border-radius:50px;
+      color:var(--text-dim);font-family:inherit;font-size:0.82rem;font-weight:700;
+      cursor:pointer;text-decoration:none;
+    }
+    .progress-dots{display:flex;gap:5px;}
+    .dot{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.2);transition:all 0.3s;}
+    .dot.correct{background:var(--correct);border-color:var(--correct);}
+    .dot.wrong{background:var(--wrong);border-color:var(--wrong);}
+    .streak-display{font-size:0.9rem;font-weight:800;color:#facc15;min-width:80px;text-align:right;}
+
+    .screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+    .screen.hidden{display:none;}
+
+    #intro-screen h1{
+      font-size:2.4rem;font-weight:900;
+      background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      margin-bottom:12px;text-align:center;
+    }
+    #intro-screen p{font-size:1rem;color:var(--text-dim);text-align:center;line-height:1.7;margin-bottom:24px;}
+
+    /* 플레이 */
+    #play-screen{gap:24px;}
+
+    /* 캐릭터 */
+    #character-area{
+      position:relative;display:flex;align-items:center;gap:20px;
+    }
+    #char-svg{transition:transform 0.3s;}
+    #char-svg.happy{animation:bounce 0.5s ease-out;}
+    @keyframes bounce{0%{transform:scale(1);}30%{transform:scale(1.2) translateY(-10px);}60%{transform:scale(0.95);}100%{transform:scale(1);}}
+    #char-svg.shake{animation:charShake 0.4s ease-out;}
+    @keyframes charShake{0%,100%{transform:rotate(0);}25%{transform:rotate(-8deg);}75%{transform:rotate(8deg);}}
+
+    /* 타이머 */
+    #timer-wrap{
+      width:100%;max-width:450px;height:12px;
+      background:rgba(255,255,255,0.1);border-radius:6px;overflow:hidden;
+    }
+    #timer-bar{
+      height:100%;width:100%;
+      background:linear-gradient(90deg,#22c55e,#a855f7);
+      border-radius:6px;
+      transition:none;
+    }
+    #timer-bar.warning{background:linear-gradient(90deg,#f97316,#ef4444);}
+
+    /* 단어 카드 */
+    #word-card{
+      background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(236,72,153,0.15));
+      border:2px solid rgba(168,85,247,0.4);
+      border-radius:24px;padding:20px 50px;text-align:center;
+    }
+    #word-sub{font-size:0.85rem;color:var(--text-dim);margin-bottom:6px;}
+    #word-main{font-size:3.5rem;font-weight:900;color:var(--text);letter-spacing:2px;}
+    #word-main{animation:wordIn 0.35s cubic-bezier(.175,.885,.32,1.275);}
+    @keyframes wordIn{from{transform:scale(0.6);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+    /* 선택지 3개 */
+    #choices-row{
+      display:flex;gap:14px;width:100%;max-width:560px;
+    }
+    .choice-btn{
+      flex:1;padding:16px 12px;
+      background:var(--card);border:2px solid var(--card-border);
+      border-radius:18px;color:var(--text);
+      font-family:inherit;font-size:1.3rem;font-weight:800;
+      cursor:pointer;transition:all 0.2s;text-align:center;
+    }
+    .choice-btn:hover{background:rgba(168,85,247,0.1);border-color:var(--purple);transform:translateY(-2px);}
+    .choice-btn.correct{border-color:var(--correct);background:rgba(34,197,94,0.2);color:var(--correct);}
+    .choice-btn.wrong{border-color:var(--wrong);background:rgba(239,68,68,0.15);color:var(--wrong);}
+
+    /* 피드백 */
+    #feedback-area{min-height:28px;text-align:center;font-size:1rem;font-weight:800;}
+
+    /* 결과 */
+    #result-screen{gap:14px;}
+    #result-screen h2{
+      font-size:2rem;font-weight:900;
+      background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    }
+    .result-score{font-size:3rem;font-weight:900;color:#facc15;}
+    .result-label{font-size:1rem;color:var(--text-dim);}
+    .stars-row{display:flex;gap:10px;margin:8px 0;}
+    .result-star{animation:starPop 0.4s cubic-bezier(.175,.885,.32,1.275) forwards;opacity:0;}
+    @keyframes starPop{from{transform:scale(0) rotate(-30deg);opacity:0;}to{transform:scale(1);opacity:1;}}
+    .btn-primary{
+      padding:14px 36px;background:var(--grad);border:none;border-radius:50px;color:#fff;
+      font-family:inherit;font-size:1.1rem;font-weight:800;cursor:pointer;
+      box-shadow:0 4px 20px rgba(168,85,247,0.4);transition:transform 0.15s;
+    }
+    .btn-primary:hover{transform:translateY(-2px);}
+    .btn-secondary{
+      padding:12px 28px;background:var(--card);border:1px solid var(--card-border);
+      border-radius:50px;color:var(--text);font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;
+    }
+    .btn-row{display:flex;gap:12px;margin-top:10px;}
+    .particle{
+      position:absolute;border-radius:50%;pointer-events:none;z-index:20;
+      animation:particleFly var(--dur,.8s) ease-out forwards;
+    }
+    @keyframes particleFly{0%{transform:translate(0,0) scale(1);opacity:1;}100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0;}}
+    .flash-overlay{
+      position:absolute;inset:0;pointer-events:none;z-index:5;opacity:0;border-radius:28px;
+    }
+    .flash-overlay.flash-wrong{background:rgba(239,68,68,0.3);animation:flashAnim 0.4s ease-out forwards;}
+    .flash-overlay.flash-correct{background:rgba(34,197,94,0.2);animation:flashAnim 0.4s ease-out forwards;}
+    @keyframes flashAnim{0%{opacity:1;}100%{opacity:0;}}
+  </style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div id="game-area">
+  <div class="hud">
+    <a href="../../index.html" class="btn-back">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      홈
+    </a>
+    <div class="progress-dots" id="progress-dots"></div>
+    <div class="streak-display" id="streak-display"></div>
+  </div>
+
+  <!-- 인트로 -->
+  <div class="screen" id="intro-screen">
+    <h1>반대말 게임</h1>
+    <p>단어가 나오면 3초 안에<br>반대말을 골라야 해요!</p>
+    <svg width="200" height="80" viewBox="0 0 200 80" style="margin-bottom:20px;">
+      <!-- 크다/작다 예시 -->
+      <circle cx="50" cy="40" r="28" fill="rgba(168,85,247,0.2)" stroke="#a855f7" stroke-width="2"/>
+      <text x="50" y="47" text-anchor="middle" fill="#f0e8ff" font-size="13" font-family="Nunito" font-weight="800">크다</text>
+      <path d="M80,40 L120,40" stroke="#a855f7" stroke-width="2.5" stroke-dasharray="4,3"/>
+      <polygon points="114,34 128,40 114,46" fill="#a855f7"/>
+      <circle cx="160" cy="40" r="14" fill="rgba(236,72,153,0.2)" stroke="#ec4899" stroke-width="2"/>
+      <text x="160" y="47" text-anchor="middle" fill="#f0e8ff" font-size="11" font-family="Nunito" font-weight="800">작다</text>
+    </svg>
+    <p style="font-size:0.9rem;color:var(--text-dim);margin-bottom:20px;">12라운드 · 제한 시간 3초</p>
+    <button class="btn-primary" id="start-btn">시작하기</button>
+  </div>
+
+  <!-- 플레이 -->
+  <div class="screen hidden" id="play-screen">
+    <div id="timer-wrap"><div id="timer-bar"></div></div>
+    <div id="character-area">
+      <svg id="char-svg" width="90" height="110" viewBox="0 0 90 110"></svg>
+    </div>
+    <div id="word-card">
+      <div id="word-sub">반대말은 무엇일까요?</div>
+      <div id="word-main"></div>
+    </div>
+    <div id="choices-row"></div>
+    <div id="feedback-area"></div>
+    <div id="flash-overlay-el" class="flash-overlay"></div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="screen hidden" id="result-screen">
+    <h2>반대말 완성!</h2>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-label">정답 / 12라운드</div>
+    <div class="stars-row" id="stars-row"></div>
+    <div id="streak-best" style="font-size:0.95rem;color:var(--purple);font-weight:800;"></div>
+    <div id="cheer-msg" style="font-size:1rem;color:var(--text-dim);text-align:center;"></div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="location.href='../../index.html'">홈으로</button>
+      <button class="btn-primary" id="retry-btn">다시하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 별 생성
+(function(){
+  const el=document.getElementById('stars');
+  for(let i=0;i<55;i++){
+    const s=document.createElement('div');s.className='star';
+    const size=Math.random()*2.5+0.5;
+    s.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${(Math.random()*3+1.5).toFixed(1)}s;--delay:${(Math.random()*3).toFixed(1)}s;--min-op:${(Math.random()*0.2+0.1).toFixed(2)};--max-op:${(Math.random()*0.5+0.5).toFixed(2)};`;
+    el.appendChild(s);
+  }
+})();
+
+// ── 반대말 데이터 ──
+const PAIRS = [
+  {word:'크다',    opp:'작다',   wrong:['높다','넓다']   },
+  {word:'빠르다',  opp:'느리다', wrong:['가볍다','많다']  },
+  {word:'뜨겁다',  opp:'차갑다', wrong:['부드럽다','낡다']},
+  {word:'길다',    opp:'짧다',   wrong:['좁다','어둡다'] },
+  {word:'높다',    opp:'낮다',   wrong:['짧다','작다']   },
+  {word:'무겁다',  opp:'가볍다', wrong:['작다','느리다'] },
+  {word:'많다',    opp:'적다',   wrong:['낡다','좁다']   },
+  {word:'밝다',    opp:'어둡다', wrong:['차갑다','낮다'] },
+  {word:'달다',    opp:'쓰다',   wrong:['짧다','좁다']   },
+  {word:'딱딱하다',opp:'부드럽다',wrong:['작다','느리다']},
+  {word:'넓다',    opp:'좁다',   wrong:['낡다','어둡다'] },
+  {word:'새롭다',  opp:'낡다',   wrong:['좁다','차갑다'] },
+  {word:'기쁘다',  opp:'슬프다', wrong:['느리다','어둡다']},
+  {word:'열다',    opp:'닫다',   wrong:['작다','쓰다']   },
+  {word:'오다',    opp:'가다',   wrong:['닫다','좁다']   },
+];
+
+const TOTAL_ROUNDS=12;
+const TIME_LIMIT=3000;
+
+let rounds=[], currentRound=0, correctCount=0, streak=0, maxStreak=0;
+let answered=false, timerInterval;
+
+// ── 캐릭터 단계 (연속 정답에 따라 신남) ──
+function drawCharacter(level) {
+  // level 0~5
+  const charSvg=document.getElementById('char-svg');
+  const colors=['#a855f7','#ec4899','#f97316','#eab308','#22c55e'];
+  const color=colors[Math.min(level,4)];
+  const happy=level>=2;
+  const veryHappy=level>=4;
+
+  let mouthPath;
+  if(veryHappy) mouthPath='M32,65 Q45,80 58,65';
+  else if(happy) mouthPath='M35,62 Q45,72 55,62';
+  else mouthPath='M35,60 Q45,65 55,60';
+
+  let extras='';
+  if(veryHappy){
+    // 신남 표시: 별
+    extras=`<polygon points="75,15 77,21 83,21 78,25 80,31 75,27 70,31 72,25 67,21 73,21" fill="#facc15" opacity="0.9"/>`;
+  }
+  if(level>=3){
+    // 볼터치 강조
+    extras+=`<ellipse cx="26" cy="58" rx="10" ry="6" fill="${color}" opacity="0.35"/>
+             <ellipse cx="64" cy="58" rx="10" ry="6" fill="${color}" opacity="0.35"/>`;
+  }
+
+  charSvg.innerHTML=`
+    <!-- 몸통 -->
+    <ellipse cx="45" cy="85" rx="28" ry="22" fill="${color}" opacity="0.7"/>
+    <!-- 팔 -->
+    <ellipse cx="15" cy="78" rx="10" ry="6" fill="${color}" opacity="0.7" transform="rotate(-20,15,78)"/>
+    <ellipse cx="75" cy="78" rx="10" ry="6" fill="${color}" opacity="0.7" transform="rotate(20,75,78)"/>
+    <!-- 머리 -->
+    <circle cx="45" cy="45" r="30" fill="${color}"/>
+    <!-- 눈 -->
+    <circle cx="35" cy="40" r="${veryHappy?4.5:5}" fill="rgba(0,0,0,0.6)"/>
+    <circle cx="55" cy="40" r="${veryHappy?4.5:5}" fill="rgba(0,0,0,0.6)"/>
+    <circle cx="36.5" cy="38.5" r="2" fill="white"/>
+    <circle cx="56.5" cy="38.5" r="2" fill="white"/>
+    ${veryHappy?'<path d="M32,38 Q35,34 38,38" stroke="rgba(0,0,0,0.5)" stroke-width="1.5" fill="none"/><path d="M52,38 Q55,34 58,38" stroke="rgba(0,0,0,0.5)" stroke-width="1.5" fill="none"/>':''}
+    <!-- 입 -->
+    <path d="${mouthPath}" stroke="rgba(0,0,0,0.55)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    ${extras}
+  `;
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function startGame(){
+  // 라운드 섞기
+  const shuffled=[...PAIRS].sort(()=>Math.random()-0.5);
+  rounds=shuffled.slice(0,TOTAL_ROUNDS);
+  currentRound=0; correctCount=0; streak=0; maxStreak=0; answered=false;
+
+  // 점 초기화
+  const dots=document.getElementById('progress-dots');
+  dots.innerHTML='';
+  for(let i=0;i<TOTAL_ROUNDS;i++){
+    const d=document.createElement('div');d.className='dot';d.id=`dot-${i}`;dots.appendChild(d);
+  }
+  document.getElementById('streak-display').textContent='';
+  showScreen('play-screen');
+  drawCharacter(0);
+  showQuestion();
+}
+
+function showQuestion(){
+  answered=false;
+  document.getElementById('feedback-area').textContent='';
+  document.getElementById('feedback-area').style.color='';
+
+  const q=rounds[currentRound];
+  document.getElementById('word-main').textContent=q.word;
+  // 애니메이션 재실행
+  const wm=document.getElementById('word-main');
+  wm.style.animation='none';void wm.offsetWidth;wm.style.animation='wordIn 0.35s cubic-bezier(.175,.885,.32,1.275)';
+
+  // 선택지
+  const choices=[
+    {word:q.opp,isCorrect:true},
+    {word:q.wrong[0],isCorrect:false},
+    {word:q.wrong[1],isCorrect:false},
+  ];
+  for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+
+  const row=document.getElementById('choices-row');
+  row.innerHTML='';
+  choices.forEach(ch=>{
+    const btn=document.createElement('button');
+    btn.className='choice-btn';
+    btn.textContent=ch.word;
+    btn.dataset.correct=ch.isCorrect;
+    btn.addEventListener('click',()=>handleChoice(btn,ch));
+    row.appendChild(btn);
+  });
+
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(timerInterval);
+  const bar=document.getElementById('timer-bar');
+  bar.style.transition='none';
+  bar.style.width='100%';
+  bar.className='';
+  const start=performance.now();
+
+  timerInterval=setInterval(()=>{
+    const elapsed=performance.now()-start;
+    const pct=Math.max(0,1-elapsed/TIME_LIMIT);
+    bar.style.width=`${pct*100}%`;
+    if(pct<0.35) bar.className='warning';
+    if(elapsed>=TIME_LIMIT){
+      clearInterval(timerInterval);
+      if(!answered) timeOut();
+    }
+  },30);
+}
+
+function timeOut(){
+  answered=true;
+  streak=0;
+  document.getElementById('streak-display').textContent='';
+  document.getElementById(`dot-${currentRound}`).classList.add('wrong');
+  document.querySelectorAll('.choice-btn').forEach(b=>{if(b.dataset.correct==='true')b.classList.add('correct');});
+  document.getElementById('feedback-area').textContent='시간 초과! 더 빨리 골라봐요!';
+  document.getElementById('feedback-area').style.color='#ef4444';
+  flashEl(false);
+  charAnimation(false);
+  setTimeout(next,1200);
+}
+
+function handleChoice(btn, choice){
+  if(answered) return;
+  answered=true;
+  clearInterval(timerInterval);
+
+  if(choice.isCorrect){
+    btn.classList.add('correct');
+    correctCount++;
+    streak++;
+    if(streak>maxStreak) maxStreak=streak;
+    document.getElementById(`dot-${currentRound}`).classList.add('correct');
+    document.getElementById('feedback-area').textContent=streak>=3?`${streak}연속! 대단해요!`:'정답!';
+    document.getElementById('feedback-area').style.color='#22c55e';
+    document.getElementById('streak-display').textContent=streak>=2?`${streak}연속`:'' ;
+    flashEl(true);
+    spawnParticles();
+    charAnimation(true);
+    drawCharacter(Math.min(Math.floor(streak/2),4));
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.choice-btn').forEach(b=>{if(b.dataset.correct==='true')b.classList.add('correct');});
+    streak=0;
+    document.getElementById('streak-display').textContent='';
+    document.getElementById(`dot-${currentRound}`).classList.add('wrong');
+    document.getElementById('feedback-area').textContent=`아쉬워요! 정답은 "${rounds[currentRound].opp}"이에요`;
+    document.getElementById('feedback-area').style.color='#ef4444';
+    flashEl(false);
+    charAnimation(false);
+    drawCharacter(0);
+  }
+  setTimeout(next,1300);
+}
+
+function next(){
+  currentRound++;
+  if(currentRound>=TOTAL_ROUNDS) showResult();
+  else showQuestion();
+}
+
+function flashEl(correct){
+  const el=document.getElementById('flash-overlay-el');
+  el.className='flash-overlay';
+  void el.offsetWidth;
+  el.className=`flash-overlay ${correct?'flash-correct':'flash-wrong'}`;
+}
+
+function charAnimation(correct){
+  const el=document.getElementById('char-svg');
+  el.classList.remove('happy','shake');
+  void el.offsetWidth;
+  el.classList.add(correct?'happy':'shake');
+  el.addEventListener('animationend',()=>el.classList.remove('happy','shake'),{once:true});
+}
+
+function spawnParticles(){
+  const area=document.getElementById('game-area');
+  const colors=['#a855f7','#ec4899','#22c55e','#facc15','#f97316'];
+  for(let i=0;i<18;i++){
+    const p=document.createElement('div');p.className='particle';
+    const size=Math.random()*12+6,angle=Math.random()*Math.PI*2,dist=Math.random()*130+60;
+    p.style.cssText=`width:${size}px;height:${size}px;background:${colors[Math.floor(Math.random()*colors.length)]};left:50%;top:45%;--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px;--dur:${(Math.random()*0.4+0.5).toFixed(2)}s;`;
+    area.appendChild(p);
+    setTimeout(()=>p.remove(),1000);
+  }
+}
+
+function showResult(){
+  showScreen('result-screen');
+  document.getElementById('result-score').textContent=`${correctCount} / ${TOTAL_ROUNDS}`;
+  document.getElementById('streak-best').textContent=maxStreak>=3?`최고 연속: ${maxStreak}번!`:'';
+  const stars=correctCount>=11?3:correctCount>=8?2:correctCount>=5?1:0;
+  const cheers=['다시 한번 도전해봐요!','잘했어요! 반대말 박사가 되고 있어요!','훌륭해요! 어휘력이 쑥쑥!','완벽한 반대말 챔피언!'];
+  document.getElementById('cheer-msg').textContent=cheers[stars];
+  const sr=document.getElementById('stars-row');sr.innerHTML='';
+  for(let i=0;i<3;i++){
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('width','50');svg.setAttribute('height','50');svg.setAttribute('viewBox','0 0 50 50');
+    svg.classList.add('result-star');svg.style.animationDelay=`${i*0.15}s`;
+    const f=i<stars;
+    svg.innerHTML=`<polygon points="25,5 30,18 44,18 33,27 37,41 25,32 13,41 17,27 6,18 20,18" fill="${f?'#facc15':'rgba(255,255,255,0.1)'}" stroke="${f?'#f59e0b':'rgba(255,255,255,0.15)'}" stroke-width="2"/>`;
+    sr.appendChild(svg);
+  }
+}
+
+document.getElementById('start-btn').addEventListener('click',startGame);
+document.getElementById('retry-btn').addEventListener('click',startGame);
+</script>
+</body>
+</html>

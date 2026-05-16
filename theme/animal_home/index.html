@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>동물의 집 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#0a0118;--card:rgba(255,255,255,0.06);--card-border:rgba(255,255,255,0.12);
+      --purple:#a855f7;--pink:#ec4899;--grad:linear-gradient(135deg,#a855f7,#ec4899);
+      --text:#f0e8ff;--text-dim:rgba(240,232,255,0.55);
+      --correct:#22c55e;--wrong:#ef4444;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      font-family:'Nunito','Apple SD Gothic Neo',sans-serif;
+      background:var(--bg);color:var(--text);
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;overflow:hidden;
+    }
+    .stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+    .star{position:absolute;border-radius:50%;background:white;
+      animation:twinkle var(--d,3s) var(--delay,0s) infinite alternate ease-in-out;}
+    @keyframes twinkle{from{opacity:var(--min-op,.2);transform:scale(1);}to{opacity:var(--max-op,.9);transform:scale(1.4);}}
+
+    #game-area{
+      position:relative;z-index:1;width:800px;height:600px;
+      background:rgba(10,1,24,0.9);border:1px solid var(--card-border);
+      border-radius:28px;overflow:hidden;display:flex;flex-direction:column;
+    }
+    .hud{
+      display:flex;justify-content:space-between;align-items:center;
+      padding:12px 20px 8px;flex-shrink:0;position:relative;z-index:10;
+    }
+    .btn-back{
+      display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
+      background:rgba(10,1,24,0.7);border:1px solid var(--card-border);border-radius:50px;
+      color:var(--text-dim);font-family:inherit;font-size:0.82rem;font-weight:700;
+      cursor:pointer;text-decoration:none;transition:background 0.2s;
+    }
+    .btn-back:hover{background:rgba(255,255,255,0.1);}
+    .score-area{font-size:1rem;font-weight:800;background:rgba(10,1,24,0.7);padding:6px 14px;border-radius:20px;border:1px solid var(--card-border);}
+    .hearts{display:flex;gap:5px;}
+
+    .screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+    .screen.hidden{display:none;}
+
+    #intro-screen h1{
+      font-size:2.4rem;font-weight:900;
+      background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      margin-bottom:12px;text-align:center;
+    }
+    #intro-screen p{font-size:1rem;color:var(--text-dim);text-align:center;line-height:1.7;margin-bottom:24px;}
+
+    /* 플레이 화면 */
+    #play-screen{
+      position:relative;padding:0;
+    }
+
+    /* 서식지 배경 */
+    #habitat-bg{
+      position:absolute;inset:0;
+      display:grid;grid-template-columns:1fr 1fr 1fr;
+    }
+    .habitat-zone{
+      display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+      padding-bottom:16px;
+      transition:all 0.3s;
+      cursor:default;
+    }
+    .habitat-zone.hover{filter:brightness(1.2);}
+    .habitat-zone.correct-flash{animation:habitatFlash 0.5s ease-out;}
+    @keyframes habitatFlash{0%{filter:brightness(2);}100%{filter:brightness(1);}}
+    .habitat-label{
+      font-size:0.9rem;font-weight:800;
+      background:rgba(0,0,0,0.5);padding:4px 12px;border-radius:20px;
+      color:white;margin-top:8px;
+    }
+
+    /* 동물 카드 */
+    #animals-layer{
+      position:absolute;inset:0;pointer-events:none;
+    }
+    .animal-card{
+      position:absolute;
+      cursor:grab;pointer-events:all;
+      transition:transform 0.15s;
+      z-index:5;
+    }
+    .animal-card:active{cursor:grabbing;transform:scale(1.15);}
+    .animal-card.dragging{z-index:100;transform:scale(1.2);pointer-events:none;}
+    .animal-card.placed{pointer-events:none;animation:placedAnim 0.5s ease-out;}
+    @keyframes placedAnim{0%{transform:scale(1.3);}50%{transform:scale(0.8);}100%{transform:scale(1);}}
+    .animal-card.wrong-bounce{animation:wrongBounce 0.5s ease-out;}
+    @keyframes wrongBounce{0%{transform:scale(1);}30%{transform:scale(0.7) rotate(15deg);}60%{transform:scale(1.1) rotate(-5deg);}100%{transform:scale(1);}}
+
+    /* 토스트 메시지 */
+    #toast{
+      position:absolute;top:60px;left:50%;transform:translateX(-50%);
+      background:rgba(0,0,0,0.85);padding:8px 20px;border-radius:20px;
+      font-size:1rem;font-weight:800;pointer-events:none;z-index:50;
+      opacity:0;transition:opacity 0.3s;white-space:nowrap;
+    }
+    #toast.visible{opacity:1;}
+
+    /* 결과 */
+    #result-screen{gap:14px;}
+    #result-screen h2{
+      font-size:2rem;font-weight:900;
+      background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    }
+    .result-score{font-size:3rem;font-weight:900;color:#facc15;}
+    .result-label{font-size:1rem;color:var(--text-dim);}
+    .stars-row{display:flex;gap:10px;margin:8px 0;}
+    .result-star{animation:starPop 0.4s cubic-bezier(.175,.885,.32,1.275) forwards;opacity:0;}
+    @keyframes starPop{from{transform:scale(0) rotate(-30deg);opacity:0;}to{transform:scale(1);opacity:1;}}
+    .btn-primary{
+      padding:14px 36px;background:var(--grad);border:none;border-radius:50px;color:#fff;
+      font-family:inherit;font-size:1.1rem;font-weight:800;cursor:pointer;
+      box-shadow:0 4px 20px rgba(168,85,247,0.4);transition:transform 0.15s;
+    }
+    .btn-primary:hover{transform:translateY(-2px);}
+    .btn-secondary{
+      padding:12px 28px;background:var(--card);border:1px solid var(--card-border);
+      border-radius:50px;color:var(--text);font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;
+    }
+    .btn-row{display:flex;gap:12px;margin-top:10px;}
+    .particle{
+      position:absolute;border-radius:50%;pointer-events:none;z-index:20;
+      animation:particleFly var(--dur,.8s) ease-out forwards;
+    }
+    @keyframes particleFly{0%{transform:translate(0,0) scale(1);opacity:1;}100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0;}}
+  </style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div id="game-area">
+  <div class="hud">
+    <a href="../../index.html" class="btn-back">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      홈
+    </a>
+    <div class="score-area">맞힌 동물: <span id="score-val">0</span> / <span id="total-val">12</span></div>
+    <div class="hearts" id="hearts"></div>
+  </div>
+
+  <!-- 인트로 -->
+  <div class="screen" id="intro-screen">
+    <h1>동물의 집</h1>
+    <p>동물들이 집을 잃었어요!<br>맞는 서식지로 드래그해서 데려다주세요!</p>
+    <!-- 세 구역 미리보기 SVG -->
+    <svg width="320" height="100" viewBox="0 0 320 100" style="margin-bottom:16px;">
+      <!-- 육지 -->
+      <rect x="0" y="0" width="100" height="100" rx="8" fill="rgba(34,197,94,0.2)" stroke="#22c55e" stroke-width="1.5"/>
+      <text x="50" y="55" text-anchor="middle" fill="#22c55e" font-size="11" font-family="Nunito" font-weight="800">육지</text>
+      <!-- 나무 -->
+      <circle cx="50" cy="30" r="16" fill="rgba(34,197,94,0.4)"/>
+      <rect x="46" y="38" width="8" height="12" rx="2" fill="rgba(34,197,94,0.6)"/>
+      <!-- 바다 -->
+      <rect x="110" y="0" width="100" height="100" rx="8" fill="rgba(59,130,246,0.2)" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="160" y="55" text-anchor="middle" fill="#3b82f6" font-size="11" font-family="Nunito" font-weight="800">바다</text>
+      <!-- 파도 -->
+      <path d="M120,70 Q135,60 150,70 Q165,80 180,70 Q195,60 210,70" stroke="#3b82f6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- 하늘 -->
+      <rect x="220" y="0" width="100" height="100" rx="8" fill="rgba(168,85,247,0.2)" stroke="#a855f7" stroke-width="1.5"/>
+      <text x="270" y="55" text-anchor="middle" fill="#a855f7" font-size="11" font-family="Nunito" font-weight="800">하늘</text>
+      <!-- 구름 -->
+      <ellipse cx="250" cy="28" rx="12" ry="8" fill="rgba(168,85,247,0.4)"/>
+      <ellipse cx="262" cy="25" rx="10" ry="7" fill="rgba(168,85,247,0.4)"/>
+      <ellipse cx="274" cy="28" rx="9" ry="7" fill="rgba(168,85,247,0.4)"/>
+    </svg>
+    <button class="btn-primary" id="start-btn">시작하기</button>
+  </div>
+
+  <!-- 플레이 -->
+  <div class="screen hidden" id="play-screen">
+    <div id="habitat-bg">
+      <div class="habitat-zone" id="zone-land" data-habitat="land">
+        <div class="habitat-label">육지</div>
+      </div>
+      <div class="habitat-zone" id="zone-sea" data-habitat="sea">
+        <div class="habitat-label">바다</div>
+      </div>
+      <div class="habitat-zone" id="zone-sky" data-habitat="sky">
+        <div class="habitat-label">하늘</div>
+      </div>
+    </div>
+    <div id="animals-layer"></div>
+    <div id="toast"></div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="screen hidden" id="result-screen">
+    <h2>대단해요!</h2>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-label">동물을 집에 데려다줬어요!</div>
+    <div class="stars-row" id="stars-row"></div>
+    <div id="cheer-msg" style="font-size:1rem;color:var(--text-dim);text-align:center;"></div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="location.href='../../index.html'">홈으로</button>
+      <button class="btn-primary" id="retry-btn">다시하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 별 생성
+(function(){
+  const el=document.getElementById('stars');
+  for(let i=0;i<55;i++){
+    const s=document.createElement('div');s.className='star';
+    const size=Math.random()*2.5+0.5;
+    s.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${(Math.random()*3+1.5).toFixed(1)}s;--delay:${(Math.random()*3).toFixed(1)}s;--min-op:${(Math.random()*0.2+0.1).toFixed(2)};--max-op:${(Math.random()*0.5+0.5).toFixed(2)};`;
+    el.appendChild(s);
+  }
+})();
+
+// ── 서식지 배경 SVG ──
+function drawHabitatBg() {
+  const land = document.getElementById('zone-land');
+  const sea  = document.getElementById('zone-sea');
+  const sky  = document.getElementById('zone-sky');
+
+  // 육지 배경
+  land.style.background = 'linear-gradient(to bottom, rgba(22,163,74,0.15), rgba(22,163,74,0.08))';
+  land.style.borderRight = '1px solid rgba(34,197,94,0.2)';
+  const landSvg = `<svg width="250" height="500" viewBox="0 0 250 500" style="position:absolute;inset:0;pointer-events:none;">
+    <defs><radialGradient id="grassGrad" cx="50%" cy="100%" r="60%"><stop offset="0%" stop-color="#15803d" stop-opacity="0.3"/><stop offset="100%" stop-color="transparent"/></radialGradient></defs>
+    <rect width="250" height="500" fill="url(#grassGrad)"/>
+    <!-- 나무 1 -->
+    <circle cx="50" cy="120" r="28" fill="rgba(34,197,94,0.25)"/>
+    <circle cx="65" cy="105" r="22" fill="rgba(34,197,94,0.2)"/>
+    <rect x="55" y="140" width="10" height="30" rx="4" fill="rgba(120,80,20,0.3)"/>
+    <!-- 나무 2 -->
+    <circle cx="180" cy="200" r="24" fill="rgba(34,197,94,0.2)"/>
+    <rect x="175" y="217" width="10" height="25" rx="4" fill="rgba(120,80,20,0.3)"/>
+    <!-- 풀 -->
+    <path d="M0,420 Q30,400 60,420 Q90,400 120,420 Q150,400 180,420 Q210,400 250,420" stroke="rgba(34,197,94,0.3)" stroke-width="3" fill="none"/>
+  </svg>`;
+  land.insertAdjacentHTML('afterbegin', landSvg);
+
+  // 바다 배경
+  sea.style.background = 'linear-gradient(to bottom, rgba(37,99,235,0.1), rgba(29,78,216,0.2))';
+  sea.style.borderRight = '1px solid rgba(59,130,246,0.2)';
+  sea.style.borderLeft = '1px solid rgba(59,130,246,0.2)';
+  const seaSvg = `<svg width="250" height="500" viewBox="0 0 250 500" style="position:absolute;inset:0;pointer-events:none;">
+    <rect width="250" height="500" fill="rgba(30,64,175,0.1)"/>
+    <!-- 파도 여러 겹 -->
+    <path d="M0,350 Q31,335 62,350 Q93,365 125,350 Q156,335 187,350 Q218,365 250,350" stroke="rgba(59,130,246,0.3)" stroke-width="3" fill="none"/>
+    <path d="M0,370 Q31,355 62,370 Q93,385 125,370 Q156,355 187,370 Q218,385 250,370" stroke="rgba(59,130,246,0.25)" stroke-width="3" fill="none"/>
+    <path d="M0,390 Q31,375 62,390 Q93,405 125,390 Q156,375 187,390 Q218,405 250,390" stroke="rgba(59,130,246,0.2)" stroke-width="3" fill="none"/>
+    <!-- 거품 -->
+    <circle cx="60" cy="400" r="5" fill="rgba(147,197,253,0.3)"/>
+    <circle cx="130" cy="410" r="4" fill="rgba(147,197,253,0.25)"/>
+    <circle cx="200" cy="395" r="6" fill="rgba(147,197,253,0.2)"/>
+  </svg>`;
+  sea.insertAdjacentHTML('afterbegin', seaSvg);
+
+  // 하늘 배경
+  sky.style.background = 'linear-gradient(to bottom, rgba(124,58,237,0.15), rgba(168,85,247,0.08))';
+  sky.style.borderLeft = '1px solid rgba(168,85,247,0.2)';
+  const skySvg = `<svg width="250" height="500" viewBox="0 0 250 500" style="position:absolute;inset:0;pointer-events:none;">
+    <rect width="250" height="500" fill="rgba(88,28,235,0.05)"/>
+    <!-- 별들 -->
+    <circle cx="40" cy="60" r="2" fill="rgba(255,255,255,0.6)"/>
+    <circle cx="100" cy="40" r="1.5" fill="rgba(255,255,255,0.5)"/>
+    <circle cx="180" cy="80" r="2" fill="rgba(255,255,255,0.7)"/>
+    <circle cx="220" cy="50" r="1.5" fill="rgba(255,255,255,0.4)"/>
+    <!-- 구름 -->
+    <ellipse cx="80" cy="150" rx="35" ry="20" fill="rgba(196,181,253,0.2)"/>
+    <ellipse cx="105" cy="140" rx="30" ry="18" fill="rgba(196,181,253,0.18)"/>
+    <ellipse cx="130" cy="150" rx="28" ry="18" fill="rgba(196,181,253,0.15)"/>
+    <ellipse cx="170" cy="240" rx="30" ry="16" fill="rgba(196,181,253,0.15)"/>
+    <ellipse cx="195" cy="232" rx="25" ry="14" fill="rgba(196,181,253,0.12)"/>
+  </svg>`;
+  sky.insertAdjacentHTML('afterbegin', skySvg);
+}
+
+// ── 동물 SVG ──
+const ANIMALS = [
+  // 육지
+  { id:'lion',     name:'사자',   habitat:'land', color:'#f59e0b',
+    svg:`<circle cx="40" cy="35" r="22" fill="#f59e0b" opacity="0.3"/>
+         <ellipse cx="40" cy="42" rx="18" ry="14" fill="#f59e0b"/>
+         <circle cx="40" cy="28" r="14" fill="#f59e0b"/>
+         <circle cx="35" cy="25" r="3.5" fill="rgba(0,0,0,0.5)"/>
+         <circle cx="45" cy="25" r="3.5" fill="rgba(0,0,0,0.5)"/>
+         <ellipse cx="40" cy="32" rx="5" ry="4" fill="#fbbf24"/>
+         <circle cx="40" cy="35" r="22" fill="none" stroke="#d97706" stroke-width="5" stroke-dasharray="4,3" opacity="0.7"/>` },
+  { id:'elephant', name:'코끼리', habitat:'land', color:'#9ca3af',
+    svg:`<ellipse cx="40" cy="45" rx="24" ry="18" fill="#9ca3af"/>
+         <circle cx="40" cy="27" r="16" fill="#9ca3af"/>
+         <circle cx="33" cy="23" r="4" fill="rgba(0,0,0,0.4)"/>
+         <circle cx="47" cy="23" r="4" fill="rgba(0,0,0,0.4)"/>
+         <path d="M38,38 Q30,50 32,62" stroke="#6b7280" stroke-width="4" fill="none" stroke-linecap="round"/>
+         <ellipse cx="28" cy="18" rx="5" ry="10" fill="#9ca3af"/>
+         <ellipse cx="52" cy="18" rx="5" ry="10" fill="#9ca3af"/>` },
+  { id:'rabbit',   name:'토끼',   habitat:'land', color:'#f9a8d4',
+    svg:`<ellipse cx="40" cy="45" rx="18" ry="14" fill="#f9a8d4"/>
+         <circle cx="40" cy="32" r="14" fill="#f9a8d4"/>
+         <ellipse cx="32" cy="12" rx="5" ry="14" fill="#f9a8d4"/>
+         <ellipse cx="48" cy="12" rx="5" ry="14" fill="#f9a8d4"/>
+         <ellipse cx="32" cy="12" rx="3" ry="10" fill="#fda4af"/>
+         <ellipse cx="48" cy="12" rx="3" ry="10" fill="#fda4af"/>
+         <circle cx="35" cy="29" r="3.5" fill="rgba(0,0,0,0.5)"/>
+         <circle cx="45" cy="29" r="3.5" fill="rgba(0,0,0,0.5)"/>
+         <circle cx="40" cy="35" r="3" fill="#fda4af"/>` },
+  { id:'deer',     name:'사슴',   habitat:'land', color:'#a16207',
+    svg:`<ellipse cx="40" cy="46" rx="16" ry="12" fill="#a16207"/>
+         <circle cx="40" cy="30" r="14" fill="#a16207"/>
+         <circle cx="34" cy="26" r="3.5" fill="rgba(0,0,0,0.5)"/>
+         <circle cx="46" cy="26" r="3.5" fill="rgba(0,0,0,0.5)"/>
+         <circle cx="40" cy="33" r="4" fill="#fde68a"/>
+         <path d="M32,14 Q28,5 24,10 Q28,12 32,18" fill="#a16207"/>
+         <path d="M48,14 Q52,5 56,10 Q52,12 48,18" fill="#a16207"/>` },
+  // 바다
+  { id:'fish',     name:'물고기', habitat:'sea',  color:'#06b6d4',
+    svg:`<ellipse cx="36" cy="40" rx="22" ry="14" fill="#06b6d4"/>
+         <path d="M58,30 L70,24 L70,56 L58,50 Z" fill="#06b6d4"/>
+         <circle cx="24" cy="37" r="5" fill="rgba(0,0,0,0.5)"/>
+         <circle cx="25.5" cy="35.5" r="2" fill="white"/>
+         <path d="M40,35 Q50,40 40,45" stroke="rgba(0,0,0,0.2)" stroke-width="1.5" fill="none"/>
+         <path d="M30,35 Q40,40 30,45" stroke="rgba(0,0,0,0.2)" stroke-width="1.5" fill="none"/>` },
+  { id:'whale',    name:'고래',   habitat:'sea',  color:'#1d4ed8',
+    svg:`<ellipse cx="38" cy="42" rx="26" ry="16" fill="#1d4ed8"/>
+         <path d="M64,38 Q72,28 70,50 Q68,60 64,48 Z" fill="#1d4ed8"/>
+         <path d="M20,56 Q28,66 36,56" fill="#1e40af"/>
+         <circle cx="22" cy="36" r="5" fill="rgba(255,255,255,0.8)"/>
+         <circle cx="23" cy="35" r="2" fill="rgba(0,0,0,0.6)"/>
+         <path d="M32,26 Q38,20 44,26" stroke="rgba(147,197,253,0.6)" stroke-width="2" fill="none"/>` },
+  { id:'crab',     name:'게',     habitat:'sea',  color:'#ef4444',
+    svg:`<ellipse cx="40" cy="40" rx="20" ry="14" fill="#ef4444"/>
+         <!-- 집게 -->
+         <line x1="20" y1="36" x2="8" y2="28" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/>
+         <circle cx="8" cy="28" r="5" fill="#ef4444"/>
+         <line x1="60" y1="36" x2="72" y2="28" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/>
+         <circle cx="72" cy="28" r="5" fill="#ef4444"/>
+         <!-- 눈 -->
+         <circle cx="32" cy="30" r="5" fill="white"/><circle cx="32" cy="30" r="3" fill="rgba(0,0,0,0.7)"/>
+         <circle cx="48" cy="30" r="5" fill="white"/><circle cx="48" cy="30" r="3" fill="rgba(0,0,0,0.7)"/>
+         <!-- 다리 -->
+         <line x1="25" y1="45" x2="18" y2="56" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+         <line x1="35" y1="52" x2="30" y2="62" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+         <line x1="45" y1="52" x2="50" y2="62" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+         <line x1="55" y1="45" x2="62" y2="56" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>` },
+  { id:'turtle',   name:'거북이', habitat:'sea',  color:'#22c55e',
+    svg:`<ellipse cx="40" cy="42" rx="22" ry="16" fill="#22c55e"/>
+         <!-- 등껍데기 -->
+         <path d="M22,38 Q40,20 58,38 Q58,54 40,58 Q22,54 22,38 Z" fill="#15803d"/>
+         <path d="M30,30 Q40,22 50,30" stroke="#22c55e" stroke-width="2" fill="none"/>
+         <path d="M24,40 Q40,32 56,40" stroke="#22c55e" stroke-width="2" fill="none"/>
+         <circle cx="40" cy="25" r="10" fill="#22c55e"/>
+         <circle cx="36" cy="22" r="3" fill="rgba(0,0,0,0.5)"/>
+         <circle cx="44" cy="22" r="3" fill="rgba(0,0,0,0.5)"/>` },
+  // 하늘
+  { id:'bird',     name:'새',     habitat:'sky',  color:'#f97316',
+    svg:`<ellipse cx="40" cy="42" rx="16" ry="12" fill="#f97316"/>
+         <circle cx="40" cy="28" r="14" fill="#f97316"/>
+         <circle cx="35" cy="24" r="4" fill="rgba(0,0,0,0.5)"/>
+         <circle cx="45" cy="24" r="4" fill="rgba(0,0,0,0.5)"/>
+         <!-- 날개 -->
+         <path d="M24,42 Q16,32 8,38 Q16,44 24,42 Z" fill="#ea580c"/>
+         <path d="M56,42 Q64,32 72,38 Q64,44 56,42 Z" fill="#ea580c"/>
+         <!-- 부리 -->
+         <polygon points="40,32 46,36 40,38" fill="#facc15"/>` },
+  { id:'butterfly',name:'나비',   habitat:'sky',  color:'#ec4899',
+    svg:`<!-- 날개 위 -->
+         <path d="M40,35 Q20,10 10,30 Q20,45 40,40 Z" fill="#ec4899" opacity="0.85"/>
+         <path d="M40,35 Q60,10 70,30 Q60,45 40,40 Z" fill="#a855f7" opacity="0.85"/>
+         <!-- 날개 아래 -->
+         <path d="M40,42 Q18,55 15,68 Q30,60 40,50 Z" fill="#f9a8d4" opacity="0.8"/>
+         <path d="M40,42 Q62,55 65,68 Q50,60 40,50 Z" fill="#c4b5fd" opacity="0.8"/>
+         <!-- 몸통 -->
+         <ellipse cx="40" cy="42" rx="3" ry="10" fill="#4a044e"/>
+         <!-- 더듬이 -->
+         <line x1="40" y1="34" x2="32" y2="22" stroke="#4a044e" stroke-width="1.5"/>
+         <circle cx="32" cy="22" r="2.5" fill="#4a044e"/>
+         <line x1="40" y1="34" x2="48" y2="22" stroke="#4a044e" stroke-width="1.5"/>
+         <circle cx="48" cy="22" r="2.5" fill="#4a044e"/>` },
+  { id:'dragonfly',name:'잠자리', habitat:'sky',  color:'#06b6d4',
+    svg:`<!-- 날개 -->
+         <path d="M40,40 Q18,28 10,38 Q18,48 40,44 Z" fill="rgba(6,182,212,0.5)"/>
+         <path d="M40,40 Q62,28 70,38 Q62,48 40,44 Z" fill="rgba(6,182,212,0.5)"/>
+         <path d="M40,44 Q16,52 12,62 Q24,58 40,50 Z" fill="rgba(6,182,212,0.4)"/>
+         <path d="M40,44 Q64,52 68,62 Q56,58 40,50 Z" fill="rgba(6,182,212,0.4)"/>
+         <!-- 몸통 -->
+         <ellipse cx="40" cy="44" rx="4" ry="16" fill="#06b6d4"/>
+         <circle cx="40" cy="28" r="8" fill="#0891b2"/>
+         <circle cx="37" cy="26" r="3" fill="rgba(0,0,0,0.5)"/>
+         <circle cx="43" cy="26" r="3" fill="rgba(0,0,0,0.5)"/>` },
+  { id:'owl',      name:'올빼미', habitat:'sky',  color:'#92400e',
+    svg:`<ellipse cx="40" cy="45" rx="18" ry="14" fill="#92400e"/>
+         <circle cx="40" cy="30" r="16" fill="#92400e"/>
+         <!-- 날개 -->
+         <path d="M22,50 Q10,40 14,60 Q22,56 22,50 Z" fill="#78350f"/>
+         <path d="M58,50 Q70,40 66,60 Q58,56 58,50 Z" fill="#78350f"/>
+         <!-- 눈 -->
+         <circle cx="34" cy="28" r="8" fill="#fde68a"/>
+         <circle cx="46" cy="28" r="8" fill="#fde68a"/>
+         <circle cx="34" cy="28" r="4.5" fill="rgba(0,0,0,0.8)"/>
+         <circle cx="46" cy="28" r="4.5" fill="rgba(0,0,0,0.8)"/>
+         <!-- 부리 -->
+         <polygon points="40,32 36,38 44,38" fill="#f59e0b"/>` },
+];
+
+let score=0, lives=3, placedCount=0;
+const TOTAL=12;
+let dragEl=null, dragOffX=0, dragOffY=0;
+let dragStartX=0, dragStartY=0;
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function updateHearts(){
+  const el=document.getElementById('hearts');
+  el.innerHTML='';
+  for(let i=0;i<3;i++){
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('width','24');svg.setAttribute('height','24');svg.setAttribute('viewBox','0 0 24 24');
+    const filled=i<lives;
+    svg.innerHTML=`<path d="M12 21C12 21 3 14 3 8a4.5 4.5 0 0 1 9-1.2A4.5 4.5 0 0 1 21 8c0 6-9 13-9 13Z" fill="${filled?'#ef4444':'rgba(255,255,255,0.15)'}" stroke="${filled?'#dc2626':'rgba(255,255,255,0.2)'}" stroke-width="1.5"/>`;
+    el.appendChild(svg);
+  }
+}
+
+function startGame(){
+  score=0; lives=3; placedCount=0;
+  document.getElementById('score-val').textContent='0';
+  document.getElementById('total-val').textContent=TOTAL;
+  updateHearts();
+  showScreen('play-screen');
+  drawHabitatBg();
+  spawnAnimals();
+  setupZoneEvents();
+}
+
+function spawnAnimals(){
+  const layer=document.getElementById('animals-layer');
+  layer.innerHTML='';
+  // 가로 3열, 4행 배치
+  const positions=[
+    // 육지 구역 상단
+    {x:30,y:80},{x:30,y:170},{x:30,y:270},{x:30,y:360},
+    // 바다 구역 상단
+    {x:300,y:80},{x:300,y:170},{x:300,y:270},{x:300,y:360},
+    // 하늘 구역 상단
+    {x:560,y:80},{x:560,y:170},{x:560,y:270},{x:560,y:360},
+  ];
+  // 섞기
+  const shuffled=[...ANIMALS];
+  for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+
+  shuffled.forEach((animal,idx)=>{
+    if(idx>=TOTAL) return;
+    const pos=positions[idx];
+    const card=document.createElement('div');
+    card.className='animal-card';
+    card.dataset.habitat=animal.habitat;
+    card.dataset.id=animal.id;
+    card.style.left=`${pos.x}px`;
+    card.style.top=`${pos.y}px`;
+    card.style.width='70px';
+    card.style.height='70px';
+
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('width','70');svg.setAttribute('height','70');svg.setAttribute('viewBox','0 0 80 80');
+    svg.innerHTML=animal.svg;
+    card.appendChild(svg);
+
+    const lbl=document.createElement('div');
+    lbl.style.cssText='text-align:center;font-size:0.7rem;font-weight:800;color:rgba(240,232,255,0.8);margin-top:2px;';
+    lbl.textContent=animal.name;
+    card.appendChild(lbl);
+
+    setupDrag(card);
+    layer.appendChild(card);
+  });
+}
+
+function setupDrag(card){
+  card.addEventListener('mousedown', dragStart);
+  card.addEventListener('touchstart', touchStart, {passive:false});
+}
+
+function touchStart(e){
+  e.preventDefault();
+  const touch=e.touches[0];
+  startDrag(e.currentTarget, touch.clientX, touch.clientY);
+  document.addEventListener('touchmove', touchMove, {passive:false});
+  document.addEventListener('touchend', touchEnd);
+}
+function touchMove(e){
+  e.preventDefault();
+  if(!dragEl) return;
+  const touch=e.touches[0];
+  moveDrag(touch.clientX, touch.clientY);
+}
+function touchEnd(e){
+  document.removeEventListener('touchmove', touchMove);
+  document.removeEventListener('touchend', touchEnd);
+  endDrag(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+}
+
+function dragStart(e){
+  startDrag(e.currentTarget, e.clientX, e.clientY);
+  document.addEventListener('mousemove', mouseMove);
+  document.addEventListener('mouseup', mouseUp);
+}
+function mouseMove(e){ moveDrag(e.clientX, e.clientY); }
+function mouseUp(e){
+  document.removeEventListener('mousemove', mouseMove);
+  document.removeEventListener('mouseup', mouseUp);
+  endDrag(e.clientX, e.clientY);
+}
+
+function startDrag(card, cx, cy){
+  dragEl=card;
+  const rect=card.getBoundingClientRect();
+  dragOffX=cx-rect.left;
+  dragOffY=cy-rect.top;
+  dragStartX=parseInt(card.style.left);
+  dragStartY=parseInt(card.style.top);
+  card.classList.add('dragging');
+  card.style.zIndex=100;
+
+  // 구역 호버 표시
+  document.querySelectorAll('.habitat-zone').forEach(z=>{z.style.opacity='0.6';});
+}
+
+function moveDrag(cx, cy){
+  if(!dragEl) return;
+  const area=document.getElementById('game-area');
+  const areaRect=area.getBoundingClientRect();
+  const x=cx-areaRect.left-dragOffX;
+  const y=cy-areaRect.top-dragOffY;
+  dragEl.style.left=`${x}px`;
+  dragEl.style.top=`${y}px`;
+
+  // 구역 하이라이트
+  const zones=document.querySelectorAll('.habitat-zone');
+  zones.forEach(z=>{z.classList.remove('hover');});
+  const zone=getZoneAtPoint(cx,cy);
+  if(zone) zone.classList.add('hover');
+}
+
+function endDrag(cx, cy){
+  if(!dragEl) return;
+  dragEl.classList.remove('dragging');
+  dragEl.style.zIndex=5;
+  document.querySelectorAll('.habitat-zone').forEach(z=>{z.classList.remove('hover');z.style.opacity='1';});
+
+  const zone=getZoneAtPoint(cx,cy);
+  if(zone){
+    const animalHabitat=dragEl.dataset.habitat;
+    const zoneHabitat=zone.dataset.habitat;
+    if(animalHabitat===zoneHabitat){
+      handleCorrect(dragEl);
+    } else {
+      handleWrong(dragEl);
+    }
+  } else {
+    // 원위치
+    dragEl.style.left=`${dragStartX}px`;
+    dragEl.style.top=`${dragStartY}px`;
+  }
+  dragEl=null;
+}
+
+function getZoneAtPoint(cx, cy){
+  const zones=document.querySelectorAll('.habitat-zone');
+  for(const z of zones){
+    const r=z.getBoundingClientRect();
+    if(cx>=r.left&&cx<=r.right&&cy>=r.top&&cy<=r.bottom) return z;
+  }
+  return null;
+}
+
+function handleCorrect(card){
+  score++;
+  placedCount++;
+  document.getElementById('score-val').textContent=score;
+  card.classList.add('placed');
+  card.style.pointerEvents='none';
+  spawnParticles(card);
+  showToast('정답! 잘 찾아왔어요!', '#22c55e');
+  if(placedCount>=TOTAL) setTimeout(showResult, 800);
+}
+
+function handleWrong(card){
+  lives=Math.max(0,lives-1);
+  updateHearts();
+  card.classList.add('wrong-bounce');
+  card.addEventListener('animationend',()=>{
+    card.classList.remove('wrong-bounce');
+    card.style.left=`${dragStartX}px`;
+    card.style.top=`${dragStartY}px`;
+  },{once:true});
+  showToast('여기는 내 집이 아니야!', '#ef4444');
+  if(lives<=0) setTimeout(showResult,800);
+}
+
+function showToast(msg, color){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.color=color;
+  t.classList.add('visible');
+  setTimeout(()=>t.classList.remove('visible'),1500);
+}
+
+function spawnParticles(card){
+  const area=document.getElementById('game-area');
+  const cardRect=card.getBoundingClientRect();
+  const areaRect=area.getBoundingClientRect();
+  const cx=cardRect.left-areaRect.left+35;
+  const cy=cardRect.top-areaRect.top+35;
+  const colors=['#22c55e','#86efac','#facc15','#fde047','#a855f7'];
+  for(let i=0;i<16;i++){
+    const p=document.createElement('div');p.className='particle';
+    const size=Math.random()*12+6,angle=Math.random()*Math.PI*2,dist=Math.random()*100+50;
+    p.style.cssText=`width:${size}px;height:${size}px;background:${colors[Math.floor(Math.random()*colors.length)]};position:absolute;left:${cx}px;top:${cy}px;--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px;--dur:${(Math.random()*0.4+0.5).toFixed(2)}s;border-radius:50%;pointer-events:none;z-index:30;animation:particleFly var(--dur) ease-out forwards;`;
+    area.appendChild(p);
+    setTimeout(()=>p.remove(),1000);
+  }
+}
+
+function setupZoneEvents(){}
+
+function showResult(){
+  showScreen('result-screen');
+  document.getElementById('result-score').textContent=`${score} / ${TOTAL}`;
+  const pct=score/TOTAL;
+  const stars=pct>=0.9?3:pct>=0.6?2:pct>=0.3?1:0;
+  let cheer=stars===3?'모든 동물이 집에 돌아왔어요! 최고!':stars===2?'잘했어요! 조금만 더 연습해봐요!':stars===1?'괜찮아요! 다시 도전해봐요!':'동물들을 도와줘서 고마워요!';
+  document.getElementById('cheer-msg').textContent=cheer;
+
+  const sr=document.getElementById('stars-row');sr.innerHTML='';
+  for(let i=0;i<3;i++){
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('width','50');svg.setAttribute('height','50');svg.setAttribute('viewBox','0 0 50 50');
+    svg.classList.add('result-star');svg.style.animationDelay=`${i*0.15}s`;
+    const f=i<stars;
+    svg.innerHTML=`<polygon points="25,5 30,18 44,18 33,27 37,41 25,32 13,41 17,27 6,18 20,18" fill="${f?'#facc15':'rgba(255,255,255,0.1)'}" stroke="${f?'#f59e0b':'rgba(255,255,255,0.15)'}" stroke-width="2"/>`;
+    sr.appendChild(svg);
+  }
+}
+
+document.getElementById('start-btn').addEventListener('click',startGame);
+document.getElementById('retry-btn').addEventListener('click',startGame);
+</script>
+</body>
+</html>

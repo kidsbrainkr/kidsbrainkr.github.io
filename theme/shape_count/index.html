@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>도형 세기 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0118;
+      --card: rgba(255,255,255,0.06);
+      --card-border: rgba(255,255,255,0.12);
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --cyan: #06b6d4;
+      --grad: linear-gradient(135deg, #a855f7, #ec4899);
+      --text: #f0e8ff;
+      --text-dim: rgba(240,232,255,0.55);
+      --correct: #22c55e;
+      --wrong: #ef4444;
+      --radius: 20px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Nunito', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+    }
+
+    /* Stars */
+    .star {
+      position: fixed;
+      border-radius: 50%;
+      background: #fff;
+      animation: twinkle var(--dur, 3s) ease-in-out infinite var(--delay, 0s);
+      pointer-events: none;
+      z-index: 0;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.15; transform: scale(1); }
+      50% { opacity: 0.9; transform: scale(1.4); }
+    }
+
+    /* Game wrap */
+    #game-wrap {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      background: linear-gradient(160deg, #0d0225 0%, #0a0118 60%, #100230 100%);
+      border-radius: 28px;
+      border: 1px solid rgba(168,85,247,0.2);
+      box-shadow: 0 0 80px rgba(168,85,247,0.12), 0 24px 64px rgba(0,0,0,0.7);
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    /* HUD */
+    #hud {
+      position: absolute;
+      top: 16px; left: 20px; right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 20;
+    }
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50px;
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+    .btn-back svg { width: 14px; height: 14px; }
+
+    .hearts {
+      display: flex;
+      gap: 6px;
+    }
+    .heart-icon { width: 28px; height: 28px; transition: transform 0.3s; }
+    .heart-icon.lost { opacity: 0.2; }
+
+    /* Round indicator */
+    #round-bar {
+      position: absolute;
+      top: 60px; left: 50%; transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      z-index: 20;
+    }
+    .rd-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: background 0.3s;
+    }
+    .rd-dot.done { background: var(--purple); }
+    .rd-dot.active { background: var(--pink); box-shadow: 0 0 8px var(--pink); }
+
+    /* Mission */
+    #mission-panel {
+      position: absolute;
+      top: 88px; left: 50%; transform: translateX(-50%);
+      text-align: center;
+      z-index: 20;
+      pointer-events: none;
+    }
+    .mission-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .mission-text {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 0 20px rgba(168,85,247,0.6);
+    }
+    .target-shape-icon {
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 8px;
+    }
+
+    /* Shape canvas */
+    #shape-canvas {
+      position: absolute;
+      top: 150px; left: 20px; right: 20px;
+      bottom: 110px;
+      z-index: 5;
+    }
+    #shape-canvas svg {
+      width: 100%; height: 100%;
+      overflow: visible;
+    }
+
+    /* Number buttons */
+    #num-btns {
+      position: absolute;
+      bottom: 16px; left: 50%; transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 20;
+    }
+    .num-btn {
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      background: var(--card);
+      border: 1.5px solid var(--card-border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 1.4rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s, border-color 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .num-btn:hover {
+      background: rgba(168,85,247,0.2);
+      border-color: var(--purple);
+      transform: translateY(-3px);
+    }
+    .num-btn:active { transform: scale(0.92); }
+    .num-btn.correct {
+      background: rgba(34,197,94,0.3);
+      border-color: var(--correct);
+      color: var(--correct);
+    }
+    .num-btn.wrong {
+      background: rgba(239,68,68,0.3);
+      border-color: var(--wrong);
+      color: var(--wrong);
+    }
+
+    /* Flash overlay */
+    #flash {
+      position: absolute;
+      inset: 0;
+      border-radius: 28px;
+      pointer-events: none;
+      z-index: 30;
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+    #flash.red { background: rgba(239,68,68,0.25); }
+    #flash.green { background: rgba(34,197,94,0.15); }
+
+    /* Shake */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-10px); }
+      40% { transform: translateX(10px); }
+      60% { transform: translateX(-8px); }
+      80% { transform: translateX(6px); }
+    }
+    .shake { animation: shake 0.4s ease; }
+
+    /* Particle canvas */
+    #particle-canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 25;
+    }
+
+    /* Result screen */
+    #result-screen {
+      position: absolute;
+      inset: 0;
+      background: rgba(10,1,24,0.92);
+      border-radius: 28px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      gap: 18px;
+    }
+    #result-screen.show { display: flex; }
+    .result-title {
+      font-size: 2.4rem;
+      font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .result-stars {
+      display: flex; gap: 12px;
+    }
+    .result-star { width: 52px; height: 52px; }
+    .result-score {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-dim);
+    }
+    .result-btns {
+      display: flex; gap: 14px; margin-top: 8px;
+    }
+    .res-btn {
+      padding: 14px 28px;
+      border-radius: 50px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .res-btn:hover { transform: translateY(-3px); }
+    .res-btn.primary {
+      background: var(--grad);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(168,85,247,0.4);
+    }
+    .res-btn.secondary {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--text);
+    }
+
+    /* Highlight pulse */
+    @keyframes highlight-pulse {
+      0% { filter: drop-shadow(0 0 0px #22c55e); }
+      50% { filter: drop-shadow(0 0 14px #22c55e); }
+      100% { filter: drop-shadow(0 0 0px #22c55e); }
+    }
+    .shape-highlight { animation: highlight-pulse 0.6s ease 3; }
+
+    /* Shape bounce */
+    @keyframes shape-bounce {
+      0% { transform: translateY(0) scale(1); }
+      30% { transform: translateY(-22px) scale(1.2); }
+      60% { transform: translateY(-10px) scale(1.05); }
+      80% { transform: translateY(-16px) scale(1.1); }
+      100% { transform: translateY(0) scale(1); }
+    }
+    .shape-bounce { animation: shape-bounce 0.7s cubic-bezier(0.34,1.56,0.64,1); }
+
+    /* Countdown overlay */
+    #countdown-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10,1,24,0.85);
+      border-radius: 28px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+    }
+    #countdown-overlay.show { display: flex; }
+    .countdown-num {
+      font-size: 5rem;
+      font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: countScale 0.8s ease;
+    }
+    @keyframes countScale {
+      0% { transform: scale(2); opacity: 0; }
+      50% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Intro animation */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeInUp 0.5s ease forwards; }
+  </style>
+</head>
+<body>
+
+<!-- Stars -->
+<div id="stars-container"></div>
+
+<!-- Game Wrap -->
+<div id="game-wrap">
+  <!-- HUD -->
+  <div id="hud">
+    <a class="btn-back" href="../../index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      홈
+    </a>
+    <div class="hearts" id="hearts-container"></div>
+  </div>
+
+  <!-- Round dots -->
+  <div id="round-bar"></div>
+
+  <!-- Mission -->
+  <div id="mission-panel">
+    <div class="mission-label">미션</div>
+    <div class="mission-text" id="mission-text">도형을 세어보세요!</div>
+  </div>
+
+  <!-- Shape canvas -->
+  <div id="shape-canvas">
+    <svg id="shapes-svg" viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <!-- Number buttons -->
+  <div id="num-btns"></div>
+
+  <!-- Flash overlay -->
+  <div id="flash"></div>
+
+  <!-- Particle canvas -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- Countdown -->
+  <div id="countdown-overlay">
+    <span class="countdown-num" id="countdown-num">3</span>
+  </div>
+
+  <!-- Result screen -->
+  <div id="result-screen">
+    <div class="result-title" id="result-title">잘했어요!</div>
+    <div class="result-stars" id="result-stars"></div>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-btns">
+      <button class="res-btn secondary" onclick="goHome()">홈으로</button>
+      <button class="res-btn primary" onclick="restartGame()">다시하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ──────────────────── Stars ────────────────────
+(function createStars() {
+  const container = document.getElementById('stars-container');
+  for (let i = 0; i < 55; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2.5 + 0.8;
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}vw; top:${Math.random()*100}vh;
+      --dur:${2+Math.random()*4}s; --delay:${Math.random()*4}s;
+    `;
+    container.appendChild(s);
+  }
+})();
+
+// ──────────────────── Config ────────────────────
+const TOTAL_ROUNDS = 8;
+const SHAPE_TYPES = ['triangle', 'square', 'circle', 'star', 'diamond'];
+const SHAPE_NAMES = { triangle:'세모', square:'네모', circle:'원', star:'별', diamond:'마름모' };
+const COLORS = {
+  triangle: ['#f472b6','#fb923c','#facc15','#a78bfa'],
+  square:   ['#60a5fa','#34d399','#818cf8','#67e8f9'],
+  circle:   ['#f9a8d4','#86efac','#93c5fd','#fde68a'],
+  star:     ['#fbbf24','#fb923c','#c084fc','#f472b6'],
+  diamond:  ['#6ee7b7','#7dd3fc','#d8b4fe','#fca5a5'],
+};
+
+const ROUNDS_CONFIG = [
+  { count: 7 }, { count: 7 }, { count: 8 },
+  { count: 9 }, { count: 10 }, { count: 11 },
+  { count: 13 }, { count: 14 },
+];
+
+// ──────────────────── State ────────────────────
+let currentRound = 0;
+let lives = 3;
+let score = 0;
+let correctAnswers = 0;
+let currentAnswer = 0;
+let currentTarget = '';
+let shapes = [];
+let answering = false;
+
+// ──────────────────── Particle system ────────────────────
+const pCanvas = document.getElementById('particle-canvas');
+const pCtx = pCanvas.getContext('2d');
+let particles = [];
+
+function resizeParticleCanvas() {
+  const wrap = document.getElementById('game-wrap');
+  pCanvas.width = wrap.offsetWidth;
+  pCanvas.height = wrap.offsetHeight;
+}
+
+function spawnParticles(x, y, color = '#a855f7', count = 28) {
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+    const speed = 3 + Math.random() * 5;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,
+      decay: 0.02 + Math.random() * 0.02,
+      size: 4 + Math.random() * 6,
+      color,
+    });
+  }
+}
+
+function animateParticles() {
+  pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+  particles = particles.filter(p => p.life > 0);
+  for (const p of particles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.15;
+    p.vx *= 0.97;
+    p.life -= p.decay;
+    pCtx.save();
+    pCtx.globalAlpha = Math.max(0, p.life);
+    pCtx.fillStyle = p.color;
+    pCtx.beginPath();
+    pCtx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+    pCtx.fill();
+    pCtx.restore();
+  }
+  requestAnimationFrame(animateParticles);
+}
+
+// ──────────────────── SVG Shape Drawing ────────────────────
+function makeSVGShape(type, x, y, size, colorStr, id) {
+  const ns = 'http://www.w3.org/2000/svg';
+  let el;
+  const s = size;
+
+  switch (type) {
+    case 'triangle': {
+      el = document.createElementNS(ns, 'polygon');
+      const pts = [
+        `${x},${y - s}`,
+        `${x - s * 0.9},${y + s * 0.7}`,
+        `${x + s * 0.9},${y + s * 0.7}`
+      ].join(' ');
+      el.setAttribute('points', pts);
+      break;
+    }
+    case 'square': {
+      el = document.createElementNS(ns, 'rect');
+      el.setAttribute('x', x - s * 0.8);
+      el.setAttribute('y', y - s * 0.8);
+      el.setAttribute('width', s * 1.6);
+      el.setAttribute('height', s * 1.6);
+      el.setAttribute('rx', '5');
+      break;
+    }
+    case 'circle': {
+      el = document.createElementNS(ns, 'circle');
+      el.setAttribute('cx', x);
+      el.setAttribute('cy', y);
+      el.setAttribute('r', s * 0.9);
+      break;
+    }
+    case 'star': {
+      el = document.createElementNS(ns, 'polygon');
+      const points = [];
+      for (let i = 0; i < 10; i++) {
+        const r = i % 2 === 0 ? s : s * 0.45;
+        const angle = (i * Math.PI / 5) - Math.PI / 2;
+        points.push(`${x + r * Math.cos(angle)},${y + r * Math.sin(angle)}`);
+      }
+      el.setAttribute('points', points.join(' '));
+      break;
+    }
+    case 'diamond': {
+      el = document.createElementNS(ns, 'polygon');
+      const dpts = [
+        `${x},${y - s}`,
+        `${x + s * 0.75},${y}`,
+        `${x},${y + s}`,
+        `${x - s * 0.75},${y}`
+      ].join(' ');
+      el.setAttribute('points', dpts);
+      break;
+    }
+  }
+  el.setAttribute('fill', colorStr);
+  el.setAttribute('opacity', '0.88');
+  el.setAttribute('id', id);
+  el.dataset.type = type;
+  return el;
+}
+
+// ──────────────────── Generate Round ────────────────────
+function generateRound() {
+  const cfg = ROUNDS_CONFIG[currentRound];
+  const totalShapes = cfg.count;
+
+  // Pick target shape
+  const allTypes = [...SHAPE_TYPES];
+  currentTarget = allTypes[Math.floor(Math.random() * allTypes.length)];
+
+  // Determine how many of target: 1~8 range
+  const maxTarget = Math.min(8, Math.floor(totalShapes * 0.7));
+  const minTarget = Math.max(1, Math.floor(totalShapes * 0.15));
+  currentAnswer = minTarget + Math.floor(Math.random() * (maxTarget - minTarget + 1));
+
+  // Fill remaining with other shapes
+  shapes = [];
+  for (let i = 0; i < currentAnswer; i++) {
+    const colors = COLORS[currentTarget];
+    shapes.push({
+      type: currentTarget,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    });
+  }
+  const remaining = totalShapes - currentAnswer;
+  for (let i = 0; i < remaining; i++) {
+    const others = SHAPE_TYPES.filter(t => t !== currentTarget);
+    const t = others[Math.floor(Math.random() * others.length)];
+    const colors = COLORS[t];
+    shapes.push({
+      type: t,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    });
+  }
+  // Shuffle
+  shapes.sort(() => Math.random() - 0.5);
+
+  // Assign positions (avoid too much overlap — random placement)
+  const positions = generatePositions(shapes.length, 760, 300);
+
+  // Render
+  const svg = document.getElementById('shapes-svg');
+  svg.innerHTML = '';
+  shapes.forEach((sh, i) => {
+    const { x, y } = positions[i];
+    const size = 18 + Math.random() * 12;
+    const id = `sh-${i}`;
+    const el = makeSVGShape(sh.type, x, y, size, sh.color, id);
+    el.style.transition = 'filter 0.3s';
+    svg.appendChild(el);
+    sh.id = id;
+    sh.el = el;
+    sh.x = x; sh.y = y;
+  });
+
+  // Mission text
+  document.getElementById('mission-text').textContent =
+    `${SHAPE_NAMES[currentTarget]}가 몇 개일까요?`;
+
+  // Build answer buttons
+  buildAnswerButtons();
+  updateHUD();
+}
+
+function generatePositions(count, w, h) {
+  const positions = [];
+  const margin = 28;
+  let attempts = 0;
+  while (positions.length < count && attempts < 2000) {
+    attempts++;
+    const x = margin + Math.random() * (w - margin * 2);
+    const y = margin + Math.random() * (h - margin * 2);
+    // Light overlap check — allow some overlap (kids game)
+    const tooClose = positions.some(p => Math.hypot(p.x - x, p.y - y) < 36);
+    if (!tooClose || positions.length < 3) {
+      positions.push({ x, y });
+    }
+  }
+  return positions;
+}
+
+// ──────────────────── Answer Buttons ────────────────────
+function buildAnswerButtons() {
+  const container = document.getElementById('num-btns');
+  container.innerHTML = '';
+
+  // Generate 7 answer options including correct one
+  const options = new Set([currentAnswer]);
+  while (options.size < 7) {
+    const n = 1 + Math.floor(Math.random() * Math.max(8, currentAnswer + 3));
+    if (n !== currentAnswer) options.add(n);
+  }
+  const sorted = [...options].sort((a, b) => a - b);
+
+  sorted.forEach(n => {
+    const btn = document.createElement('button');
+    btn.className = 'num-btn';
+    btn.textContent = n;
+    btn.addEventListener('click', () => handleAnswer(n, btn));
+    container.appendChild(btn);
+  });
+}
+
+// ──────────────────── Answer Handling ────────────────────
+function handleAnswer(chosen, btn) {
+  if (answering) return;
+  answering = true;
+
+  if (chosen === currentAnswer) {
+    // Correct
+    btn.classList.add('correct');
+    score += 10 + (currentRound * 2);
+    correctAnswers++;
+    playCorrectFeedback();
+    setTimeout(() => {
+      nextRound();
+    }, 1600);
+  } else {
+    // Wrong
+    btn.classList.add('wrong');
+    lives--;
+    updateHearts();
+    playWrongFeedback();
+    setTimeout(() => {
+      btn.classList.remove('wrong');
+      if (lives <= 0) {
+        showResult();
+      } else {
+        answering = false;
+      }
+    }, 800);
+  }
+}
+
+function playCorrectFeedback() {
+  // Flash green
+  const flash = document.getElementById('flash');
+  flash.className = 'green';
+  flash.style.opacity = '1';
+  setTimeout(() => { flash.style.opacity = '0'; flash.className = ''; }, 400);
+
+  // Highlight target shapes and bounce them
+  shapes.forEach(sh => {
+    if (sh.type === currentTarget && sh.el) {
+      sh.el.classList.add('shape-highlight');
+    }
+  });
+
+  // Bounce sequentially
+  shapes.filter(sh => sh.type === currentTarget).forEach((sh, i) => {
+    setTimeout(() => {
+      if (!sh.el) return;
+      sh.el.classList.add('shape-bounce');
+      // Particle burst
+      const rect = document.getElementById('shape-canvas').getBoundingClientRect();
+      const wrapRect = document.getElementById('game-wrap').getBoundingClientRect();
+      const svgEl = document.getElementById('shapes-svg');
+      const svgRect = svgEl.getBoundingClientRect();
+      const scaleX = svgRect.width / 760;
+      const scaleY = svgRect.height / 300;
+      const px = svgRect.left - wrapRect.left + sh.x * scaleX;
+      const py = svgRect.top - wrapRect.top + sh.y * scaleY;
+      spawnParticles(px, py, COLORS[currentTarget][0], 16);
+      setTimeout(() => sh.el && sh.el.classList.remove('shape-bounce'), 800);
+    }, i * 120);
+  });
+}
+
+function playWrongFeedback() {
+  const wrap = document.getElementById('game-wrap');
+  wrap.classList.add('shake');
+  const flash = document.getElementById('flash');
+  flash.className = 'red';
+  flash.style.opacity = '1';
+  setTimeout(() => {
+    flash.style.opacity = '0';
+    flash.className = '';
+    wrap.classList.remove('shake');
+  }, 400);
+}
+
+// ──────────────────── Round navigation ────────────────────
+function nextRound() {
+  currentRound++;
+  answering = false;
+  if (currentRound >= TOTAL_ROUNDS) {
+    showResult();
+    return;
+  }
+  generateRound();
+  updateRoundDots();
+}
+
+// ──────────────────── HUD ────────────────────
+function updateHUD() {
+  updateHearts();
+  updateRoundDots();
+}
+
+function updateHearts() {
+  const container = document.getElementById('hearts-container');
+  container.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.classList.add('heart-icon');
+    if (i >= lives) svg.classList.add('lost');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z');
+    path.setAttribute('fill', i < lives ? '#f43f5e' : 'none');
+    path.setAttribute('stroke', i < lives ? '#f43f5e' : 'rgba(255,255,255,0.2)');
+    path.setAttribute('stroke-width', '1.5');
+    svg.appendChild(path);
+    container.appendChild(svg);
+  }
+}
+
+function updateRoundDots() {
+  const bar = document.getElementById('round-bar');
+  bar.innerHTML = '';
+  for (let i = 0; i < TOTAL_ROUNDS; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'rd-dot';
+    if (i < currentRound) dot.classList.add('done');
+    else if (i === currentRound) dot.classList.add('active');
+    bar.appendChild(dot);
+  }
+}
+
+// ──────────────────── Result ────────────────────
+function showResult() {
+  const screen = document.getElementById('result-screen');
+  screen.classList.add('show');
+  const stars = Math.round((correctAnswers / TOTAL_ROUNDS) * 3);
+  renderResultStars(stars);
+  document.getElementById('result-title').textContent =
+    stars === 3 ? '완벽해요!' : stars === 2 ? '잘했어요!' : '계속 연습해봐요!';
+  document.getElementById('result-score').textContent =
+    `${correctAnswers}/${TOTAL_ROUNDS} 정답  |  ${score}점`;
+}
+
+function renderResultStars(count) {
+  const container = document.getElementById('result-stars');
+  container.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.classList.add('result-star');
+    const pts = [];
+    for (let j = 0; j < 10; j++) {
+      const r = j % 2 === 0 ? 11 : 5;
+      const angle = (j * Math.PI / 5) - Math.PI / 2;
+      pts.push(`${12 + r * Math.cos(angle)},${12 + r * Math.sin(angle)}`);
+    }
+    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    poly.setAttribute('points', pts.join(' '));
+    poly.setAttribute('fill', i < count ? '#fbbf24' : 'rgba(255,255,255,0.1)');
+    poly.setAttribute('stroke', i < count ? '#f59e0b' : 'rgba(255,255,255,0.15)');
+    poly.setAttribute('stroke-width', '1');
+    svg.appendChild(poly);
+    container.appendChild(svg);
+  }
+}
+
+function restartGame() {
+  currentRound = 0;
+  lives = 3;
+  score = 0;
+  correctAnswers = 0;
+  answering = false;
+  particles = [];
+  document.getElementById('result-screen').classList.remove('show');
+  generateRound();
+  updateHUD();
+}
+
+function goHome() {
+  window.location.href = '../../index.html';
+}
+
+// ──────────────────── Init ────────────────────
+resizeParticleCanvas();
+animateParticles();
+generateRound();
+updateHUD();
+</script>
+</body>
+</html>

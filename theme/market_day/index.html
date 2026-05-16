@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>마트 장보기 🛒</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0118;
+      --wood: #8B5E3C;
+      --wood-light: #A8724A;
+      --shelf: #6B4226;
+      --card: #1a0a2e;
+      --card-border: #2d1a4a;
+      --accent: #FFD700;
+      --accent2: #FF7043;
+      --green: #4CAF50;
+      --red: #F44336;
+      --text: #F0E6FF;
+      --text-dim: #9B7FBF;
+      --coin: #FFD700;
+      --coin-dark: #B8860B;
+      --panel: #13022a;
+      --panel-border: #3d1f6e;
+      --radius: 16px;
+      --shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+    }
+
+    /* ── BACK BUTTON ── */
+    .back-btn {
+      position: fixed;
+      top: 14px; left: 14px;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,255,255,0.15);
+      color: var(--text-dim);
+      border-radius: 50px;
+      padding: 7px 16px 7px 10px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+      z-index: 100;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.16); color: var(--text); }
+
+    /* ── SCREENS ── */
+    .screen { display: none; flex-direction: column; align-items: center; width: 100%; min-height: 100vh; padding: 20px 12px 30px; }
+    .screen.active { display: flex; animation: fadeIn 0.35s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── START SCREEN ── */
+    #startScreen { justify-content: center; gap: 24px; }
+    .start-logo {
+      font-size: clamp(3rem, 12vw, 5rem);
+      animation: bounce 1.4s ease-in-out infinite;
+      filter: drop-shadow(0 0 20px rgba(255,215,0,0.4));
+    }
+    @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-14px);} }
+
+    .start-title {
+      font-size: clamp(1.6rem, 6vw, 2.4rem);
+      font-weight: 900;
+      text-align: center;
+      background: linear-gradient(135deg, #FFD700, #FF7043);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .start-sub {
+      font-size: clamp(0.9rem, 3vw, 1.1rem);
+      color: var(--text-dim);
+      text-align: center;
+      line-height: 1.6;
+    }
+    .start-badge {
+      background: rgba(255,215,0,0.12);
+      border: 1.5px solid rgba(255,215,0,0.3);
+      border-radius: 50px;
+      padding: 8px 20px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      border: none; border-radius: 50px;
+      font-family: inherit; font-weight: 800;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn:active { transform: scale(0.94); }
+    .btn-start {
+      background: linear-gradient(135deg, #FFD700, #FF7043);
+      color: #1a0505;
+      font-size: clamp(1rem, 4vw, 1.25rem);
+      padding: 16px 48px;
+      box-shadow: 0 4px 24px rgba(255,215,0,0.35);
+    }
+    .btn-checkout {
+      background: linear-gradient(135deg, #4CAF50, #8BC34A);
+      color: #fff;
+      font-size: 1.05rem;
+      padding: 14px 32px;
+      box-shadow: 0 4px 20px rgba(76,175,80,0.35);
+    }
+    .btn-next {
+      background: linear-gradient(135deg, #7C4DFF, #B388FF);
+      color: #fff;
+      font-size: 1.1rem;
+      padding: 14px 40px;
+      box-shadow: 0 4px 20px rgba(124,77,255,0.35);
+    }
+    .btn-restart {
+      background: linear-gradient(135deg, #FF7043, #FFCA28);
+      color: #1a0505;
+      font-size: 1.1rem;
+      padding: 14px 40px;
+      box-shadow: 0 4px 20px rgba(255,112,67,0.35);
+    }
+
+    /* ── GAME SCREEN ── */
+    #gameScreen { padding-top: 60px; gap: 0; max-width: 800px; width: 100%; margin: 0 auto; }
+
+    .game-header {
+      width: 100%;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0 4px 14px;
+    }
+    .round-badge {
+      background: rgba(124,77,255,0.2);
+      border: 1.5px solid rgba(124,77,255,0.4);
+      border-radius: 50px;
+      padding: 6px 16px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #B388FF;
+    }
+    .score-badge {
+      background: rgba(255,215,0,0.12);
+      border: 1.5px solid rgba(255,215,0,0.3);
+      border-radius: 50px;
+      padding: 6px 16px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    .game-main {
+      width: 100%;
+      display: flex;
+      gap: 12px;
+      flex: 1;
+    }
+
+    /* ── SHOPPING LIST ── */
+    .mission-panel {
+      width: 180px;
+      min-width: 160px;
+      background: var(--panel);
+      border: 1.5px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .mission-title {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--accent);
+      text-align: center;
+      letter-spacing: 0.05em;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .mission-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 6px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      transition: background 0.2s;
+    }
+    .mission-item.checked {
+      background: rgba(76,175,80,0.15);
+    }
+    .mission-checkbox {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      border: 2px solid var(--panel-border);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .mission-item.checked .mission-checkbox {
+      background: var(--green);
+      border-color: var(--green);
+    }
+    .check-mark {
+      display: none;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 900;
+    }
+    .mission-item.checked .check-mark { display: block; }
+    .mission-item-info { flex: 1; min-width: 0; }
+    .mission-item-name {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .mission-item-price {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      display: flex; align-items: center; gap: 3px;
+      margin-top: 2px;
+    }
+    .mission-svg { width: 28px; height: 28px; flex-shrink: 0; }
+
+    /* ── STORE AREA ── */
+    .store-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    /* shelf decoration */
+    .shelf-unit {
+      background: linear-gradient(180deg, #2a1505 0%, #1a0a02 100%);
+      border: 2px solid var(--shelf);
+      border-radius: var(--radius);
+      padding: 12px 10px 14px;
+      position: relative;
+    }
+    .shelf-bar {
+      position: absolute;
+      left: 0; right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--shelf), var(--wood), var(--shelf));
+      border-radius: 2px;
+    }
+    .shelf-bar.top { top: 38px; }
+    .shelf-bar.mid { top: 130px; }
+
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .item-card {
+      background: linear-gradient(160deg, #1e0d35, #150828);
+      border: 1.5px solid var(--card-border);
+      border-radius: 14px;
+      padding: 10px 6px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+    .item-card:hover { transform: translateY(-3px); border-color: rgba(255,215,0,0.4); box-shadow: 0 6px 20px rgba(255,215,0,0.15); }
+    .item-card:active { transform: scale(0.94); }
+    .item-card.in-basket {
+      border-color: rgba(76,175,80,0.5);
+      background: linear-gradient(160deg, #0d2010, #081508);
+    }
+    .item-card.in-basket:hover { border-color: rgba(76,175,80,0.7); box-shadow: 0 6px 20px rgba(76,175,80,0.2); }
+
+    .item-svg-wrap { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; }
+    .item-svg-wrap svg { width: 54px; height: 54px; }
+
+    .item-name {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+    }
+    .item-price {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    /* ── BASKET AREA ── */
+    .basket-area {
+      width: 100%;
+      background: var(--panel);
+      border: 1.5px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .basket-label {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--text-dim);
+      white-space: nowrap;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .basket-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      flex: 1;
+      min-height: 36px;
+      align-items: center;
+    }
+    .basket-chip {
+      background: rgba(255,215,0,0.12);
+      border: 1.5px solid rgba(255,215,0,0.25);
+      border-radius: 50px;
+      padding: 5px 8px 5px 6px;
+      display: flex; align-items: center; gap: 5px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .basket-chip:hover { background: rgba(244,67,54,0.2); border-color: rgba(244,67,54,0.4); }
+    .basket-chip:active { transform: scale(0.93); }
+    .chip-svg { width: 22px; height: 22px; }
+    .chip-svg svg { width: 22px; height: 22px; }
+    .chip-remove {
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      font-weight: 900;
+      line-height: 1;
+      margin-left: 1px;
+    }
+    .basket-empty {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    .basket-total {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .basket-total-num {
+      font-size: 1.3rem;
+      transition: transform 0.15s;
+    }
+    .basket-total-num.pop { animation: numPop 0.3s ease; }
+    @keyframes numPop { 0%{transform:scale(1);} 50%{transform:scale(1.5);} 100%{transform:scale(1);} }
+
+    /* ── COIN SVG ── */
+    .coin-svg { display: inline-flex; align-items: center; justify-content: center; }
+
+    /* ── CHECKOUT ROW ── */
+    .checkout-row {
+      width: 100%;
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+
+    /* ── FEEDBACK OVERLAY ── */
+    .feedback-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+    }
+    .feedback-overlay.active { display: flex; animation: fadeIn 0.25s ease; }
+
+    .feedback-box {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 36px 40px;
+      text-align: center;
+      max-width: 340px;
+      width: 90%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .feedback-box.win { border: 2px solid rgba(76,175,80,0.5); box-shadow: 0 0 40px rgba(76,175,80,0.25); }
+    .feedback-box.lose { border: 2px solid rgba(244,67,54,0.5); box-shadow: 0 0 40px rgba(244,67,54,0.25); }
+
+    .feedback-icon { font-size: 3.5rem; animation: popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275); }
+    @keyframes popIn { 0%{transform:scale(0);} 100%{transform:scale(1);} }
+    .feedback-title { font-size: 1.6rem; font-weight: 900; }
+    .feedback-title.win { color: var(--green); }
+    .feedback-title.lose { color: var(--red); }
+    .feedback-desc { font-size: 0.9rem; color: var(--text-dim); line-height: 1.5; }
+
+    /* ── SHAKE ANIMATION ── */
+    @keyframes shake {
+      0%,100%{transform:translateX(0);}
+      20%{transform:translateX(-8px);}
+      40%{transform:translateX(8px);}
+      60%{transform:translateX(-6px);}
+      80%{transform:translateX(6px);}
+    }
+    .shake { animation: shake 0.4s ease; }
+
+    /* ── RESULT SCREEN ── */
+    #resultScreen { justify-content: center; gap: 24px; padding-top: 80px; }
+    .result-trophy { font-size: 5rem; animation: bounce 1.4s ease-in-out infinite; }
+    .result-title { font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; text-align: center; color: var(--accent); }
+    .result-score {
+      background: rgba(255,215,0,0.1);
+      border: 2px solid rgba(255,215,0,0.3);
+      border-radius: var(--radius);
+      padding: 24px 40px;
+      text-align: center;
+    }
+    .result-score-label { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 8px; }
+    .result-score-num { font-size: 3.5rem; font-weight: 900; color: var(--accent); }
+    .result-score-max { font-size: 1rem; color: var(--text-dim); }
+    .result-msg { font-size: 1rem; color: var(--text-dim); text-align: center; line-height: 1.6; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      .game-main { flex-direction: column; }
+      .mission-panel { width: 100%; flex-direction: row; flex-wrap: wrap; gap: 8px; padding: 12px; }
+      .mission-title { width: 100%; }
+      .mission-item { width: calc(33% - 6px); }
+      .items-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+      .item-svg-wrap { width: 44px; height: 44px; }
+      .item-svg-wrap svg { width: 42px; height: 42px; }
+      .feedback-box { padding: 28px 24px; }
+    }
+    @media (max-width: 420px) {
+      .items-grid { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+      .item-card { padding: 7px 4px 6px; }
+      .item-svg-wrap { width: 38px; height: 38px; }
+      .item-svg-wrap svg { width: 36px; height: 36px; }
+      .item-name { font-size: 0.65rem; }
+    }
+
+    /* ── STARS ── */
+    .stars-bg {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      overflow: hidden;
+    }
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      animation: twinkle var(--d, 3s) ease-in-out infinite var(--delay, 0s);
+    }
+    @keyframes twinkle {
+      0%,100%{opacity:0.15;transform:scale(1);}
+      50%{opacity:0.6;transform:scale(1.3);}
+    }
+
+    /* confetti */
+    .confetti-piece {
+      position: fixed;
+      width: 10px; height: 10px;
+      border-radius: 2px;
+      pointer-events: none;
+      z-index: 300;
+      animation: confettiFall var(--dur,1.5s) ease-in forwards;
+    }
+    @keyframes confettiFall {
+      0%{transform:translateY(-20px) rotate(0deg);opacity:1;}
+      100%{transform:translateY(110vh) rotate(720deg);opacity:0;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- Stars background -->
+<div class="stars-bg" id="starsBg"></div>
+
+<!-- Back button -->
+<a class="back-btn" href="../../index.html">
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  뒤로
+</a>
+
+<!-- ══ START SCREEN ══ -->
+<div class="screen active" id="startScreen">
+  <div class="start-logo">🛒</div>
+  <div class="start-title">마트 장보기</div>
+  <div class="start-sub">
+    미션을 확인하고<br>
+    딱 맞는 물건들을 골라 담아요!
+  </div>
+  <div class="start-badge">🪙 동전 더하기 수학 게임</div>
+  <button class="btn btn-start" onclick="startGame()">
+    시작하기 🎉
+  </button>
+</div>
+
+<!-- ══ GAME SCREEN ══ -->
+<div class="screen" id="gameScreen">
+  <!-- header -->
+  <div class="game-header">
+    <div class="round-badge" id="roundBadge">라운드 1 / 8</div>
+    <div class="score-badge">
+      <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#FFD700" stroke="#B8860B" stroke-width="1.2"/><text x="8" y="12" text-anchor="middle" font-size="9" font-weight="900" fill="#7B5200">★</text></svg>
+      점수: <span id="scoreDisplay">0</span>
+    </div>
+  </div>
+
+  <div class="game-main">
+    <!-- Mission Panel -->
+    <div class="mission-panel">
+      <div class="mission-title">📋 쇼핑 미션</div>
+      <div id="missionList"></div>
+      <div style="margin-top:auto; padding-top:12px; border-top:1px solid var(--panel-border);">
+        <div style="font-size:0.72rem; color:var(--text-dim); text-align:center; margin-bottom:6px;">목표 금액</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:1rem;font-weight:900;color:var(--accent);">
+          <span id="missionTotal">0</span>
+          <span id="missionCoinIcons"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Store -->
+    <div class="store-area">
+      <div class="shelf-unit">
+        <div class="shelf-bar top"></div>
+        <div class="shelf-bar mid"></div>
+        <div class="items-grid" id="itemsGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Basket -->
+  <div class="basket-area" id="basketArea">
+    <div class="basket-label">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M2 5h16l-2 10H4L2 5z" fill="#7C4DFF" opacity="0.6"/>
+        <path d="M6 5L8 2h4l2 3" stroke="#B388FF" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="7" cy="17" r="1.5" fill="#B388FF"/>
+        <circle cx="13" cy="17" r="1.5" fill="#B388FF"/>
+      </svg>
+      장바구니
+    </div>
+    <div class="basket-chips" id="basketChips">
+      <span class="basket-empty">물건을 골라 담아요!</span>
+    </div>
+    <div class="basket-total">
+      <span id="basketCoinIcon"></span>
+      <span class="basket-total-num" id="basketTotal">0</span>
+      <span style="font-size:0.75rem;color:var(--text-dim);font-weight:600;">코인</span>
+    </div>
+  </div>
+
+  <!-- Checkout -->
+  <div class="checkout-row">
+    <button class="btn btn-checkout" onclick="checkout()">
+      계산하기 ✔
+    </button>
+  </div>
+</div>
+
+<!-- ══ RESULT SCREEN ══ -->
+<div class="screen" id="resultScreen">
+  <div class="result-trophy" id="resultTrophy">🏆</div>
+  <div class="result-title" id="resultTitle">게임 완료!</div>
+  <div class="result-score">
+    <div class="result-score-label">최종 점수</div>
+    <div class="result-score-num" id="finalScore">0</div>
+    <div class="result-score-max">/ 8 라운드</div>
+  </div>
+  <div class="result-msg" id="resultMsg"></div>
+  <button class="btn btn-restart" onclick="restartGame()">
+    다시 하기 🔄
+  </button>
+</div>
+
+<!-- ══ FEEDBACK OVERLAY ══ -->
+<div class="feedback-overlay" id="feedbackOverlay">
+  <div class="feedback-box" id="feedbackBox">
+    <div class="feedback-icon" id="feedbackIcon">🎉</div>
+    <div class="feedback-title" id="feedbackTitle">정답!</div>
+    <div class="feedback-desc" id="feedbackDesc"></div>
+    <button class="btn btn-next" onclick="nextRound()">다음 →</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  SVG ITEM LIBRARY
+// ══════════════════════════════════════════
+const ITEMS = {
+  사과: {
+    name: '사과',
+    svg: () => `<svg viewBox="0 0 54 54" xmlns="http://www.w3.org/2000/svg">
+      <!-- stem -->
+      <path d="M28 8 C28 4 32 3 33 6" stroke="#5D4037" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <!-- leaf -->
+      <ellipse cx="31" cy="5" rx="5" ry="3" fill="#66BB6A" transform="rotate(-30 31 5)"/>
+      <!-- apple body -->
+      <path d="M14 22 C12 14 18 8 27 10 C36 8 42 14 40 22 C40 34 35 44 27 44 C19 44 14 34 14 22Z" fill="#EF5350"/>
+      <!-- shine -->
+      <ellipse cx="20" cy="18" rx="4" ry="6" fill="rgba(255,255,255,0.3)" transform="rotate(-20 20 18)"/>
+      <!-- indent top -->
+      <path d="M23 11 C25 8 29 8 31 11" stroke="#C62828" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    </svg>`,
+  },
+  바나나: {
+    name: '바나나',
+    svg: () => `<svg viewBox="0 0 54 54" xmlns="http://www.w3.org/2000/svg">
+      <!-- banana bunch -->
+      <path d="M12 35 C14 20 22 10 36 8 C42 7 44 10 42 14 C38 20 28 24 20 36 C18 40 14 42 12 40 C10 38 11 37 12 35Z" fill="#FFEE58" stroke="#F9A825" stroke-width="1.5"/>
+      <path d="M14 33 C16 20 24 12 36 10" stroke="#FFF176" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <!-- tips -->
+      <ellipse cx="36" cy="9" rx="4" ry="2.5" fill="#8D6E63" transform="rotate(-20 36 9)"/>
+      <ellipse cx="12.5" cy="38" rx="3.5" ry="2" fill="#8D6E63" transform="rotate(40 12.5 38)"/>
+      <!-- shine -->
+      <path d="M17 28 C19 22 24 16 30 13" stroke="rgba(255,255,255,0.45)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    </svg>`,
+  },
+  우유: {
+    name: '우유',
+    svg: () => `<svg viewBox="0 0 54 54" xmlns="http://www.w3.org/2000/svg">
+      <!-- carton body -->
+      <rect x="14" y="20" width="26" height="26" rx="3" fill="#F5F5F5" stroke="#BDBDBD" stroke-width="1.5"/>
+      <!-- carton top gable -->
+      <polygon points="14,20 27,10 40,20" fill="#E3F2FD" stroke="#BDBDBD" stroke-width="1.5"/>
+      <!-- carton fold lines -->
+      <line x1="27" y1="10" x2="27" y2="20" stroke="#90CAF9" stroke-width="1"/>
+      <!-- blue stripe -->
+      <rect x="14" y="28" width="26" height="8" fill="#42A5F5"/>
+      <!-- cow spot -->
+      <ellipse cx="22" cy="38" rx="4" ry="3" fill="#424242"/>
+      <ellipse cx="32" cy="40" rx="3" ry="2" fill="#424242"/>
+      <!-- label text -->
+      <text x="27" y="26" text-anchor="middle" font-size="6" font-weight="900" fill="#1565C0">우유</text>
+      <!-- milk text on blue -->
+      <text x="27" y="35" text-anchor="middle" font-size="5" font-weight="700" fill="#fff">MILK</text>
+    </svg>`,
+  },
+  빵: {
+    name: '빵',
+    svg: () => `<svg viewBox="0 0 54 54" xmlns="http://www.w3.org/2000/svg">
+      <!-- loaf base -->
+      <rect x="10" y="32" width="34" height="16" rx="4" fill="#8D6E63"/>
+      <!-- loaf top dome -->
+      <ellipse cx="27" cy="32" rx="17" ry="10" fill="#D4A574"/>
+      <!-- dome highlight -->
+      <ellipse cx="22" cy="27" rx="7" ry="4" fill="rgba(255,255,255,0.2)"/>
+      <!-- crust line -->
+      <path d="M10 36 Q27 38 44 36" stroke="#6D4C41" stroke-width="1.5" fill="none"/>
+      <!-- score lines on top -->
+      <path d="M20 30 C22 24 26 22 30 24" stroke="#A0522D" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      <path d="M17 33 C19 27 23 25 27 27" stroke="#A0522D" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+      <!-- sesame seeds -->
+      <ellipse cx="24" cy="28" rx="1.2" ry="0.7" fill="#FFF9C4" transform="rotate(30 24 28)"/>
+      <ellipse cx="29" cy="26" rx="1.2" ry="0.7" fill="#FFF9C4" transform="rotate(-20 29 26)"/>
+      <ellipse cx="31" cy="30" rx="1.2" ry="0.7" fill="#FFF9C4" transform="rotate(45 31 30)"/>
+    </svg>`,
+  },
+  당근: {
+    name: '당근',
+    svg: () => `<svg viewBox="0 0 54 54" xmlns="http://www.w3.org/2000/svg">
+      <!-- leaves -->
+      <path d="M22 12 C20 6 16 4 18 10 C16 6 12 7 15 12 C14 8 10 10 14 14" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <path d="M27 10 C27 4 27 2 27 8" stroke="#66BB6A" stroke-width="2" stroke-linecap="round"/>
+      <path d="M32 12 C34 6 38 4 36 10 C38 6 42 7 39 12 C40 8 44 10 40 14" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <!-- carrot body -->
+      <path d="M18 14 C18 10 36 10 36 14 L30 44 L27 47 L24 44 Z" fill="#FF7043"/>
+      <!-- stripes -->
+      <path d="M19 20 Q27 22 35 20" stroke="#FF5722" stroke-width="1" fill="none"/>
+      <path d="M20 26 Q27 28 34 26" stroke="#FF5722" stroke-width="1" fill="none"/>
+      <path d="M22 32 Q27 34 32 32" stroke="#FF5722" stroke-width="1" fill="none"/>
+      <!-- shine -->
+      <path d="M21 15 L23 28" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round"/>
+    </svg>`,
+  },
+  딸기: {
+    name: '딸기',
+    svg: () => `<svg viewBox="0 0 54 54" xmlns="http://www.w3.org/2000/svg">
+      <!-- leaves/calyx -->
+      <path d="M27 14 C24 8 18 10 22 15" fill="#4CAF50"/>
+      <path d="M27 14 C20 6 14 12 20 16" fill="#66BB6A"/>
+      <path d="M27 14 C30 8 36 10 32 15" fill="#4CAF50"/>
+      <path d="M27 14 C34 6 40 12 34 16" fill="#66BB6A"/>
+      <path d="M27 14 C27 6 27 4 27 12" fill="#81C784"/>
+      <!-- berry body -->
+      <path d="M16 20 C14 18 16 14 20 15 C22 12 32 12 34 15 C38 14 40 18 38 20 C40 28 35 40 27 44 C19 40 14 28 16 20Z" fill="#F44336"/>
+      <!-- shine -->
+      <ellipse cx="21" cy="22" rx="4" ry="6" fill="rgba(255,255,255,0.25)" transform="rotate(-15 21 22)"/>
+      <!-- seeds -->
+      <ellipse cx="23" cy="28" rx="1" ry="1.4" fill="#FFCDD2" transform="rotate(10 23 28)"/>
+      <ellipse cx="28" cy="24" rx="1" ry="1.4" fill="#FFCDD2" transform="rotate(-5 28 24)"/>
+      <ellipse cx="31" cy="31" rx="1" ry="1.4" fill="#FFCDD2" transform="rotate(15 31 31)"/>
+      <ellipse cx="24" cy="35" rx="1" ry="1.4" fill="#FFCDD2" transform="rotate(-10 24 35)"/>
+      <ellipse cx="30" cy="38" rx="1" ry="1.4" fill="#FFCDD2" transform="rotate(5 30 38)"/>
+      <ellipse cx="20" cy="32" rx="1" ry="1.2" fill="#FFCDD2"/>
+    </svg>`,
+  },
+  오렌지: {
+    name: '오렌지',
+    svg: () => `<svg viewBox="0 0 54 54" xmlns="http://www.w3.org/2000/svg">
+      <!-- leaf -->
+      <ellipse cx="32" cy="8" rx="6" ry="3" fill="#66BB6A" transform="rotate(-30 32 8)"/>
+      <!-- stem -->
+      <line x1="28" y1="12" x2="28" y2="9" stroke="#5D4037" stroke-width="2" stroke-linecap="round"/>
+      <!-- orange body -->
+      <circle cx="27" cy="30" r="18" fill="#FF9800"/>
+      <!-- texture segments visible at edge -->
+      <path d="M27 12 Q14 14 12 27" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" fill="none"/>
+      <path d="M27 12 Q40 14 42 27" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" fill="none"/>
+      <!-- shine -->
+      <ellipse cx="20" cy="22" rx="5" ry="8" fill="rgba(255,255,255,0.25)" transform="rotate(-20 20 22)"/>
+      <!-- navel -->
+      <ellipse cx="27" cy="43" rx="4" ry="2.5" fill="#E65100" opacity="0.6"/>
+      <ellipse cx="27" cy="43" rx="2" ry="1.2" fill="#BF360C" opacity="0.5"/>
+    </svg>`,
+  },
+  포도: {
+    name: '포도',
+    svg: () => `<svg viewBox="0 0 54 54" xmlns="http://www.w3.org/2000/svg">
+      <!-- stem -->
+      <line x1="27" y1="6" x2="27" y2="13" stroke="#795548" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- leaf -->
+      <path d="M27 7 C24 4 19 5 20 9 C21 12 25 12 27 10 C29 12 33 12 34 9 C35 5 30 4 27 7Z" fill="#66BB6A"/>
+      <!-- grape clusters -->
+      <!-- row 1 -->
+      <circle cx="27" cy="17" r="6" fill="#7E57C2" stroke="#4527A0" stroke-width="1"/>
+      <!-- row 2 -->
+      <circle cx="20" cy="26" r="6" fill="#7E57C2" stroke="#4527A0" stroke-width="1"/>
+      <circle cx="34" cy="26" r="6" fill="#7E57C2" stroke="#4527A0" stroke-width="1"/>
+      <!-- row 3 -->
+      <circle cx="14" cy="35" r="6" fill="#7E57C2" stroke="#4527A0" stroke-width="1"/>
+      <circle cx="27" cy="35" r="6" fill="#7E57C2" stroke="#4527A0" stroke-width="1"/>
+      <circle cx="40" cy="35" r="6" fill="#7E57C2" stroke="#4527A0" stroke-width="1"/>
+      <!-- row 4 partial -->
+      <circle cx="20" cy="44" r="6" fill="#7E57C2" stroke="#4527A0" stroke-width="1"/>
+      <circle cx="34" cy="44" r="6" fill="#7E57C2" stroke="#4527A0" stroke-width="1"/>
+      <!-- shines -->
+      <circle cx="24" cy="14" r="2" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="17" cy="23" r="2" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="31" cy="23" r="2" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="11" cy="32" r="2" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="24" cy="32" r="2" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="37" cy="32" r="2" fill="rgba(255,255,255,0.35)"/>
+    </svg>`,
+  },
+  달걀: {
+    name: '달걀',
+    svg: () => `<svg viewBox="0 0 54 54" xmlns="http://www.w3.org/2000/svg">
+      <!-- egg shadow -->
+      <ellipse cx="27" cy="46" rx="14" ry="3" fill="rgba(0,0,0,0.2)"/>
+      <!-- egg body -->
+      <path d="M14 30 C14 16 20 8 27 8 C34 8 40 16 40 30 C40 40 34 46 27 46 C20 46 14 40 14 30Z" fill="#FFF8E1" stroke="#FFE082" stroke-width="1.5"/>
+      <!-- crack line -->
+      <path d="M22 24 L25 28 L22 32" stroke="#FFCA28" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <!-- shine -->
+      <ellipse cx="21" cy="18" rx="4" ry="6" fill="rgba(255,255,255,0.45)" transform="rotate(-10 21 18)"/>
+      <!-- subtle color variation -->
+      <path d="M30 14 C36 18 38 28 36 36" stroke="#FFF3E0" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.5"/>
+    </svg>`,
+  },
+  치즈: {
+    name: '치즈',
+    svg: () => `<svg viewBox="0 0 54 54" xmlns="http://www.w3.org/2000/svg">
+      <!-- cheese wedge shadow -->
+      <ellipse cx="27" cy="46" rx="18" ry="3" fill="rgba(0,0,0,0.2)"/>
+      <!-- cheese wedge body -->
+      <polygon points="10,44 44,44 44,24 27,8 10,24" fill="#FDD835" stroke="#F9A825" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- darker face -->
+      <polygon points="44,24 44,44 10,44 10,24" fill="#FFEE58"/>
+      <!-- holes -->
+      <ellipse cx="20" cy="35" rx="4.5" ry="3.5" fill="#F9A825" opacity="0.6"/>
+      <ellipse cx="33" cy="38" rx="3.5" ry="2.5" fill="#F9A825" opacity="0.6"/>
+      <ellipse cx="37" cy="30" rx="3" ry="2.5" fill="#F9A825" opacity="0.6"/>
+      <!-- top face -->
+      <polygon points="10,24 44,24 27,8" fill="#FFCA28"/>
+      <!-- top holes -->
+      <ellipse cx="24" cy="18" rx="3" ry="2" fill="#F9A825" opacity="0.5"/>
+      <ellipse cx="33" cy="20" rx="2.5" ry="1.8" fill="#F9A825" opacity="0.5"/>
+      <!-- edge shine -->
+      <path d="M12 24 L12 42" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round"/>
+    </svg>`,
+  },
+};
+
+const ITEM_KEYS = Object.keys(ITEMS);
+
+// ══════════════════════════════════════════
+//  COIN SVG
+// ══════════════════════════════════════════
+function coinSVG(size = 18) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="10" cy="10" r="9" fill="#FFD700" stroke="#B8860B" stroke-width="1.5"/>
+    <circle cx="10" cy="10" r="6.5" fill="#FFC200" stroke="#F0A500" stroke-width="0.8"/>
+    <text x="10" y="14" text-anchor="middle" font-size="8" font-weight="900" fill="#7B5200" font-family="Nunito,sans-serif">₩</text>
+  </svg>`;
+}
+
+function coinsRow(n, size = 16) {
+  return Array(n).fill(coinSVG(size)).join('');
+}
+
+// ══════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════
+let round = 0;
+let score = 0;
+let basket = [];      // [{key, name, price}]
+let missionItems = []; // [{key, name, price}]
+let shelfItems = [];   // [{key, name, price}]
+const TOTAL_ROUNDS = 8;
+
+function getPriceRange(r) {
+  if (r <= 3) return [1, 2];
+  if (r <= 6) return [1, 3];
+  return [1, 4];
+}
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startGame() {
+  round = 0; score = 0;
+  showScreen('gameScreen');
+  nextRoundSetup();
+}
+
+function nextRound() {
+  hideFeedback();
+  if (round >= TOTAL_ROUNDS) {
+    showResult();
+    return;
+  }
+  nextRoundSetup();
+}
+
+function nextRoundSetup() {
+  basket = [];
+  const [min, max] = getPriceRange(round + 1);
+  round++;
+
+  // Pick 8 items from pool, shuffle
+  const keys = shuffle(ITEM_KEYS).slice(0, 8);
+  shelfItems = keys.map(k => ({
+    key: k,
+    name: ITEMS[k].name,
+    price: randInt(min, max),
+  }));
+
+  // Mission: pick 3 from shelf items
+  const missionPicked = shuffle([...shelfItems]).slice(0, 3);
+  missionItems = missionPicked;
+
+  renderRound();
+}
+
+function renderRound() {
+  document.getElementById('roundBadge').textContent = `라운드 ${round} / ${TOTAL_ROUNDS}`;
+  document.getElementById('scoreDisplay').textContent = score;
+
+  // Mission panel
+  const missionTotal = missionItems.reduce((s, i) => s + i.price, 0);
+  document.getElementById('missionTotal').textContent = missionTotal;
+  document.getElementById('missionCoinIcons').innerHTML = coinsRow(missionTotal, 14);
+
+  const ml = document.getElementById('missionList');
+  ml.innerHTML = '';
+  missionItems.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'mission-item';
+    div.id = `mission-${item.key}`;
+    div.innerHTML = `
+      <div class="mission-checkbox"><span class="check-mark">✓</span></div>
+      <div class="mission-svg">${ITEMS[item.key].svg()}</div>
+      <div class="mission-item-info">
+        <div class="mission-item-name">${item.name}</div>
+        <div class="mission-item-price">${coinSVG(12)} ${item.price}</div>
+      </div>
+    `;
+    ml.appendChild(div);
+  });
+
+  // Shelf items
+  const grid = document.getElementById('itemsGrid');
+  grid.innerHTML = '';
+  shelfItems.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.id = `shelf-${item.key}`;
+    card.onclick = () => toggleItem(item);
+    card.innerHTML = `
+      <div class="item-svg-wrap">${ITEMS[item.key].svg()}</div>
+      <div class="item-name">${item.name}</div>
+      <div class="item-price">${coinSVG(14)} ${item.price}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  renderBasket();
+}
+
+function toggleItem(item) {
+  const idx = basket.findIndex(b => b.key === item.key);
+  if (idx >= 0) {
+    // already in basket — remove
+    basket.splice(idx, 1);
+  } else {
+    basket.push(item);
+  }
+  renderBasket();
+  updateShelfState();
+  updateMissionChecks();
+}
+
+function removeFromBasket(key) {
+  basket = basket.filter(b => b.key !== key);
+  renderBasket();
+  updateShelfState();
+  updateMissionChecks();
+}
+
+function renderBasket() {
+  const chips = document.getElementById('basketChips');
+  const totalEl = document.getElementById('basketTotal');
+  const coinIcon = document.getElementById('basketCoinIcon');
+
+  chips.innerHTML = '';
+  if (basket.length === 0) {
+    chips.innerHTML = '<span class="basket-empty">물건을 골라 담아요!</span>';
+  } else {
+    basket.forEach(item => {
+      const chip = document.createElement('div');
+      chip.className = 'basket-chip';
+      chip.onclick = () => removeFromBasket(item.key);
+      chip.innerHTML = `
+        <span class="chip-svg">${ITEMS[item.key].svg()}</span>
+        ${item.name} ${coinSVG(13)}${item.price}
+        <span class="chip-remove">✕</span>
+      `;
+      chips.appendChild(chip);
+    });
+  }
+
+  const total = basket.reduce((s, i) => s + i.price, 0);
+  const old = parseInt(totalEl.textContent) || 0;
+  totalEl.textContent = total;
+  if (old !== total) {
+    totalEl.classList.remove('pop');
+    void totalEl.offsetWidth;
+    totalEl.classList.add('pop');
+  }
+  coinIcon.innerHTML = coinSVG(20);
+}
+
+function updateShelfState() {
+  shelfItems.forEach(item => {
+    const card = document.getElementById(`shelf-${item.key}`);
+    if (!card) return;
+    if (basket.find(b => b.key === item.key)) {
+      card.classList.add('in-basket');
+    } else {
+      card.classList.remove('in-basket');
+    }
+  });
+}
+
+function updateMissionChecks() {
+  missionItems.forEach(item => {
+    const el = document.getElementById(`mission-${item.key}`);
+    if (!el) return;
+    if (basket.find(b => b.key === item.key)) {
+      el.classList.add('checked');
+    } else {
+      el.classList.remove('checked');
+    }
+  });
+}
+
+function checkout() {
+  // Check correctness: basket must have exactly the 3 mission items (by key)
+  if (basket.length === 0) {
+    shakeBasket();
+    return;
+  }
+
+  const missionKeys = missionItems.map(i => i.key).sort().join(',');
+  const basketKeys = basket.map(i => i.key).sort().join(',');
+  const correct = missionKeys === basketKeys;
+
+  if (correct) {
+    score++;
+    document.getElementById('scoreDisplay').textContent = score;
+    showFeedback(true);
+    spawnConfetti();
+  } else {
+    // Check if basket has all mission items but also extra
+    const hasAllMission = missionItems.every(m => basket.find(b => b.key === m.key));
+    const hasExtra = basket.some(b => !missionItems.find(m => m.key === b.key));
+    const missingItems = missionItems.filter(m => !basket.find(b => b.key === m.key));
+
+    let msg = '';
+    if (hasExtra && hasAllMission) {
+      const extraNames = basket.filter(b => !missionItems.find(m => m.key === b.key)).map(b => b.name).join(', ');
+      msg = `필요없는 물건이 있어요: ${extraNames}`;
+    } else if (missingItems.length > 0) {
+      msg = `${missingItems.map(i=>i.name).join(', ')}을(를) 더 담아야 해요!`;
+    } else {
+      msg = '미션 목록을 다시 확인해 봐요!';
+    }
+    shakeBasket();
+    showFeedback(false, msg);
+  }
+}
+
+function shakeBasket() {
+  const ba = document.getElementById('basketArea');
+  ba.classList.remove('shake');
+  void ba.offsetWidth;
+  ba.classList.add('shake');
+}
+
+function showFeedback(win, errMsg = '') {
+  const overlay = document.getElementById('feedbackOverlay');
+  const box = document.getElementById('feedbackBox');
+  const icon = document.getElementById('feedbackIcon');
+  const title = document.getElementById('feedbackTitle');
+  const desc = document.getElementById('feedbackDesc');
+
+  box.className = `feedback-box ${win ? 'win' : 'lose'}`;
+  icon.textContent = win ? '🎉' : '😅';
+  title.className = `feedback-title ${win ? 'win' : 'lose'}`;
+  title.textContent = win ? '정답! 잘했어요!' : '다시 해봐요!';
+
+  if (win) {
+    const total = missionItems.reduce((s,i) => s+i.price, 0);
+    desc.innerHTML = `${missionItems.map(i=>i.name).join(' + ')} = ${coinSVG(16)} ${total}코인<br><br>정확히 맞췄어요! ⭐`;
+  } else {
+    desc.innerHTML = errMsg;
+  }
+
+  overlay.classList.add('active');
+}
+
+function hideFeedback() {
+  document.getElementById('feedbackOverlay').classList.remove('active');
+}
+
+function showResult() {
+  showScreen('resultScreen');
+  document.getElementById('finalScore').textContent = score;
+
+  let trophy, msg;
+  if (score >= 8) {
+    trophy = '🏆'; msg = '완벽해요! 슈퍼 쇼핑 마스터! 모든 미션을 성공했어요!';
+  } else if (score >= 6) {
+    trophy = '🥇'; msg = `굉장해요! ${score}개 미션 성공! 정말 잘했어요!`;
+  } else if (score >= 4) {
+    trophy = '🥈'; msg = `잘했어요! ${score}개 미션 성공! 더 연습하면 완벽해질 거예요!`;
+  } else {
+    trophy = '🌟'; msg = `${score}개 성공! 포기하지 마세요, 다시 도전해봐요!`;
+  }
+  document.getElementById('resultTrophy').textContent = trophy;
+  document.getElementById('resultTitle').textContent = '게임 완료!';
+  document.getElementById('resultMsg').textContent = msg;
+
+  if (score >= 6) spawnConfetti(80);
+}
+
+function restartGame() {
+  round = 0; score = 0;
+  showScreen('startScreen');
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ══════════════════════════════════════════
+//  CONFETTI
+// ══════════════════════════════════════════
+function spawnConfetti(n = 50) {
+  const colors = ['#FFD700','#FF7043','#7C4DFF','#4CAF50','#F44336','#42A5F5','#FF4081','#FFCA28'];
+  for (let i = 0; i < n; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.top = '-20px';
+      el.style.background = colors[Math.floor(Math.random() * colors.length)];
+      el.style.width = (8 + Math.random() * 8) + 'px';
+      el.style.height = (8 + Math.random() * 8) + 'px';
+      el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      el.style.setProperty('--dur', (1.2 + Math.random() * 1.5) + 's');
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }, i * 30);
+  }
+}
+
+// ══════════════════════════════════════════
+//  STARS BACKGROUND
+// ══════════════════════════════════════════
+function initStars() {
+  const bg = document.getElementById('starsBg');
+  for (let i = 0; i < 60; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = 1 + Math.random() * 2.5;
+    s.style.cssText = `
+      left:${Math.random()*100}%;
+      top:${Math.random()*100}%;
+      width:${size}px; height:${size}px;
+      --d:${2 + Math.random()*4}s;
+      --delay:${Math.random()*4}s;
+      opacity:${0.1 + Math.random()*0.3};
+    `;
+    bg.appendChild(s);
+  }
+}
+
+initStars();
+</script>
+</body>
+</html>

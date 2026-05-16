@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>표정 만들기 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0a0118;--card:rgba(255,255,255,0.06);--card-border:rgba(255,255,255,0.12);
+      --purple:#a855f7;--pink:#ec4899;--green:#22c55e;--red:#ef4444;--yellow:#fbbf24;
+      --text:#f0e8ff;--text-dim:rgba(240,232,255,0.55);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      font-family:'Nunito','Apple SD Gothic Neo',sans-serif;
+      background:var(--bg);color:var(--text);
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
+      overflow:hidden;
+    }
+    #stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+    .star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--dur,3s) ease-in-out infinite var(--delay,0s);}
+    @keyframes twinkle{0%,100%{opacity:0.15;transform:scale(1);}50%{opacity:1;transform:scale(1.4);}}
+    #game-wrap{
+      position:relative;z-index:1;width:800px;height:600px;
+      background:linear-gradient(160deg,#110228 0%,#0a0118 60%,#050010 100%);
+      border-radius:28px;box-shadow:0 0 80px rgba(168,85,247,0.2),0 20px 60px rgba(0,0,0,0.7);
+      overflow:hidden;display:flex;flex-direction:column;
+    }
+    .hud{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;flex-shrink:0;}
+    .btn-back{
+      display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--card);
+      border:1px solid var(--card-border);border-radius:50px;color:var(--text-dim);
+      font-family:inherit;font-size:0.82rem;font-weight:700;cursor:pointer;text-decoration:none;transition:background 0.2s;
+    }
+    .btn-back:hover{background:rgba(255,255,255,0.1);}
+    .hud-right{display:flex;align-items:center;gap:12px;}
+    .round-pill{font-size:0.85rem;font-weight:700;color:var(--text-dim);background:var(--card);border:1px solid var(--card-border);border-radius:50px;padding:6px 14px;}
+    .hearts{display:flex;gap:6px;}
+
+    .main-area{flex:1;display:flex;gap:0;padding:0 20px 8px;}
+
+    /* Left: make face */
+    .make-panel{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;}
+    .panel-title{font-size:0.9rem;font-weight:800;color:var(--text-dim);}
+
+    .face-canvas{
+      width:180px;height:180px;
+      background:radial-gradient(circle at 40% 35%, #fde68a 0%, #fbbf24 60%, #d97706 100%);
+      border-radius:50%;
+      box-shadow:0 0 30px rgba(251,191,36,0.3);
+      position:relative;overflow:visible;
+      flex-shrink:0;
+    }
+    .face-canvas svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
+
+    /* Right: target face */
+    .target-panel{flex:0 0 220px;display:flex;flex-direction:column;align-items:center;gap:8px;padding-left:16px;}
+    .target-label{
+      font-size:0.82rem;font-weight:800;color:var(--text-dim);
+      background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);
+      border-radius:50px;padding:4px 14px;
+    }
+    .target-emotion{font-size:1.4rem;font-weight:900;background:linear-gradient(135deg,#a855f7,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .target-face{
+      width:160px;height:160px;
+      background:radial-gradient(circle at 40% 35%, #fde68a 0%, #fbbf24 60%, #d97706 100%);
+      border-radius:50%;border:3px solid rgba(168,85,247,0.5);
+      box-shadow:0 0 24px rgba(168,85,247,0.25);
+      position:relative;flex-shrink:0;
+    }
+    .target-face svg{position:absolute;inset:0;width:100%;height:100%;}
+
+    /* Parts selector */
+    .parts-area{flex-shrink:0;padding:6px 20px 14px;}
+    .parts-tabs{display:flex;gap:8px;margin-bottom:8px;justify-content:center;}
+    .tab-btn{
+      padding:6px 18px;border-radius:50px;font-family:inherit;font-size:0.82rem;font-weight:800;
+      cursor:pointer;border:2px solid var(--card-border);background:var(--card);color:var(--text-dim);
+      transition:all 0.2s;
+    }
+    .tab-btn.active{background:linear-gradient(135deg,#a855f7,#ec4899);border-color:transparent;color:#fff;}
+    .parts-grid{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+    .part-card{
+      width:80px;height:70px;background:var(--card);border:2px solid var(--card-border);
+      border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:4px;cursor:pointer;transition:all 0.2s;
+    }
+    .part-card:hover{background:rgba(168,85,247,0.18);border-color:var(--purple);}
+    .part-card.selected{background:rgba(168,85,247,0.25);border-color:var(--purple);box-shadow:0 0 14px rgba(168,85,247,0.35);}
+    .part-card span{font-size:0.65rem;font-weight:800;color:var(--text-dim);}
+
+    /* Bottom buttons */
+    .bottom-row{display:flex;gap:16px;justify-content:center;padding:0 24px 16px;flex-shrink:0;}
+    .btn-action{
+      padding:12px 32px;border-radius:50px;font-family:inherit;font-size:1rem;font-weight:900;
+      cursor:pointer;border:none;transition:transform 0.15s;
+    }
+    .btn-action:hover{transform:scale(1.04);}
+    .btn-done{background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff;}
+    .btn-clear{background:var(--card);border:2px solid var(--card-border);color:var(--text-dim);}
+
+    /* Flash */
+    #flash{position:absolute;inset:0;pointer-events:none;border-radius:28px;opacity:0;z-index:50;transition:opacity 0.1s;}
+    #flash.red{background:rgba(239,68,68,0.35);}
+    #flash.green{background:rgba(34,197,94,0.2);}
+    @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-6px);}80%{transform:translateX(6px);}}
+    .shake{animation:shake 0.45s ease;}
+
+    /* Feedback msg */
+    #feedback-msg{
+      position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.8);
+      background:rgba(10,1,24,0.95);border:2px solid rgba(168,85,247,0.5);
+      border-radius:24px;padding:24px 40px;text-align:center;z-index:150;
+      opacity:0;transition:all 0.3s;pointer-events:none;
+    }
+    #feedback-msg.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto;}
+    #feedback-msg .msg-title{font-size:1.6rem;font-weight:900;margin-bottom:8px;}
+    #feedback-msg .msg-sub{font-size:0.95rem;color:var(--text-dim);}
+    .msg-ok{font-size:1.4rem;font-weight:900;background:var(--green);color:#fff;border:none;border-radius:50px;padding:10px 28px;cursor:pointer;margin-top:12px;font-family:inherit;}
+
+    .particle{position:absolute;border-radius:50%;pointer-events:none;z-index:100;animation:particleFly var(--dur,0.8s) ease-out forwards;}
+    @keyframes particleFly{0%{transform:translate(0,0) scale(1);opacity:1;}100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0;}}
+
+    #result-screen{position:absolute;inset:0;background:rgba(10,1,24,0.93);display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:200;border-radius:28px;}
+    #result-screen.show{display:flex;}
+    .result-title{font-size:2.4rem;font-weight:900;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .result-score{font-size:1.3rem;font-weight:800;color:var(--text-dim);}
+    .stars-row{display:flex;gap:12px;}
+    .result-buttons{display:flex;gap:16px;margin-top:8px;}
+    .btn-result{padding:14px 32px;border-radius:50px;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;border:none;transition:transform 0.15s;text-decoration:none;display:inline-flex;align-items:center;}
+    .btn-result:hover{transform:scale(1.05);}
+    .btn-retry{background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff;}
+    .btn-home{background:var(--card);border:2px solid var(--card-border);color:var(--text-dim);}
+  </style>
+</head>
+<body>
+<div id="stars"></div>
+<div id="game-wrap">
+  <div id="flash"></div>
+  <div id="feedback-msg">
+    <div class="msg-title" id="msg-title"></div>
+    <div class="msg-sub" id="msg-sub"></div>
+    <button class="msg-ok" onclick="nextRound()">다음!</button>
+  </div>
+
+  <div class="hud">
+    <a href="../../index.html" class="btn-back">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      홈
+    </a>
+    <div class="hud-right">
+      <div class="round-pill" id="round-pill">1 / 6</div>
+      <div class="hearts" id="hearts"></div>
+    </div>
+  </div>
+
+  <div class="main-area">
+    <!-- Make panel -->
+    <div class="make-panel">
+      <div class="panel-title">내 표정 만들기</div>
+      <div class="face-canvas" id="my-face">
+        <svg id="my-face-svg" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+          <!-- Cheeks -->
+          <ellipse cx="38" cy="118" rx="18" ry="12" fill="#fca5a5" opacity="0.5"/>
+          <ellipse cx="142" cy="118" rx="18" ry="12" fill="#fca5a5" opacity="0.5"/>
+          <!-- Parts rendered by JS -->
+          <g id="my-brows"></g>
+          <g id="my-eyes"></g>
+          <g id="my-mouth"></g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Target panel -->
+    <div class="target-panel">
+      <div class="target-label">목표 표정</div>
+      <div class="target-emotion" id="target-emotion-name"></div>
+      <div class="target-face" id="target-face">
+        <svg id="target-face-svg" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="38" cy="118" rx="18" ry="12" fill="#fca5a5" opacity="0.5"/>
+          <ellipse cx="142" cy="118" rx="18" ry="12" fill="#fca5a5" opacity="0.5"/>
+          <g id="target-brows"></g>
+          <g id="target-eyes"></g>
+          <g id="target-mouth"></g>
+        </svg>
+      </div>
+      <div style="font-size:0.75rem;color:var(--text-dim);text-align:center;margin-top:4px;">눈, 눈썹, 입을<br>맞춰보세요!</div>
+    </div>
+  </div>
+
+  <!-- Parts selector -->
+  <div class="parts-area">
+    <div class="parts-tabs">
+      <button class="tab-btn active" onclick="switchTab('eyes')">눈</button>
+      <button class="tab-btn" onclick="switchTab('brows')">눈썹</button>
+      <button class="tab-btn" onclick="switchTab('mouth')">입</button>
+    </div>
+    <div class="parts-grid" id="parts-grid"></div>
+  </div>
+
+  <div class="bottom-row">
+    <button class="btn-action btn-clear" onclick="clearFace()">지우기</button>
+    <button class="btn-action btn-done" onclick="checkFace()">완성!</button>
+  </div>
+
+  <div id="result-screen">
+    <div class="result-title">표정 달인!</div>
+    <div class="stars-row" id="result-stars"></div>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-buttons">
+      <button class="btn-result btn-retry" onclick="initGame()">다시하기</button>
+      <a href="../../index.html" class="btn-result btn-home">홈으로</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// Stars
+(function(){
+  const c=document.getElementById('stars');
+  for(let i=0;i<55;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=Math.random()*2+0.8;
+    s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--dur:${2+Math.random()*3}s;--delay:${Math.random()*3}s`;
+    c.appendChild(s);
+  }
+})();
+
+// Parts library
+const PARTS = {
+  eyes: [
+    { id:'eye-happy',  label:'기쁜눈',  svg: `<g id="p-eyes"><path d="M54 75 Q62 66 70 75" stroke="#1c1917" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M110 75 Q118 66 126 75" stroke="#1c1917" stroke-width="4" fill="none" stroke-linecap="round"/></g>` },
+    { id:'eye-sad',    label:'슬픈눈',  svg: `<g id="p-eyes"><circle cx="62" cy="75" r="9" fill="#1c1917"/><circle cx="118" cy="75" r="9" fill="#1c1917"/><circle cx="65" cy="72" r="3" fill="white"/><circle cx="121" cy="72" r="3" fill="white"/><ellipse cx="62" cy="78" rx="6" ry="3" fill="#93c5fd" opacity="0.5"/><ellipse cx="118" cy="78" rx="6" ry="3" fill="#93c5fd" opacity="0.5"/></g>` },
+    { id:'eye-angry',  label:'화난눈',  svg: `<g id="p-eyes"><ellipse cx="62" cy="78" rx="11" ry="8" fill="#1c1917"/><ellipse cx="118" cy="78" rx="11" ry="8" fill="#1c1917"/><circle cx="65" cy="76" r="3" fill="white"/><circle cx="121" cy="76" r="3" fill="white"/></g>` },
+    { id:'eye-surprised',label:'놀란눈',svg: `<g id="p-eyes"><circle cx="62" cy="76" r="13" fill="white" stroke="#1c1917" stroke-width="2.5"/><circle cx="62" cy="76" r="8" fill="#1c1917"/><circle cx="65" cy="73" r="3" fill="white"/><circle cx="118" cy="76" r="13" fill="white" stroke="#1c1917" stroke-width="2.5"/><circle cx="118" cy="76" r="8" fill="#1c1917"/><circle cx="121" cy="73" r="3" fill="white"/></g>` },
+  ],
+  brows: [
+    { id:'brow-happy',   label:'기쁜눈썹',svg: `<g id="p-brows"><path d="M48 58 Q62 50 76 56" stroke="#92400e" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M104 56 Q118 50 132 58" stroke="#92400e" stroke-width="3.5" fill="none" stroke-linecap="round"/></g>` },
+    { id:'brow-sad',     label:'슬픈눈썹',svg: `<g id="p-brows"><path d="M48 56 Q62 64 76 60" stroke="#92400e" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M104 60 Q118 64 132 56" stroke="#92400e" stroke-width="3.5" fill="none" stroke-linecap="round"/></g>` },
+    { id:'brow-angry',   label:'화난눈썹',svg: `<g id="p-brows"><path d="M46 62 Q62 54 78 58" stroke="#92400e" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M102 58 Q118 54 134 62" stroke="#92400e" stroke-width="4" fill="none" stroke-linecap="round"/></g>` },
+    { id:'brow-surprised',label:'놀란눈썹',svg:`<g id="p-brows"><path d="M48 52 Q62 44 76 52" stroke="#92400e" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M104 52 Q118 44 132 52" stroke="#92400e" stroke-width="3.5" fill="none" stroke-linecap="round"/></g>` },
+  ],
+  mouth: [
+    { id:'mouth-happy',   label:'기쁜입',  svg: `<g id="p-mouth"><path d="M62 122 Q90 145 118 122" stroke="#1c1917" stroke-width="4" fill="#f87171" stroke-linecap="round"/></g>` },
+    { id:'mouth-sad',     label:'슬픈입',  svg: `<g id="p-mouth"><path d="M62 138 Q90 120 118 138" stroke="#1c1917" stroke-width="4" fill="none" stroke-linecap="round"/></g>` },
+    { id:'mouth-angry',   label:'화난입',  svg: `<g id="p-mouth"><path d="M66 136 Q90 124 114 136" stroke="#1c1917" stroke-width="4" fill="none" stroke-linecap="round"/><line x1="74" y1="140" x2="106" y2="140" stroke="#1c1917" stroke-width="3"/></g>` },
+    { id:'mouth-surprised',label:'놀란입', svg: `<g id="p-mouth"><ellipse cx="90" cy="130" rx="20" ry="16" fill="#1c1917"/><ellipse cx="90" cy="130" rx="16" ry="12" fill="#7f1d1d"/></g>` },
+  ]
+};
+
+const EMOTIONS = [
+  { name:'기쁨',    eyes:'eye-happy',    brows:'brow-happy',    mouth:'mouth-happy',    msg:'정말 행복한 표정이에요!' },
+  { name:'슬픔',    eyes:'eye-sad',      brows:'brow-sad',      mouth:'mouth-sad',      msg:'슬플 때는 위로해줘요.' },
+  { name:'화남',    eyes:'eye-angry',    brows:'brow-angry',    mouth:'mouth-angry',    msg:'화가 났을 때는 깊게 숨 쉬어요.' },
+  { name:'놀람',    eyes:'eye-surprised',brows:'brow-surprised',mouth:'mouth-surprised',msg:'깜짝 놀란 표정이에요!' },
+  { name:'두려움',  eyes:'eye-surprised',brows:'brow-sad',      mouth:'mouth-sad',      msg:'무서울 땐 친구에게 말해요.' },
+  { name:'부끄러움',eyes:'eye-happy',   brows:'brow-sad',      mouth:'mouth-happy',    msg:'부끄러울 때도 괜찮아요!' },
+];
+
+let round=0, hearts=3, score=0;
+let selected={ eyes:null, brows:null, mouth:null };
+let currentTab='eyes';
+let roundOrder=[];
+
+function initGame(){
+  round=0; hearts=3; score=0;
+  selected={eyes:null,brows:null,mouth:null};
+  roundOrder=[...EMOTIONS].sort(()=>Math.random()-0.5);
+  document.getElementById('result-screen').classList.remove('show');
+  loadRound();
+}
+
+function renderHearts(){
+  const c=document.getElementById('hearts');c.innerHTML='';
+  const ns='http://www.w3.org/2000/svg';
+  for(let i=0;i<3;i++){
+    const svg=document.createElementNS(ns,'svg');
+    svg.setAttribute('width','28');svg.setAttribute('height','28');svg.setAttribute('viewBox','0 0 28 28');
+    const p=document.createElementNS(ns,'path');
+    p.setAttribute('d','M14 23 C14 23 4 16 4 10 C4 7 6 5 9 5 C11 5 13 6.5 14 8 C15 6.5 17 5 19 5 C22 5 24 7 24 10 C24 16 14 23 14 23Z');
+    p.setAttribute('fill',i<hearts?'#ec4899':'rgba(255,255,255,0.1)');
+    p.setAttribute('stroke',i<hearts?'#f472b6':'rgba(255,255,255,0.15)');
+    p.setAttribute('stroke-width','1.5');
+    svg.appendChild(p);c.appendChild(svg);
+  }
+}
+
+function loadRound(){
+  selected={eyes:null,brows:null,mouth:null};
+  currentTab='eyes';
+  document.getElementById('round-pill').textContent=`${round+1} / 6`;
+  renderHearts();
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  const emo=roundOrder[round];
+  document.getElementById('target-emotion-name').textContent=emo.name;
+  // Render target face
+  renderFaceParts('target-brows', 'target-eyes', 'target-mouth', emo.brows, emo.eyes, emo.mouth);
+  clearMyFace();
+  renderParts();
+}
+
+function renderFaceParts(browsId, eyesId, mouthId, browsPartId, eyesPartId, mouthPartId){
+  const bEl=document.getElementById(browsId);
+  const eEl=document.getElementById(eyesId);
+  const mEl=document.getElementById(mouthId);
+  const bPart=PARTS.brows.find(p=>p.id===browsPartId);
+  const ePart=PARTS.eyes.find(p=>p.id===eyesPartId);
+  const mPart=PARTS.mouth.find(p=>p.id===mouthPartId);
+  if(bEl && bPart) bEl.innerHTML=bPart.svg;
+  if(eEl && ePart) eEl.innerHTML=ePart.svg;
+  if(mEl && mPart) mEl.innerHTML=mPart.svg;
+}
+
+function clearMyFace(){
+  document.getElementById('my-brows').innerHTML='';
+  document.getElementById('my-eyes').innerHTML='';
+  document.getElementById('my-mouth').innerHTML='';
+  selected={eyes:null,brows:null,mouth:null};
+}
+
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active',['eyes','brows','mouth'][i]===tab);
+  });
+  renderParts();
+}
+
+function renderParts(){
+  const grid=document.getElementById('parts-grid');
+  grid.innerHTML='';
+  PARTS[currentTab].forEach(part=>{
+    const card=document.createElement('div');
+    card.className='part-card'+(selected[currentTab]===part.id?' selected':'');
+    card.innerHTML=`<svg viewBox="0 0 180 180" width="52" height="52" xmlns="http://www.w3.org/2000/svg"><rect width="180" height="180" rx="90" fill="#fbbf24"/>${part.svg}</svg><span>${part.label}</span>`;
+    card.onclick=()=>selectPart(part.id);
+    grid.appendChild(card);
+  });
+}
+
+function selectPart(partId){
+  selected[currentTab]=partId;
+  renderParts();
+  // Apply to my face
+  if(currentTab==='eyes'){
+    const p=PARTS.eyes.find(p=>p.id===partId);
+    document.getElementById('my-eyes').innerHTML=p?p.svg:'';
+  } else if(currentTab==='brows'){
+    const p=PARTS.brows.find(p=>p.id===partId);
+    document.getElementById('my-brows').innerHTML=p?p.svg:'';
+  } else {
+    const p=PARTS.mouth.find(p=>p.id===partId);
+    document.getElementById('my-mouth').innerHTML=p?p.svg:'';
+  }
+}
+
+function clearFace(){
+  clearMyFace();
+  renderParts();
+}
+
+function checkFace(){
+  const emo=roundOrder[round];
+  let matches=0;
+  if(selected.eyes===emo.eyes) matches++;
+  if(selected.brows===emo.brows) matches++;
+  if(selected.mouth===emo.mouth) matches++;
+
+  if(matches>=2){
+    score++;
+    flashScreen('green');
+    spawnParticles();
+    const fb=document.getElementById('feedback-msg');
+    document.getElementById('msg-title').textContent=`잘 했어요! (${matches}/3 맞아요)`;
+    document.getElementById('msg-title').style.color='#22c55e';
+    document.getElementById('msg-sub').textContent=emo.msg;
+    fb.classList.add('show');
+  } else {
+    hearts--;
+    flashScreen('red');
+    shakeWrap();
+    renderHearts();
+    const fb=document.getElementById('feedback-msg');
+    document.getElementById('msg-title').textContent=`조금 더 생각해봐요! (${matches}/3)`;
+    document.getElementById('msg-title').style.color='#f87171';
+    document.getElementById('msg-sub').textContent='눈, 눈썹, 입 중 2개 이상 맞춰보세요!';
+    fb.classList.add('show');
+    if(hearts<=0){
+      setTimeout(()=>{ document.getElementById('feedback-msg').classList.remove('show'); showResult(); },1400);
+    }
+  }
+}
+
+function nextRound(){
+  document.getElementById('feedback-msg').classList.remove('show');
+  round++;
+  if(round>=6) showResult();
+  else loadRound();
+}
+
+function showResult(){
+  const sc=document.getElementById('result-screen');
+  const stars=document.getElementById('result-stars');
+  const scoreEl=document.getElementById('result-score');
+  const starCount=score>=5?3:score>=3?2:score>=1?1:0;
+  scoreEl.textContent=`${score} / 6 정답!`;
+  stars.innerHTML='';
+  const ns='http://www.w3.org/2000/svg';
+  for(let i=0;i<3;i++){
+    const svg=document.createElementNS(ns,'svg');
+    svg.setAttribute('width','54');svg.setAttribute('height','54');svg.setAttribute('viewBox','0 0 54 54');
+    const poly=document.createElementNS(ns,'polygon');
+    poly.setAttribute('points','27,4 33,20 50,20 37,30 42,46 27,36 12,46 17,30 4,20 21,20');
+    poly.setAttribute('fill',i<starCount?'#fbbf24':'rgba(255,255,255,0.1)');
+    poly.setAttribute('stroke',i<starCount?'#f59e0b':'rgba(255,255,255,0.1)');
+    svg.appendChild(poly);stars.appendChild(svg);
+  }
+  sc.classList.add('show');
+  spawnParticles(true);
+}
+
+function flashScreen(type){
+  const f=document.getElementById('flash');
+  f.className=type;f.style.opacity='1';
+  setTimeout(()=>{f.style.opacity='0';f.className='';},320);
+}
+function shakeWrap(){
+  const w=document.getElementById('game-wrap');
+  w.classList.remove('shake');void w.offsetWidth;w.classList.add('shake');
+  setTimeout(()=>w.classList.remove('shake'),450);
+}
+function spawnParticles(big=false){
+  const wrap=document.getElementById('game-wrap');
+  const colors=['#a855f7','#ec4899','#fbbf24','#22c55e','#60a5fa','#f472b6','#34d399'];
+  const count=big?35:20;
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');p.className='particle';
+    const angle=(i/count)*Math.PI*2;
+    const dist=70+Math.random()*130;
+    const sz=6+Math.random()*10;
+    p.style.cssText=`left:${300+Math.random()*200}px;top:${200+Math.random()*100}px;background:${colors[i%colors.length]};width:${sz}px;height:${sz}px;--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px;--dur:${0.65+Math.random()*0.55}s;`;
+    wrap.appendChild(p);setTimeout(()=>p.remove(),1300);
+  }
+}
+
+initGame();
+</script>
+</body>
+</html>

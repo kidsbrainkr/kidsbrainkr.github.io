@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>반응속도 게임 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0118;
+      --card: rgba(255,255,255,0.06);
+      --card-border: rgba(255,255,255,0.12);
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --grad: linear-gradient(135deg,#a855f7,#ec4899);
+      --text: #f0e8ff;
+      --text-dim: rgba(240,232,255,0.55);
+      --correct: #22c55e;
+      --wrong: #ef4444;
+      --radius: 20px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Nunito','Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+    }
+    .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .star {
+      position: absolute; border-radius: 50%; background: white;
+      animation: twinkle var(--d,3s) var(--delay,0s) infinite alternate ease-in-out;
+    }
+    @keyframes twinkle {
+      from { opacity: var(--min-op,0.2); transform: scale(1); }
+      to   { opacity: var(--max-op,0.9); transform: scale(1.4); }
+    }
+
+    #game-area {
+      position: relative; z-index: 1;
+      width: 800px; height: 600px;
+      background: rgba(10,1,24,0.85);
+      border: 1px solid var(--card-border);
+      border-radius: 28px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px 10px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 5;
+    }
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 50px;
+      color: var(--text-dim);
+      font-family: inherit; font-size: 0.82rem; font-weight: 700;
+      cursor: pointer; text-decoration: none; transition: background 0.2s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.1); }
+    .round-display {
+      font-size: 0.9rem; font-weight: 800; color: var(--text-dim);
+    }
+    .best-display {
+      font-size: 0.85rem; font-weight: 700; color: var(--purple);
+    }
+
+    .screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    .screen.hidden { display: none; }
+
+    /* 인트로 */
+    #intro-screen h1 {
+      font-size: 2.4rem; font-weight: 900;
+      background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 12px; text-align: center;
+    }
+    #intro-screen p { font-size: 1rem; color: var(--text-dim); text-align: center; line-height: 1.7; margin-bottom: 28px; }
+
+    /* 플레이 화면 - 전체 채움 */
+    #play-screen {
+      position: relative;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    #color-bg {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.05s;
+      cursor: pointer;
+    }
+
+    #status-text {
+      font-size: 2.8rem;
+      font-weight: 900;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+      text-align: center;
+      line-height: 1.3;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    #status-sub {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-top: 12px;
+      opacity: 0.8;
+      text-align: center;
+    }
+
+    #reaction-ms {
+      font-size: 4rem;
+      font-weight: 900;
+      color: white;
+      text-shadow: 0 2px 30px rgba(0,0,0,0.6);
+      animation: popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    /* 라운드 결과 목록 */
+    .round-results {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      justify-content: center;
+      position: absolute;
+      bottom: 20px;
+      left: 0; right: 0;
+      padding: 0 20px;
+      z-index: 3;
+    }
+    .round-chip {
+      padding: 5px 14px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: white;
+    }
+    .round-chip.fast { border-color: #22c55e; color: #22c55e; }
+    .round-chip.early { border-color: #ef4444; color: #ef4444; }
+
+    /* Too Early 오버레이 */
+    #too-early {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(239,68,68,0.85);
+      z-index: 10;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    #too-early.visible { opacity: 1; pointer-events: all; }
+    #too-early .big-text { font-size: 2.5rem; font-weight: 900; color: white; }
+    #too-early .sub-text { font-size: 1.1rem; color: rgba(255,255,255,0.8); margin-top: 8px; }
+
+    /* 결과 */
+    #result-screen { gap: 16px; }
+    #result-screen h2 {
+      font-size: 2rem; font-weight: 900;
+      background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .avg-time {
+      font-size: 3.5rem; font-weight: 900; color: #facc15;
+      text-shadow: 0 2px 20px rgba(250,204,21,0.4);
+    }
+    .avg-label { font-size: 1rem; color: var(--text-dim); }
+    .animal-badge {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: 20px; padding: 16px 32px;
+    }
+    .animal-name { font-size: 1.4rem; font-weight: 900; color: var(--text); }
+    .animal-desc { font-size: 0.9rem; color: var(--text-dim); }
+    .results-list {
+      display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+    }
+    .result-chip {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+
+    .btn-primary {
+      padding: 14px 36px; background: var(--grad);
+      border: none; border-radius: 50px; color: #fff;
+      font-family: inherit; font-size: 1.1rem; font-weight: 800; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(168,85,247,0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); }
+    .btn-primary:active { transform: scale(0.96); }
+    .btn-secondary {
+      padding: 12px 28px; background: var(--card);
+      border: 1px solid var(--card-border); border-radius: 50px;
+      color: var(--text); font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
+    }
+    .btn-row { display: flex; gap: 12px; margin-top: 10px; }
+
+    /* 파티클 */
+    .particle {
+      position: absolute; border-radius: 50%; pointer-events: none; z-index: 20;
+      animation: particleFly var(--dur,0.8s) ease-out forwards;
+    }
+    @keyframes particleFly {
+      0%   { transform: translate(0,0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--tx),var(--ty)) scale(0); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+
+<div id="game-area">
+  <div class="hud">
+    <a href="../../index.html" class="btn-back">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      홈
+    </a>
+    <div class="round-display" id="round-display">1 / 5 라운드</div>
+    <div class="best-display" id="best-display"></div>
+  </div>
+
+  <!-- 인트로 -->
+  <div class="screen" id="intro-screen">
+    <h1>반응속도 게임</h1>
+    <p>빨간 화면이 초록으로 바뀌면<br>최대한 빨리 탭하세요!</p>
+    <!-- 신호등 SVG -->
+    <svg width="100" height="200" viewBox="0 0 100 200" style="margin-bottom:20px;">
+      <rect x="30" y="0" width="40" height="200" rx="20" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+      <circle cx="50" cy="40"  r="18" fill="#ef4444" filter="url(#glow-r)"/>
+      <circle cx="50" cy="100" r="18" fill="rgba(234,179,8,0.3)" stroke="rgba(234,179,8,0.5)" stroke-width="2"/>
+      <circle cx="50" cy="160" r="18" fill="rgba(34,197,94,0.3)" stroke="rgba(34,197,94,0.5)" stroke-width="2"/>
+      <defs>
+        <filter id="glow-r"><feGaussianBlur stdDeviation="4" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+    </svg>
+    <p style="font-size:0.9rem; color:var(--text-dim);">5라운드 후 평균 반응속도를 알려드려요.<br>기록은 저장돼요!</p>
+    <button class="btn-primary" id="start-btn" style="margin-top:20px">시작하기</button>
+  </div>
+
+  <!-- 플레이 -->
+  <div class="screen hidden" id="play-screen">
+    <div id="color-bg">
+      <div id="status-text"></div>
+      <div id="status-sub"></div>
+      <div id="reaction-ms" style="display:none"></div>
+    </div>
+    <div id="too-early">
+      <div class="big-text">너무 일찍!</div>
+      <div class="sub-text">초록색이 될 때까지 기다려요</div>
+    </div>
+    <div class="round-results" id="round-results"></div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="screen hidden" id="result-screen">
+    <h2>결과 발표!</h2>
+    <div class="avg-time" id="avg-time"></div>
+    <div class="avg-label">평균 반응 시간</div>
+    <div class="animal-badge">
+      <svg id="animal-svg" width="100" height="100" viewBox="0 0 100 100"></svg>
+      <div class="animal-name" id="animal-name"></div>
+      <div class="animal-desc" id="animal-desc"></div>
+    </div>
+    <div class="results-list" id="results-list"></div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="location.href='../../index.html'">홈으로</button>
+      <button class="btn-primary" id="retry-btn">다시하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 별 생성
+(function(){
+  const el = document.getElementById('stars');
+  for(let i=0;i<55;i++){
+    const s=document.createElement('div'); s.className='star';
+    const size=Math.random()*2.5+0.5;
+    s.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${(Math.random()*3+1.5).toFixed(1)}s;--delay:${(Math.random()*3).toFixed(1)}s;--min-op:${(Math.random()*0.2+0.1).toFixed(2)};--max-op:${(Math.random()*0.5+0.5).toFixed(2)};`;
+    el.appendChild(s);
+  }
+})();
+
+const TOTAL_ROUNDS = 5;
+const ANIMALS = [
+  { name:'치타', desc:'번개처럼 빠른 반응속도!', minMs:0,   maxMs:250,  color:'#facc15' },
+  { name:'독수리', desc:'날카롭고 빠른 집중력!', minMs:251, maxMs:350,  color:'#f97316' },
+  { name:'토끼', desc:'귀엽고 꽤 빠른 반응!',   minMs:351, maxMs:450,  color:'#ec4899' },
+  { name:'고양이', desc:'느긋하지만 귀여워!',   minMs:451, maxMs:600,  color:'#a855f7' },
+  { name:'거북이', desc:'천천히 하면 더 잘할 수 있어!', minMs:601, maxMs:99999, color:'#22c55e' },
+];
+
+// 동물 SVG 그리기
+function drawAnimal(svgEl, animal) {
+  svgEl.innerHTML = '';
+  const color = animal.color;
+  // 공통: 귀여운 얼굴
+  const bg = `<circle cx="50" cy="50" r="45" fill="${color}" opacity="0.2"/>`;
+  let body = '';
+  if(animal.name === '치타') {
+    body = `
+      <ellipse cx="50" cy="55" rx="28" ry="22" fill="${color}"/>
+      <circle cx="50" cy="32" r="18" fill="${color}"/>
+      <circle cx="43" cy="29" r="4" fill="rgba(0,0,0,0.3)"/>
+      <circle cx="57" cy="29" r="4" fill="rgba(0,0,0,0.3)"/>
+      <ellipse cx="50" cy="36" rx="6" ry="4" fill="rgba(0,0,0,0.2)"/>
+      <!-- 귀 -->
+      <polygon points="35,18 28,5 42,15" fill="${color}"/>
+      <polygon points="65,18 72,5 58,15" fill="${color}"/>
+      <!-- 반점 -->
+      <circle cx="38" cy="52" r="4" fill="rgba(0,0,0,0.2)"/>
+      <circle cx="62" cy="52" r="4" fill="rgba(0,0,0,0.2)"/>
+      <circle cx="50" cy="60" r="4" fill="rgba(0,0,0,0.2)"/>
+    `;
+  } else if(animal.name === '독수리') {
+    body = `
+      <ellipse cx="50" cy="55" rx="25" ry="20" fill="#8B6914"/>
+      <circle cx="50" cy="32" r="18" fill="#C8A951"/>
+      <!-- 부리 -->
+      <polygon points="50,38 60,42 50,46" fill="#f97316"/>
+      <circle cx="44" cy="29" r="4" fill="rgba(0,0,0,0.6)"/>
+      <circle cx="56" cy="29" r="4" fill="rgba(0,0,0,0.6)"/>
+      <!-- 날개 -->
+      <ellipse cx="25" cy="55" rx="18" ry="10" fill="#8B6914" transform="rotate(-20,25,55)"/>
+      <ellipse cx="75" cy="55" rx="18" ry="10" fill="#8B6914" transform="rotate(20,75,55)"/>
+    `;
+  } else if(animal.name === '토끼') {
+    body = `
+      <ellipse cx="50" cy="58" rx="25" ry="20" fill="#f9a8d4"/>
+      <circle cx="50" cy="36" r="18" fill="#f9a8d4"/>
+      <!-- 긴 귀 -->
+      <ellipse cx="40" cy="12" rx="7" ry="18" fill="#f9a8d4"/>
+      <ellipse cx="60" cy="12" rx="7" ry="18" fill="#f9a8d4"/>
+      <ellipse cx="40" cy="12" rx="4" ry="14" fill="#fda4af"/>
+      <ellipse cx="60" cy="12" rx="4" ry="14" fill="#fda4af"/>
+      <circle cx="44" cy="33" r="4" fill="rgba(0,0,0,0.5)"/>
+      <circle cx="56" cy="33" r="4" fill="rgba(0,0,0,0.5)"/>
+      <circle cx="50" cy="40" r="3" fill="#fda4af"/>
+    `;
+  } else if(animal.name === '고양이') {
+    body = `
+      <ellipse cx="50" cy="58" rx="25" ry="20" fill="#c4b5fd"/>
+      <circle cx="50" cy="35" r="18" fill="#c4b5fd"/>
+      <polygon points="36,20 28,5 44,18" fill="#c4b5fd"/>
+      <polygon points="64,20 72,5 56,18" fill="#c4b5fd"/>
+      <circle cx="44" cy="32" r="4" fill="rgba(0,0,0,0.5)"/>
+      <circle cx="56" cy="32" r="4" fill="rgba(0,0,0,0.5)"/>
+      <!-- 수염 -->
+      <line x1="28" y1="40" x2="44" y2="38" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
+      <line x1="28" y1="44" x2="44" y2="42" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
+      <line x1="72" y1="40" x2="56" y2="38" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
+      <line x1="72" y1="44" x2="56" y2="42" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
+    `;
+  } else {
+    body = `
+      <ellipse cx="50" cy="60" rx="28" ry="20" fill="#86efac"/>
+      <ellipse cx="50" cy="38" rx="22" ry="18" fill="#86efac"/>
+      <circle cx="44" cy="35" r="4" fill="rgba(0,0,0,0.5)"/>
+      <circle cx="56" cy="35" r="4" fill="rgba(0,0,0,0.5)"/>
+      <!-- 껍데기 줄무늬 -->
+      <path d="M30,55 Q50,50 70,55" stroke="#22c55e" stroke-width="2" fill="none"/>
+      <path d="M28,62 Q50,57 72,62" stroke="#22c55e" stroke-width="2" fill="none"/>
+    `;
+  }
+  svgEl.innerHTML = bg + body;
+}
+
+let roundResults = [];
+let currentRound = 0;
+let state = 'idle'; // idle | waiting | ready | result
+let greenTime = 0;
+let waitTimeout, colorBg;
+let bestRecord = parseInt(localStorage.getItem('reaction_best') || '99999');
+
+function updateBestDisplay() {
+  const el = document.getElementById('best-display');
+  if(bestRecord < 99999) el.textContent = `최고: ${bestRecord}ms`;
+  else el.textContent = '';
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function startGame() {
+  roundResults = [];
+  currentRound = 0;
+  document.getElementById('round-results').innerHTML = '';
+  showScreen('play-screen');
+  colorBg = document.getElementById('color-bg');
+  startRound();
+}
+
+function startRound() {
+  state = 'waiting';
+  document.getElementById('round-display').textContent = `${currentRound+1} / ${TOTAL_ROUNDS} 라운드`;
+
+  const statusText = document.getElementById('status-text');
+  const statusSub  = document.getElementById('status-sub');
+  const msEl = document.getElementById('reaction-ms');
+  const tooEarly = document.getElementById('too-early');
+
+  tooEarly.classList.remove('visible');
+  msEl.style.display = 'none';
+  statusText.style.animation = 'pulse 1.5s ease-in-out infinite';
+
+  colorBg.style.backgroundColor = '#c0392b'; // 빨강
+  statusText.style.color = 'white';
+  statusText.textContent = '기다려요...';
+  statusSub.textContent = '초록색이 되면 탭!';
+  statusSub.style.color = 'rgba(255,255,255,0.7)';
+
+  // 가짜 깜빡임 1회 (30% 확률)
+  const delay = Math.random() * 3000 + 1000;
+  const fakeBlink = Math.random() < 0.3;
+
+  if(fakeBlink) {
+    const fakeAt = delay * 0.4;
+    waitTimeout = setTimeout(() => {
+      // 잠깐 초록 보여줬다가 바로 다시 빨강
+      colorBg.style.backgroundColor = '#16a34a';
+      statusText.textContent = '속았지?';
+      setTimeout(() => {
+        colorBg.style.backgroundColor = '#c0392b';
+        statusText.textContent = '기다려요...';
+        // 진짜 초록
+        const remaining = delay - fakeAt;
+        waitTimeout = setTimeout(goGreen, remaining);
+      }, 200);
+    }, fakeAt);
+  } else {
+    waitTimeout = setTimeout(goGreen, delay);
+  }
+}
+
+function goGreen() {
+  state = 'ready';
+  colorBg.style.backgroundColor = '#16a34a';
+  document.getElementById('status-text').textContent = '지금!';
+  document.getElementById('status-text').style.animation = 'none';
+  document.getElementById('status-sub').textContent = '빨리 탭하세요!';
+  greenTime = performance.now();
+
+  // 놓치면 3초 후 패널티
+  waitTimeout = setTimeout(() => {
+    if(state === 'ready') {
+      recordResult(3000, false);
+    }
+  }, 3000);
+}
+
+function handleTap() {
+  if(state === 'waiting') {
+    // 너무 일찍!
+    clearTimeout(waitTimeout);
+    state = 'early';
+    document.getElementById('too-early').classList.add('visible');
+    // 1.5초 후 재시작
+    setTimeout(() => {
+      document.getElementById('too-early').classList.remove('visible');
+      // 이 라운드는 패널티로 처리
+      addRoundChip(0, true);
+      currentRound++;
+      if(currentRound >= TOTAL_ROUNDS) showResult();
+      else startRound();
+    }, 1500);
+    return;
+  }
+  if(state !== 'ready') return;
+  clearTimeout(waitTimeout);
+
+  const ms = Math.round(performance.now() - greenTime);
+  state = 'showing';
+
+  const msEl = document.getElementById('reaction-ms');
+  msEl.style.display = 'block';
+  msEl.textContent = `${ms}ms`;
+  document.getElementById('status-text').textContent = '';
+  document.getElementById('status-sub').textContent = '';
+
+  spawnParticles();
+  recordResult(ms, true);
+}
+
+function recordResult(ms, valid) {
+  if(valid) roundResults.push(ms);
+  addRoundChip(ms, false, !valid);
+
+  if(valid && ms < bestRecord) {
+    bestRecord = ms;
+    localStorage.setItem('reaction_best', ms);
+    updateBestDisplay();
+  }
+
+  currentRound++;
+  setTimeout(() => {
+    if(currentRound >= TOTAL_ROUNDS) showResult();
+    else startRound();
+  }, valid ? 1200 : 0);
+}
+
+function addRoundChip(ms, early) {
+  const chip = document.createElement('div');
+  chip.className = 'round-chip';
+  if(early) { chip.classList.add('early'); chip.textContent = `R${currentRound+1}: 너무 일찍`; }
+  else if(!ms) { chip.classList.add('early'); chip.textContent = `R${currentRound+1}: 시간초과`; }
+  else { chip.classList.add('fast'); chip.textContent = `R${currentRound+1}: ${ms}ms`; }
+  document.getElementById('round-results').appendChild(chip);
+}
+
+function showResult() {
+  showScreen('result-screen');
+  const valid = roundResults.filter(r=>r<3000);
+  const avg = valid.length ? Math.round(valid.reduce((a,b)=>a+b,0)/valid.length) : 9999;
+
+  document.getElementById('avg-time').textContent = avg < 9999 ? `${avg}ms` : '--';
+
+  const animal = ANIMALS.find(a=>avg>=a.minMs && avg<=a.maxMs) || ANIMALS[ANIMALS.length-1];
+  document.getElementById('animal-name').textContent = animal.name + ' 수준!';
+  document.getElementById('animal-desc').textContent = animal.desc;
+  drawAnimal(document.getElementById('animal-svg'), animal);
+
+  const list = document.getElementById('results-list');
+  list.innerHTML = '';
+  roundResults.forEach((ms,i) => {
+    const chip = document.createElement('div');
+    chip.className = 'result-chip';
+    chip.style.background = ms<300 ? 'rgba(34,197,94,0.15)' : 'rgba(168,85,247,0.15)';
+    chip.style.border = `1px solid ${ms<300 ? '#22c55e' : '#a855f7'}`;
+    chip.style.color = ms<300 ? '#22c55e' : '#c4b5fd';
+    chip.textContent = `${i+1}번: ${ms}ms`;
+    list.appendChild(chip);
+  });
+}
+
+function spawnParticles() {
+  const area = document.getElementById('game-area');
+  const colors = ['#22c55e','#86efac','#bbf7d0','#facc15','#fde047'];
+  for(let i=0;i<20;i++){
+    const p=document.createElement('div'); p.className='particle';
+    const size=Math.random()*14+6;
+    const angle=Math.random()*Math.PI*2;
+    const dist=Math.random()*150+80;
+    p.style.cssText=`width:${size}px;height:${size}px;background:${colors[Math.floor(Math.random()*colors.length)]};left:50%;top:50%;--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px;--dur:${(Math.random()*0.4+0.5).toFixed(2)}s;`;
+    area.appendChild(p);
+    setTimeout(()=>p.remove(),1000);
+  }
+}
+
+// 탭 이벤트
+document.getElementById('play-screen').addEventListener('click', handleTap);
+document.getElementById('play-screen').addEventListener('touchstart', (e)=>{e.preventDefault();handleTap();},{passive:false});
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('retry-btn').addEventListener('click', startGame);
+
+updateBestDisplay();
+</script>
+</body>
+</html>

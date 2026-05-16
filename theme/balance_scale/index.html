@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>시소 저울 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0118;
+      --card: rgba(255,255,255,0.06);
+      --card-border: rgba(255,255,255,0.12);
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --yellow: #fbbf24;
+      --green: #22c55e;
+      --red: #ef4444;
+      --text: #f0e8ff;
+      --text-dim: rgba(240,232,255,0.55);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Nunito', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+    }
+    #stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .star {
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle var(--dur,3s) ease-in-out infinite var(--delay,0s);
+    }
+    @keyframes twinkle {
+      0%,100% { opacity: 0.15; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.4); }
+    }
+    #game-wrap {
+      position: relative;
+      z-index: 1;
+      width: 800px;
+      height: 600px;
+      background: linear-gradient(160deg, #110228 0%, #0a0118 60%, #050010 100%);
+      border-radius: 28px;
+      box-shadow: 0 0 80px rgba(168,85,247,0.2), 0 20px 60px rgba(0,0,0,0.7);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px 8px;
+      flex-shrink: 0;
+    }
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 50px;
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.1); }
+    .hud-right { display: flex; align-items: center; gap: 12px; }
+    .hearts { display: flex; gap: 6px; }
+    .round-info {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 50px;
+      padding: 6px 14px;
+    }
+    .question-area { text-align: center; padding: 4px 0 0; flex-shrink: 0; }
+    .question-text {
+      font-size: 1.35rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #a855f7, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .scale-scene {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #scale-svg { width: 100%; height: 100%; }
+    .btn-row {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      padding: 8px 24px 20px;
+      flex-shrink: 0;
+    }
+    .btn-choice {
+      flex: 1;
+      max-width: 220px;
+      padding: 14px 20px;
+      background: var(--card);
+      border: 2px solid var(--card-border);
+      border-radius: 16px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-choice:hover { background: rgba(168,85,247,0.2); border-color: var(--purple); transform: translateY(-2px); }
+    .btn-choice.correct { background: rgba(34,197,94,0.25); border-color: var(--green); color: var(--green); }
+    .btn-choice.wrong { background: rgba(239,68,68,0.2); border-color: var(--red); color: var(--red); }
+    .btn-choice:disabled { pointer-events: none; }
+    #flash {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: 28px;
+      opacity: 0;
+      z-index: 50;
+      transition: opacity 0.1s;
+    }
+    #flash.red { background: rgba(239,68,68,0.35); }
+    #flash.green { background: rgba(34,197,94,0.2); }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-6px); }
+      80% { transform: translateX(6px); }
+    }
+    .shake { animation: shake 0.45s ease; }
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 100;
+      animation: particleFly var(--dur,0.8s) ease-out forwards;
+    }
+    @keyframes particleFly {
+      0% { transform: translate(0,0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--tx),var(--ty)) scale(0); opacity: 0; }
+    }
+    #result-screen {
+      position: absolute;
+      inset: 0;
+      background: rgba(10,1,24,0.93);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 200;
+      border-radius: 28px;
+    }
+    #result-screen.show { display: flex; }
+    .result-title {
+      font-size: 2.4rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .result-score { font-size: 1.3rem; font-weight: 800; color: var(--text-dim); }
+    .stars-row { display: flex; gap: 12px; }
+    .result-buttons { display: flex; gap: 16px; margin-top: 8px; }
+    .btn-result {
+      padding: 14px 32px;
+      border-radius: 50px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.15s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+    .btn-result:hover { transform: scale(1.05); }
+    .btn-retry { background: linear-gradient(135deg, #a855f7, #ec4899); color: #fff; }
+    .btn-home { background: var(--card); border: 2px solid var(--card-border); color: var(--text-dim); }
+    #scale-beam {
+      transition: transform 0.75s cubic-bezier(0.34,1.4,0.64,1);
+      transform-origin: 400px 252px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="stars"></div>
+<div id="game-wrap">
+  <div id="flash"></div>
+
+  <div class="hud">
+    <a href="../../index.html" class="btn-back">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      홈
+    </a>
+    <div class="hud-right">
+      <div class="round-info" id="round-info">1 / 8</div>
+      <div class="hearts" id="hearts"></div>
+    </div>
+  </div>
+
+  <div class="question-area">
+    <div class="question-text">어느 쪽이 더 무거울까요?</div>
+  </div>
+
+  <div class="scale-scene">
+    <svg id="scale-svg" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="standGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#7c3aed"/>
+          <stop offset="100%" stop-color="#4c1d95"/>
+        </linearGradient>
+        <linearGradient id="beamGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#7c3aed"/>
+          <stop offset="50%" stop-color="#a78bfa"/>
+          <stop offset="100%" stop-color="#7c3aed"/>
+        </linearGradient>
+        <radialGradient id="trayGrad" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stop-color="#c4b5fd"/>
+          <stop offset="100%" stop-color="#6d28d9"/>
+        </radialGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="4" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <radialGradient id="bgGlow" cx="50%" cy="70%" r="55%">
+          <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.12"/>
+          <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <ellipse cx="400" cy="390" rx="320" ry="25" fill="url(#bgGlow)"/>
+
+      <!-- Stand -->
+      <ellipse cx="400" cy="382" rx="75" ry="13" fill="rgba(109,40,217,0.35)"/>
+      <rect x="391" y="220" width="18" height="168" rx="9" fill="url(#standGrad)"/>
+      <circle cx="400" cy="228" r="13" fill="#7c3aed" stroke="#c4b5fd" stroke-width="2"/>
+      <circle cx="400" cy="228" r="5" fill="#e9d5ff"/>
+
+      <!-- Beam -->
+      <g id="scale-beam">
+        <rect x="188" y="222" width="424" height="12" rx="6" fill="url(#beamGrad)" filter="url(#glow)"/>
+
+        <!-- Left string -->
+        <line x1="210" y1="234" x2="210" y2="290" stroke="#c4b5fd" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Right string -->
+        <line x1="590" y1="234" x2="590" y2="290" stroke="#c4b5fd" stroke-width="2.5" stroke-linecap="round"/>
+
+        <!-- Left tray -->
+        <g id="tray-left-g">
+          <path d="M148 296 Q210 314 272 296" stroke="#8b5cf6" stroke-width="2.5" fill="rgba(109,40,217,0.35)"/>
+          <ellipse cx="210" cy="296" rx="63" ry="12" fill="none" stroke="#8b5cf6" stroke-width="2.5"/>
+          <g id="items-left"></g>
+        </g>
+
+        <!-- Right tray -->
+        <g id="tray-right-g">
+          <path d="M528 296 Q590 314 652 296" stroke="#8b5cf6" stroke-width="2.5" fill="rgba(109,40,217,0.35)"/>
+          <ellipse cx="590" cy="296" rx="63" ry="12" fill="none" stroke="#8b5cf6" stroke-width="2.5"/>
+          <g id="items-right"></g>
+        </g>
+      </g>
+
+      <!-- Labels -->
+      <text id="label-left" x="210" y="365" text-anchor="middle" fill="rgba(240,232,255,0.55)" font-family="Nunito,sans-serif" font-size="14" font-weight="800"></text>
+      <text id="label-right" x="590" y="365" text-anchor="middle" fill="rgba(240,232,255,0.55)" font-family="Nunito,sans-serif" font-size="14" font-weight="800"></text>
+    </svg>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-choice" id="btn-left" onclick="choose('left')">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M12 3L6 9L12 15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      왼쪽이 더 무거워요
+    </button>
+    <button class="btn-choice" id="btn-right" onclick="choose('right')">
+      오른쪽이 더 무거워요
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M6 3L12 9L6 15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div id="result-screen">
+    <div class="result-title">게임 완료!</div>
+    <div class="stars-row" id="result-stars"></div>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-buttons">
+      <button class="btn-result btn-retry" onclick="initGame()">다시하기</button>
+      <a href="../../index.html" class="btn-result btn-home">홈으로</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// Stars
+(function(){
+  const c = document.getElementById('stars');
+  for(let i=0;i<55;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    const sz=Math.random()*2+0.8;
+    s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--dur:${2+Math.random()*3}s;--delay:${Math.random()*3}s`;
+    c.appendChild(s);
+  }
+})();
+
+// Item SVG generators
+const ITEMS = {
+  apple: {
+    name:'사과', weight:100,
+    svg(x,y,sc=1){ return `<g transform="translate(${x},${y}) scale(${sc})">
+      <ellipse cx="0" cy="4" rx="17" ry="16" fill="#ef4444"/>
+      <ellipse cx="-4" cy="2" rx="8" ry="10" fill="#f87171" opacity="0.5"/>
+      <path d="M-3,-10 Q0,-22 4,-10" stroke="#65a30d" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M0,-18 Q6,-21 9,-15" stroke="#65a30d" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </g>`}
+  },
+  watermelon: {
+    name:'수박', weight:3000,
+    svg(x,y,sc=1){ return `<g transform="translate(${x},${y}) scale(${sc})">
+      <ellipse cx="0" cy="0" rx="22" ry="18" fill="#16a34a"/>
+      <ellipse cx="0" cy="0" rx="22" ry="18" fill="none" stroke="#15803d" stroke-width="3.5" stroke-dasharray="9 7"/>
+      <ellipse cx="0" cy="2" rx="16" ry="12" fill="#f87171"/>
+      <circle cx="-5" cy="2" r="2" fill="#1c1917"/>
+      <circle cx="3" cy="6" r="2" fill="#1c1917"/>
+      <circle cx="8" cy="-1" r="2" fill="#1c1917"/>
+    </g>`}
+  },
+  feather: {
+    name:'깃털', weight:1,
+    svg(x,y,sc=1){ return `<g transform="translate(${x},${y}) scale(${sc})">
+      <path d="M0,16 Q-20,-6 0,-22 Q20,-6 0,16Z" fill="#e0f2fe" stroke="#7dd3fc" stroke-width="1.2"/>
+      <line x1="0" y1="16" x2="0" y2="-22" stroke="#93c5fd" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M-8,-2 Q0,0 8,-2 M-11,4 Q0,6 11,4 M-6,10 Q0,12 6,10" stroke="#bae6fd" stroke-width="1" fill="none"/>
+    </g>`}
+  },
+  book: {
+    name:'책', weight:500,
+    svg(x,y,sc=1){ return `<g transform="translate(${x},${y}) scale(${sc})">
+      <rect x="-18" y="-14" width="36" height="28" rx="2" fill="#3b82f6"/>
+      <rect x="-15" y="-11" width="30" height="22" rx="1" fill="#bfdbfe"/>
+      <line x1="-13" y1="-4" x2="13" y2="-4" stroke="#3b82f6" stroke-width="1.5"/>
+      <line x1="-13" y1="1" x2="13" y2="1" stroke="#3b82f6" stroke-width="1.5"/>
+      <line x1="-13" y1="6" x2="8" y2="6" stroke="#3b82f6" stroke-width="1.5"/>
+      <rect x="-18" y="-14" width="6" height="28" rx="2" fill="#1d4ed8"/>
+    </g>`}
+  },
+  shoe: {
+    name:'신발', weight:300,
+    svg(x,y,sc=1){ return `<g transform="translate(${x},${y}) scale(${sc})">
+      <path d="M-20,8 Q-18,-12 -8,-14 L10,-14 Q18,-14 20,-6 L20,8Z" fill="#f59e0b"/>
+      <path d="M-20,8 L20,8 Q22,8 22,5 L22,3 Q22,1 20,1 L-20,1Z" fill="#d97706"/>
+      <ellipse cx="9" cy="-5" rx="7" ry="6" fill="#fbbf24"/>
+      <path d="M-10,-10 Q-4,-13 2,-10" stroke="white" stroke-width="1.5" fill="none"/>
+    </g>`}
+  },
+  bottle: {
+    name:'물병', weight:600,
+    svg(x,y,sc=1){ return `<g transform="translate(${x},${y}) scale(${sc})">
+      <rect x="-7" y="-18" width="14" height="5" rx="2.5" fill="#6b7280"/>
+      <path d="M-11,-13 L-14,10 Q-14,16 0,16 Q14,16 14,10 L11,-13Z" fill="#bae6fd" fill-opacity="0.85" stroke="#7dd3fc" stroke-width="1.5"/>
+      <path d="M-13,2 Q0,8 13,2" stroke="#93c5fd" stroke-width="1.5" fill="none"/>
+      <ellipse cx="0" cy="-3" rx="10" ry="4" fill="white" fill-opacity="0.2"/>
+    </g>`}
+  },
+  key: {
+    name:'열쇠', weight:30,
+    svg(x,y,sc=1){ return `<g transform="translate(${x},${y}) scale(${sc})">
+      <circle cx="-8" cy="0" r="11" fill="none" stroke="#fbbf24" stroke-width="4.5"/>
+      <circle cx="-8" cy="0" r="5" fill="none" stroke="#fbbf24" stroke-width="2"/>
+      <rect x="2" y="-3" width="22" height="6" rx="3" fill="#fbbf24"/>
+      <rect x="18" y="-8" width="5" height="6" rx="1" fill="#fbbf24"/>
+      <rect x="13" y="-8" width="5" height="5" rx="1" fill="#fbbf24"/>
+    </g>`}
+  },
+  eraser: {
+    name:'지우개', weight:10,
+    svg(x,y,sc=1){ return `<g transform="translate(${x},${y}) scale(${sc})">
+      <rect x="-18" y="-9" width="36" height="18" rx="3.5" fill="#fb7185"/>
+      <rect x="-18" y="-9" width="12" height="18" rx="3.5" fill="#fda4af"/>
+      <line x1="-6" y1="-9" x2="-6" y2="9" stroke="#e11d48" stroke-width="2"/>
+      <rect x="-15" y="-5" width="8" height="3" rx="1" fill="white" fill-opacity="0.4"/>
+    </g>`}
+  }
+};
+
+const ROUNDS = [
+  {left:[{id:'apple'}],              right:[{id:'feather'}],                         answer:'left'},
+  {left:[{id:'watermelon'}],         right:[{id:'book'},{id:'apple'}],                answer:'left'},
+  {left:[{id:'shoe'},{id:'key'}],    right:[{id:'book'}],                             answer:'right'},
+  {left:[{id:'eraser'},{id:'key'}],  right:[{id:'feather'}],                          answer:'left'},
+  {left:[{id:'bottle'}],             right:[{id:'shoe'}],                             answer:'left'},
+  {left:[{id:'apple'},{id:'apple'}], right:[{id:'book'}],                             answer:'right'},
+  {left:[{id:'key'}],                right:[{id:'eraser'}],                           answer:'right'},
+  {left:[{id:'watermelon'}],         right:[{id:'bottle'},{id:'book'},{id:'shoe'}],   answer:'right'}
+];
+
+let round=0, hearts=3, score=0, answered=false;
+
+function initGame(){
+  round=0; hearts=3; score=0; answered=false;
+  document.getElementById('result-screen').classList.remove('show');
+  document.getElementById('scale-beam').style.transform='rotate(0deg)';
+  renderRound();
+}
+
+function renderHearts(){
+  const c=document.getElementById('hearts');
+  c.innerHTML='';
+  for(let i=0;i<3;i++){
+    const ns='http://www.w3.org/2000/svg';
+    const svg=document.createElementNS(ns,'svg');
+    svg.setAttribute('width','28'); svg.setAttribute('height','28');
+    svg.setAttribute('viewBox','0 0 28 28');
+    const p=document.createElementNS(ns,'path');
+    p.setAttribute('d','M14 23 C14 23 4 16 4 10 C4 7 6 5 9 5 C11 5 13 6.5 14 8 C15 6.5 17 5 19 5 C22 5 24 7 24 10 C24 16 14 23 14 23Z');
+    p.setAttribute('fill', i<hearts?'#ec4899':'rgba(255,255,255,0.1)');
+    p.setAttribute('stroke', i<hearts?'#f472b6':'rgba(255,255,255,0.15)');
+    p.setAttribute('stroke-width','1.5');
+    svg.appendChild(p);
+    c.appendChild(svg);
+  }
+}
+
+function renderRound(){
+  answered=false;
+  const r=ROUNDS[round];
+  document.getElementById('round-info').textContent=`${round+1} / 8`;
+  renderHearts();
+  document.getElementById('btn-left').className='btn-choice';
+  document.getElementById('btn-left').disabled=false;
+  document.getElementById('btn-right').className='btn-choice';
+  document.getElementById('btn-right').disabled=false;
+  document.getElementById('scale-beam').style.transform='rotate(0deg)';
+  renderItems('items-left', r.left, 210);
+  renderItems('items-right', r.right, 590);
+  document.getElementById('label-left').textContent=r.left.map(i=>ITEMS[i.id].name).join(' + ');
+  document.getElementById('label-right').textContent=r.right.map(i=>ITEMS[i.id].name).join(' + ');
+}
+
+function renderItems(gid, items, cx){
+  const g=document.getElementById(gid);
+  g.innerHTML='';
+  const offsets={1:[0], 2:[-20,20], 3:[-30,0,30]};
+  const xOff=offsets[items.length]||[0];
+  const scales={1:1, 2:0.85, 3:0.75};
+  const sc=scales[items.length]||0.75;
+  items.forEach((item,idx)=>{
+    g.innerHTML+=ITEMS[item.id].svg(xOff[idx], -18, sc);
+  });
+}
+
+function choose(side){
+  if(answered) return;
+  answered=true;
+  const r=ROUNDS[round];
+  const bl=document.getElementById('btn-left');
+  const br=document.getElementById('btn-right');
+  bl.disabled=true; br.disabled=true;
+
+  const angle=r.answer==='left'?14:-14;
+  document.getElementById('scale-beam').style.transform=`rotate(${angle}deg)`;
+
+  if(side===r.answer){
+    score++;
+    (side==='left'?bl:br).classList.add('correct');
+    flashScreen('green');
+    spawnParticles();
+    setTimeout(nextRound,1300);
+  } else {
+    hearts--;
+    (side==='left'?bl:br).classList.add('wrong');
+    (r.answer==='left'?bl:br).classList.add('correct');
+    flashScreen('red');
+    shakeWrap();
+    renderHearts();
+    if(hearts<=0){ setTimeout(showResult,1100); }
+    else { setTimeout(nextRound,1500); }
+  }
+}
+
+function nextRound(){
+  round++;
+  if(round>=ROUNDS.length) showResult();
+  else renderRound();
+}
+
+function showResult(){
+  const sc=document.getElementById('result-screen');
+  const stars=document.getElementById('result-stars');
+  const scoreEl=document.getElementById('result-score');
+  const starCount=score>=7?3:score>=5?2:score>=3?1:0;
+  scoreEl.textContent=`${score} / ${ROUNDS.length} 정답!`;
+  stars.innerHTML='';
+  const ns='http://www.w3.org/2000/svg';
+  for(let i=0;i<3;i++){
+    const svg=document.createElementNS(ns,'svg');
+    svg.setAttribute('width','54'); svg.setAttribute('height','54');
+    svg.setAttribute('viewBox','0 0 54 54');
+    const poly=document.createElementNS(ns,'polygon');
+    poly.setAttribute('points','27,4 33,20 50,20 37,30 42,46 27,36 12,46 17,30 4,20 21,20');
+    poly.setAttribute('fill',i<starCount?'#fbbf24':'rgba(255,255,255,0.1)');
+    poly.setAttribute('stroke',i<starCount?'#f59e0b':'rgba(255,255,255,0.1)');
+    svg.appendChild(poly);
+    stars.appendChild(svg);
+  }
+  sc.classList.add('show');
+  spawnParticles(true);
+}
+
+function flashScreen(type){
+  const f=document.getElementById('flash');
+  f.className=type; f.style.opacity='1';
+  setTimeout(()=>{ f.style.opacity='0'; f.className=''; },320);
+}
+
+function shakeWrap(){
+  const w=document.getElementById('game-wrap');
+  w.classList.remove('shake');
+  void w.offsetWidth;
+  w.classList.add('shake');
+  setTimeout(()=>w.classList.remove('shake'),450);
+}
+
+function spawnParticles(big=false){
+  const wrap=document.getElementById('game-wrap');
+  const colors=['#a855f7','#ec4899','#fbbf24','#22c55e','#60a5fa','#f472b6','#34d399'];
+  const count=big?35:20;
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    const angle=(i/count)*Math.PI*2;
+    const dist=70+Math.random()*130;
+    const sz=6+Math.random()*10;
+    p.style.cssText=`
+      left:${340+Math.random()*120}px;top:${200+Math.random()*80}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      width:${sz}px;height:${sz}px;
+      --tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px;
+      --dur:${0.65+Math.random()*0.55}s;
+    `;
+    wrap.appendChild(p);
+    setTimeout(()=>p.remove(),1300);
+  }
+}
+
+initGame();
+</script>
+</body>
+</html>

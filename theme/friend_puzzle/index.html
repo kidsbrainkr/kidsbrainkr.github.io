@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>동물 퍼즐 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0118;
+      --card: rgba(255,255,255,0.06);
+      --card-border: rgba(255,255,255,0.12);
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --orange: #f97316;
+      --grad: linear-gradient(135deg, #f97316, #ec4899);
+      --text: #f0e8ff;
+      --text-dim: rgba(240,232,255,0.55);
+      --correct: #22c55e;
+      --wrong: #ef4444;
+      --snap-dist: 40;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Nunito', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow: hidden;
+    }
+    .star {
+      position: fixed; border-radius: 50%; background: #fff;
+      animation: twinkle var(--dur,3s) ease-in-out infinite var(--delay,0s);
+      pointer-events: none; z-index: 0;
+    }
+    @keyframes twinkle {
+      0%,100%{opacity:.15;transform:scale(1)}50%{opacity:.9;transform:scale(1.4)}
+    }
+
+    #game-wrap {
+      position: relative;
+      width: 800px; height: 600px;
+      background: linear-gradient(160deg, #1a0a0e 0%, #0a0118 55%, #1a0a18 100%);
+      border-radius: 28px;
+      border: 1px solid rgba(249,115,22,0.2);
+      box-shadow: 0 0 80px rgba(249,115,22,0.1), 0 24px 64px rgba(0,0,0,0.7);
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    /* HUD */
+    #hud {
+      position: absolute; top: 16px; left: 20px; right: 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      z-index: 20;
+    }
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50px;
+      color: var(--text-dim);
+      font-family: inherit; font-size: 0.82rem; font-weight: 800;
+      cursor: pointer; text-decoration: none;
+      transition: background .2s, color .2s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+
+    .hud-right { display: flex; align-items: center; gap: 12px; }
+
+    /* Round dots */
+    #round-bar { display: flex; gap: 6px; }
+    .rd-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: background 0.3s;
+    }
+    .rd-dot.done { background: var(--orange); }
+    .rd-dot.active { background: var(--purple); box-shadow: 0 0 8px var(--purple); }
+
+    /* Pieces counter */
+    .pieces-badge {
+      padding: 6px 14px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50px;
+      font-size: 0.82rem; font-weight: 800;
+      color: var(--text-dim);
+    }
+
+    /* Preview panel */
+    #preview-panel {
+      position: absolute;
+      top: 60px; right: 20px;
+      width: 130px;
+      z-index: 20;
+    }
+    .preview-label {
+      text-align: center;
+      font-size: 0.68rem; font-weight: 800;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    #preview-svg-wrap {
+      width: 130px; height: 100px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #preview-svg { width: 100%; height: 100%; }
+
+    /* Puzzle board */
+    #puzzle-board {
+      position: absolute;
+      top: 68px; left: 30px;
+      z-index: 10;
+    }
+
+    /* Pieces scatter area */
+    #scatter-area {
+      position: absolute;
+      bottom: 16px; left: 30px; right: 170px;
+      top: 280px;
+      z-index: 15;
+    }
+
+    /* Puzzle piece */
+    .puzzle-piece {
+      position: absolute;
+      cursor: grab;
+      z-index: 16;
+      transition: filter 0.2s;
+      touch-action: none;
+    }
+    .puzzle-piece:hover { filter: brightness(1.15); }
+    .puzzle-piece.dragging {
+      cursor: grabbing;
+      z-index: 100;
+      filter: drop-shadow(0 6px 16px rgba(249,115,22,0.6));
+    }
+    .puzzle-piece.placed {
+      cursor: default;
+      pointer-events: none;
+      filter: none;
+    }
+
+    /* Slot outlines */
+    .puzzle-slot {
+      position: absolute;
+      border: 2px dashed rgba(255,255,255,0.15);
+      border-radius: 4px;
+      background: rgba(255,255,255,0.03);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .puzzle-slot.highlight {
+      border-color: var(--orange);
+      background: rgba(249,115,22,0.1);
+    }
+    .puzzle-slot.filled {
+      border-color: var(--correct);
+      background: rgba(34,197,94,0.05);
+    }
+
+    /* Flash + shake */
+    #flash {
+      position: absolute; inset: 0; border-radius: 28px;
+      pointer-events: none; z-index: 30; opacity: 0;
+      transition: opacity 0.12s;
+    }
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-10px)}40%{transform:translateX(10px)}
+      60%{transform:translateX(-8px)}80%{transform:translateX(6px)}
+    }
+    .shake { animation: shake 0.4s ease; }
+
+    /* Particle canvas */
+    #particle-canvas {
+      position: absolute; inset: 0; pointer-events: none; z-index: 25;
+    }
+
+    /* Shine overlay */
+    @keyframes shineMove {
+      0%{transform:translateX(-100%) rotate(20deg)}
+      100%{transform:translateX(200%) rotate(20deg)}
+    }
+    .shine-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shineMove 0.8s ease;
+      pointer-events: none;
+      z-index: 22;
+      border-radius: 28px;
+    }
+
+    /* Snap animation */
+    @keyframes snapIn {
+      0%{transform:scale(1.25)}
+      60%{transform:scale(0.92)}
+      100%{transform:scale(1)}
+    }
+    .snap-in { animation: snapIn 0.2s ease; }
+
+    /* Result */
+    #result-screen {
+      position: absolute; inset: 0;
+      background: rgba(10,1,24,0.93); border-radius: 28px;
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 50; gap: 18px;
+    }
+    #result-screen.show { display: flex; }
+    .result-title {
+      font-size: 2.4rem; font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .result-stars { display: flex; gap: 12px; }
+    .result-star { width: 52px; height: 52px; }
+    .result-score { font-size: 1.1rem; font-weight: 700; color: var(--text-dim); }
+    .result-btns { display: flex; gap: 14px; margin-top: 8px; }
+    .res-btn {
+      padding: 14px 28px; border-radius: 50px;
+      font-family: inherit; font-size: 1rem; font-weight: 900;
+      cursor: pointer; border: none; transition: transform .15s;
+    }
+    .res-btn:hover { transform: translateY(-3px); }
+    .res-btn.primary { background: var(--grad); color: #fff; }
+    .res-btn.secondary {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15); color: var(--text);
+    }
+  </style>
+</head>
+<body>
+<div id="stars-container"></div>
+
+<div id="game-wrap">
+  <div id="hud">
+    <a class="btn-back" href="../../index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      홈
+    </a>
+    <div class="hud-right">
+      <span class="pieces-badge" id="pieces-badge">조각 6/6</span>
+      <div id="round-bar"></div>
+    </div>
+  </div>
+
+  <!-- Preview -->
+  <div id="preview-panel">
+    <div class="preview-label">완성 그림</div>
+    <div id="preview-svg-wrap">
+      <svg id="preview-svg" viewBox="0 0 300 220" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </div>
+
+  <!-- Puzzle board (slots) -->
+  <div id="puzzle-board"></div>
+
+  <!-- Scatter area (loose pieces) -->
+  <div id="scatter-area"></div>
+
+  <div id="flash"></div>
+  <canvas id="particle-canvas"></canvas>
+
+  <div id="result-screen">
+    <div class="result-title" id="result-title">퍼즐 마스터!</div>
+    <div class="result-stars" id="result-stars"></div>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-btns">
+      <button class="res-btn secondary" onclick="goHome()">홈으로</button>
+      <button class="res-btn primary" onclick="restartGame()">다시하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Stars
+(function(){
+  const c=document.getElementById('stars-container');
+  for(let i=0;i<55;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    const sz=Math.random()*2.5+0.8;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}vw;top:${Math.random()*100}vh;--dur:${2+Math.random()*4}s;--delay:${Math.random()*4}s;`;
+    c.appendChild(s);
+  }
+})();
+
+// Animal scenes (SVG definitions for 5 animals)
+const ANIMALS = [
+  {
+    name: '고양이',
+    viewBox: '0 0 300 220',
+    svg: `
+      <!-- Sky gradient -->
+      <rect x="0" y="0" width="300" height="220" fill="#1e1b4b"/>
+      <!-- Grass -->
+      <rect x="0" y="155" width="300" height="65" fill="#166534"/>
+      <rect x="0" y="150" width="300" height="12" rx="6" fill="#15803d"/>
+      <!-- Cat body -->
+      <ellipse cx="150" cy="145" rx="50" ry="40" fill="#f97316"/>
+      <!-- Cat head -->
+      <circle cx="150" cy="92" r="38" fill="#f97316"/>
+      <!-- Ears -->
+      <polygon points="120,68 108,38 138,62" fill="#f97316"/>
+      <polygon points="180,68 192,38 162,62" fill="#f97316"/>
+      <polygon points="122,65 113,44 135,60" fill="#f9a8d4"/>
+      <polygon points="178,65 187,44 165,60" fill="#f9a8d4"/>
+      <!-- Face -->
+      <circle cx="138" cy="88" r="6" fill="#1e293b"/>
+      <circle cx="162" cy="88" r="6" fill="#1e293b"/>
+      <circle cx="140" cy="86" r="2.5" fill="white"/>
+      <circle cx="164" cy="86" r="2.5" fill="white"/>
+      <ellipse cx="150" cy="100" rx="6" ry="4" fill="#f9a8d4"/>
+      <path d="M144 103 Q150 109 156 103" stroke="#1e293b" stroke-width="2.5" fill="none"/>
+      <!-- Whiskers -->
+      <line x1="118" y1="98" x2="142" y2="100" stroke="#fff" stroke-width="1.5" opacity="0.7"/>
+      <line x1="118" y1="103" x2="142" y2="103" stroke="#fff" stroke-width="1.5" opacity="0.7"/>
+      <line x1="158" y1="100" x2="182" y2="98" stroke="#fff" stroke-width="1.5" opacity="0.7"/>
+      <line x1="158" y1="103" x2="182" y2="103" stroke="#fff" stroke-width="1.5" opacity="0.7"/>
+      <!-- Tail -->
+      <path d="M200 148 Q240 120 220 90" stroke="#f97316" stroke-width="12" fill="none" stroke-linecap="round"/>
+      <!-- Stars -->
+      <circle cx="50" cy="30" r="2" fill="white" opacity="0.7"/>
+      <circle cx="250" cy="20" r="1.5" fill="white" opacity="0.8"/>
+      <circle cx="180" cy="15" r="1" fill="white" opacity="0.6"/>
+      <circle cx="80" cy="50" r="1.5" fill="white" opacity="0.5"/>
+    `,
+  },
+  {
+    name: '토끼',
+    viewBox: '0 0 300 220',
+    svg: `
+      <rect x="0" y="0" width="300" height="220" fill="#0f172a"/>
+      <rect x="0" y="150" width="300" height="70" fill="#14532d"/>
+      <rect x="0" y="145" width="300" height="12" rx="5" fill="#166534"/>
+      <!-- Moon -->
+      <circle cx="60" cy="45" r="28" fill="#fef3c7"/>
+      <circle cx="72" cy="35" r="22" fill="#0f172a"/>
+      <!-- Rabbit body -->
+      <ellipse cx="150" cy="148" rx="44" ry="38" fill="white"/>
+      <!-- Head -->
+      <circle cx="150" cy="98" r="36" fill="white"/>
+      <!-- Long ears -->
+      <ellipse cx="132" cy="52" rx="10" ry="30" fill="white"/>
+      <ellipse cx="168" cy="52" rx="10" ry="30" fill="white"/>
+      <ellipse cx="132" cy="52" rx="6" ry="24" fill="#fca5a5"/>
+      <ellipse cx="168" cy="52" rx="6" ry="24" fill="#fca5a5"/>
+      <!-- Face -->
+      <circle cx="140" cy="94" r="5" fill="#1e293b"/>
+      <circle cx="160" cy="94" r="5" fill="#1e293b"/>
+      <circle cx="141.5" cy="92.5" r="2" fill="white"/>
+      <circle cx="161.5" cy="92.5" r="2" fill="white"/>
+      <ellipse cx="150" cy="106" rx="5" ry="3.5" fill="#f9a8d4"/>
+      <path d="M144 110 Q150 116 156 110" stroke="#1e293b" stroke-width="2" fill="none"/>
+      <!-- Paws -->
+      <ellipse cx="118" cy="158" rx="14" ry="10" fill="white"/>
+      <ellipse cx="182" cy="158" rx="14" ry="10" fill="white"/>
+      <!-- Stars -->
+      <circle cx="220" cy="25" r="2" fill="white" opacity="0.8"/>
+      <circle cx="270" cy="60" r="1.5" fill="white" opacity="0.6"/>
+      <circle cx="40" cy="90" r="1.5" fill="white" opacity="0.5"/>
+    `,
+  },
+  {
+    name: '곰',
+    viewBox: '0 0 300 220',
+    svg: `
+      <rect x="0" y="0" width="300" height="220" fill="#27141a"/>
+      <!-- Trees -->
+      <rect x="36" y="110" width="12" height="60" fill="#92400e"/>
+      <polygon points="42,30 18,115 66,115" fill="#166534"/>
+      <polygon points="42,55 22,115 62,115" fill="#15803d"/>
+      <rect x="246" y="110" width="12" height="60" fill="#92400e"/>
+      <polygon points="252,30 228,115 276,115" fill="#166534"/>
+      <rect x="0" y="158" width="300" height="62" fill="#92400e" opacity="0.7"/>
+      <rect x="0" y="155" width="300" height="10" rx="4" fill="#a16207"/>
+      <!-- Bear body -->
+      <ellipse cx="150" cy="152" rx="52" ry="44" fill="#78350f"/>
+      <!-- Bear head -->
+      <circle cx="150" cy="96" r="40" fill="#78350f"/>
+      <!-- Round ears -->
+      <circle cx="122" cy="66" r="18" fill="#78350f"/>
+      <circle cx="178" cy="66" r="18" fill="#78350f"/>
+      <circle cx="122" cy="66" r="11" fill="#92400e"/>
+      <circle cx="178" cy="66" r="11" fill="#92400e"/>
+      <!-- Face -->
+      <ellipse cx="150" cy="110" rx="22" ry="16" fill="#a16207" opacity="0.6"/>
+      <circle cx="138" cy="90" r="6" fill="#1e293b"/>
+      <circle cx="162" cy="90" r="6" fill="#1e293b"/>
+      <circle cx="139.5" cy="88" r="2.5" fill="white"/>
+      <circle cx="163.5" cy="88" r="2.5" fill="white"/>
+      <ellipse cx="150" cy="108" rx="7" ry="5" fill="#1e293b"/>
+      <path d="M142 114 Q150 121 158 114" stroke="#1e293b" stroke-width="2.5" fill="none"/>
+      <!-- Honey pot -->
+      <rect x="188" y="148" width="28" height="30" rx="6" fill="#fbbf24"/>
+      <ellipse cx="202" cy="148" rx="16" ry="6" fill="#f59e0b"/>
+      <text x="202" y="165" text-anchor="middle" font-size="11" fill="#92400e" font-weight="bold">꿀</text>
+    `,
+  },
+  {
+    name: '펭귄',
+    viewBox: '0 0 300 220',
+    svg: `
+      <rect x="0" y="0" width="300" height="220" fill="#0c1445"/>
+      <!-- Iceberg water -->
+      <rect x="0" y="160" width="300" height="60" fill="#0e4272"/>
+      <rect x="0" y="155" width="300" height="12" rx="5" fill="#1e6da6"/>
+      <!-- Ice blocks -->
+      <rect x="20" y="145" width="60" height="25" rx="6" fill="#bfdbfe"/>
+      <rect x="220" y="140" width="50" height="30" rx="6" fill="#bfdbfe"/>
+      <rect x="100" y="150" width="40" height="20" rx="5" fill="#dbeafe"/>
+      <!-- Penguin body -->
+      <ellipse cx="150" cy="148" rx="40" ry="48" fill="#1e293b"/>
+      <ellipse cx="150" cy="150" rx="26" ry="34" fill="white"/>
+      <!-- Head -->
+      <circle cx="150" cy="90" r="34" fill="#1e293b"/>
+      <!-- White face -->
+      <ellipse cx="150" cy="98" rx="22" ry="26" fill="white"/>
+      <!-- Eyes -->
+      <circle cx="140" cy="85" r="7" fill="white"/>
+      <circle cx="160" cy="85" r="7" fill="white"/>
+      <circle cx="141" cy="85" r="5" fill="#1e293b"/>
+      <circle cx="161" cy="85" r="5" fill="#1e293b"/>
+      <circle cx="142" cy="83.5" r="2" fill="white"/>
+      <circle cx="162" cy="83.5" r="2" fill="white"/>
+      <!-- Beak -->
+      <polygon points="150,102 143,114 157,114" fill="#f59e0b"/>
+      <!-- Wings -->
+      <path d="M110 115 Q88 140 100 170" stroke="#1e293b" stroke-width="18" fill="none" stroke-linecap="round"/>
+      <path d="M190 115 Q212 140 200 170" stroke="#1e293b" stroke-width="18" fill="none" stroke-linecap="round"/>
+      <!-- Feet -->
+      <ellipse cx="136" cy="194" rx="14" ry="6" fill="#f59e0b"/>
+      <ellipse cx="164" cy="194" rx="14" ry="6" fill="#f59e0b"/>
+      <!-- Stars -->
+      <circle cx="30" cy="20" r="2" fill="white" opacity="0.8"/>
+      <circle cx="270" cy="30" r="1.5" fill="white" opacity="0.7"/>
+      <circle cx="200" cy="15" r="1" fill="white" opacity="0.6"/>
+      <circle cx="80" cy="40" r="1.5" fill="white" opacity="0.5"/>
+    `,
+  },
+  {
+    name: '사자',
+    viewBox: '0 0 300 220',
+    svg: `
+      <rect x="0" y="0" width="300" height="220" fill="#1c0f02"/>
+      <!-- Sun -->
+      <circle cx="260" cy="40" r="30" fill="#fbbf24" opacity="0.8"/>
+      <!-- Savanna -->
+      <rect x="0" y="150" width="300" height="70" fill="#a16207"/>
+      <rect x="0" y="145" width="300" height="12" rx="5" fill="#ca8a04"/>
+      <!-- Grass wisps -->
+      <line x1="40" y1="148" x2="36" y2="125" stroke="#ca8a04" stroke-width="3"/>
+      <line x1="80" y1="148" x2="84" y2="120" stroke="#ca8a04" stroke-width="3"/>
+      <line x1="220" y1="148" x2="216" y2="122" stroke="#ca8a04" stroke-width="3"/>
+      <line x1="260" y1="148" x2="264" y2="128" stroke="#ca8a04" stroke-width="3"/>
+      <!-- Mane -->
+      <circle cx="150" cy="95" r="56" fill="#d97706" opacity="0.9"/>
+      <!-- Body -->
+      <ellipse cx="150" cy="155" rx="48" ry="40" fill="#fde68a"/>
+      <!-- Head -->
+      <circle cx="150" cy="90" r="42" fill="#fde68a"/>
+      <!-- Mane detail inner -->
+      <circle cx="150" cy="92" r="38" fill="none" stroke="#f59e0b" stroke-width="3" opacity="0.3"/>
+      <!-- Face -->
+      <circle cx="136" cy="84" r="6" fill="#1e293b"/>
+      <circle cx="164" cy="84" r="6" fill="#1e293b"/>
+      <circle cx="137.5" cy="82" r="2.5" fill="white"/>
+      <circle cx="165.5" cy="82" r="2.5" fill="white"/>
+      <ellipse cx="150" cy="100" rx="10" ry="7" fill="#f9a8d4"/>
+      <path d="M140 106 Q150 114 160 106" stroke="#1e293b" stroke-width="2.5" fill="none"/>
+      <!-- Ears -->
+      <circle cx="116" cy="60" r="14" fill="#fde68a"/>
+      <circle cx="184" cy="60" r="14" fill="#fde68a"/>
+      <circle cx="116" cy="60" r="8" fill="#f9a8d4"/>
+      <circle cx="184" cy="60" r="8" fill="#f9a8d4"/>
+      <!-- Whisker spots -->
+      <circle cx="130" cy="100" r="3.5" fill="#d97706" opacity="0.5"/>
+      <circle cx="122" cy="98" r="3" fill="#d97706" opacity="0.4"/>
+      <circle cx="170" cy="100" r="3.5" fill="#d97706" opacity="0.5"/>
+      <circle cx="178" cy="98" r="3" fill="#d97706" opacity="0.4"/>
+      <!-- Tail -->
+      <path d="M198 160 Q235 130 225 100" stroke="#fde68a" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <circle cx="223" cy="98" r="10" fill="#d97706"/>
+    `,
+  },
+];
+
+const ROUND_GRIDS = [
+  { cols: 3, rows: 2 }, // 6 pieces
+  { cols: 4, rows: 2 }, // 8 pieces
+  { cols: 4, rows: 2 }, // 8 pieces (repeated with diff animal)
+  { cols: 4, rows: 3 }, // 12 pieces
+  { cols: 4, rows: 3 }, // 12 pieces
+];
+
+// Game state
+let currentRound = 0;
+let correctCount = 0;
+let pieces = [];
+let slots = [];
+let dragging = null;
+let dragOffX = 0, dragOffY = 0;
+const TOTAL_ROUNDS = 5;
+
+// Particles
+const pCanvas = document.getElementById('particle-canvas');
+const pCtx = pCanvas.getContext('2d');
+let particles = [];
+pCanvas.width = 800; pCanvas.height = 600;
+
+function spawnParticles(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 3 + Math.random() * 5;
+    particles.push({ x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed,
+      life:1, decay:0.018+Math.random()*0.02, size:4+Math.random()*8, color });
+  }
+}
+function animateParticles() {
+  pCtx.clearRect(0,0,800,600);
+  particles = particles.filter(p=>p.life>0);
+  for(const p of particles){
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.18; p.vx*=0.97; p.life-=p.decay;
+    pCtx.save(); pCtx.globalAlpha=Math.max(0,p.life); pCtx.fillStyle=p.color;
+    pCtx.beginPath(); pCtx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2); pCtx.fill(); pCtx.restore();
+  }
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+function updateRoundDots() {
+  const bar = document.getElementById('round-bar');
+  bar.innerHTML = '';
+  for (let i = 0; i < TOTAL_ROUNDS; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'rd-dot';
+    if (i < currentRound) dot.classList.add('done');
+    else if (i === currentRound) dot.classList.add('active');
+    bar.appendChild(dot);
+  }
+}
+
+// Build round
+function buildRound() {
+  // Clear old pieces/slots from game-wrap
+  document.querySelectorAll('.puzzle-piece').forEach(p => p.remove());
+  document.querySelectorAll('.puzzle-slot').forEach(s => s.remove());
+  pieces = [];
+  slots = [];
+
+  const animal = ANIMALS[currentRound % ANIMALS.length];
+  const grid = ROUND_GRIDS[currentRound];
+  const { cols, rows } = grid;
+  const totalPieces = cols * rows;
+
+  // Board layout
+  const boardX = 30;
+  const boardY = 70;
+  const boardW = 310;
+  const boardH = 200;
+  const pieceW = Math.floor(boardW / cols);
+  const pieceH = Math.floor(boardH / rows);
+
+  // Render preview
+  const previewSvg = document.getElementById('preview-svg');
+  previewSvg.innerHTML = animal.svg;
+  previewSvg.setAttribute('viewBox', animal.viewBox);
+
+  const wrap = document.getElementById('game-wrap');
+
+  // Create slots
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const idx = row * cols + col;
+      const slotEl = document.createElement('div');
+      slotEl.className = 'puzzle-slot';
+      slotEl.dataset.slotIndex = idx;
+      slotEl.style.cssText = `
+        left:${boardX + col * pieceW}px;
+        top:${boardY + row * pieceH}px;
+        width:${pieceW}px;
+        height:${pieceH}px;
+        position:absolute;
+        z-index:9;
+      `;
+      wrap.appendChild(slotEl);
+      slots.push({
+        el: slotEl,
+        idx,
+        x: boardX + col * pieceW,
+        y: boardY + row * pieceH,
+        w: pieceW,
+        h: pieceH,
+        filled: false,
+      });
+    }
+  }
+
+  // Create pieces (SVG clipPath sections)
+  const pieceOrder = Array.from({ length: totalPieces }, (_, i) => i).sort(() => Math.random() - 0.5);
+
+  // Scatter positions in bottom-right area
+  const scatterPositions = generateScatterPositions(totalPieces, 170, 290, 590, 570);
+
+  const vbW = 300, vbH = 220;
+
+  pieceOrder.forEach((slotIdx, i) => {
+    const col = slotIdx % cols;
+    const row = Math.floor(slotIdx / cols);
+    const clipX = (col / cols) * vbW;
+    const clipY = (row / rows) * vbH;
+    const clipW = vbW / cols;
+    const clipH = vbH / rows;
+
+    const div = document.createElement('div');
+    div.className = 'puzzle-piece';
+    div.dataset.pieceIndex = i;
+    div.dataset.slotTarget = slotIdx;
+
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('xmlns', svgNS);
+    svg.setAttribute('width', pieceW);
+    svg.setAttribute('height', pieceH);
+    svg.setAttribute('viewBox', `${clipX} ${clipY} ${clipW} ${clipH}`);
+    svg.innerHTML = animal.svg;
+    svg.style.display = 'block';
+    svg.style.borderRadius = '4px';
+    svg.style.border = '1.5px solid rgba(255,255,255,0.2)';
+    svg.style.overflow = 'hidden';
+
+    div.appendChild(svg);
+
+    const sx = scatterPositions[i].x;
+    const sy = scatterPositions[i].y;
+    div.style.left = `${sx}px`;
+    div.style.top = `${sy}px`;
+    div.style.width = `${pieceW}px`;
+    div.style.height = `${pieceH}px`;
+
+    div.addEventListener('mousedown', onPieceDragStart);
+    div.addEventListener('touchstart', onPieceTouchStart, { passive: false });
+
+    wrap.appendChild(div);
+    pieces.push({ el: div, idx: i, slotTarget: slotIdx, placed: false, origX: sx, origY: sy });
+  });
+
+  updateRoundDots();
+  updatePiecesBadge();
+}
+
+function generateScatterPositions(count, x1, y1, x2, y2) {
+  const positions = [];
+  const margin = 20;
+  let attempts = 0;
+  while (positions.length < count && attempts < 2000) {
+    attempts++;
+    const x = x1 + margin + Math.random() * (x2 - x1 - margin * 2 - 80);
+    const y = y1 + margin + Math.random() * (y2 - y1 - margin * 2 - 60);
+    const tooClose = positions.some(p => Math.hypot(p.x - x, p.y - y) < 55);
+    if (!tooClose) positions.push({ x, y });
+  }
+  return positions;
+}
+
+// Drag
+function onPieceDragStart(e) {
+  e.preventDefault();
+  const el = e.currentTarget;
+  const pi = parseInt(el.dataset.pieceIndex);
+  if (pieces[pi].placed) return;
+  startPieceDrag(pi, e.clientX, e.clientY);
+}
+function onPieceTouchStart(e) {
+  e.preventDefault();
+  const el = e.currentTarget;
+  const pi = parseInt(el.dataset.pieceIndex);
+  if (pieces[pi].placed) return;
+  startPieceDrag(pi, e.touches[0].clientX, e.touches[0].clientY);
+}
+
+function startPieceDrag(pi, cx, cy) {
+  const wrap = document.getElementById('game-wrap');
+  const wrapRect = wrap.getBoundingClientRect();
+  const piece = pieces[pi];
+  const elRect = piece.el.getBoundingClientRect();
+  dragOffX = cx - elRect.left;
+  dragOffY = cy - elRect.top;
+  dragging = pi;
+  piece.el.classList.add('dragging');
+  piece.el.style.zIndex = 100;
+
+  document.addEventListener('mousemove', onPieceDragMove);
+  document.addEventListener('mouseup', onPieceDragEnd);
+  document.addEventListener('touchmove', onPieceTouchMove, { passive: false });
+  document.addEventListener('touchend', onPieceTouchEnd);
+}
+
+function onPieceDragMove(e) { movePiece(e.clientX, e.clientY); }
+function onPieceTouchMove(e) { e.preventDefault(); movePiece(e.touches[0].clientX, e.touches[0].clientY); }
+
+function movePiece(cx, cy) {
+  if (dragging === null) return;
+  const wrap = document.getElementById('game-wrap');
+  const wrapRect = wrap.getBoundingClientRect();
+  const piece = pieces[dragging];
+  const x = cx - wrapRect.left - dragOffX;
+  const y = cy - wrapRect.top - dragOffY;
+  piece.el.style.left = `${x}px`;
+  piece.el.style.top = `${y}px`;
+
+  // Highlight nearest slot
+  const midX = cx - wrapRect.left;
+  const midY = cy - wrapRect.top;
+  const target = piece.slotTarget;
+  slots.forEach(s => {
+    if (s.filled) return;
+    const inside = midX > s.x && midX < s.x+s.w && midY > s.y && midY < s.y+s.h;
+    const isTarget = s.idx === target;
+    s.el.classList.toggle('highlight', inside && isTarget);
+  });
+}
+
+function onPieceDragEnd(e) { endPieceDrag(e.clientX, e.clientY); }
+function onPieceTouchEnd(e) {
+  if (e.changedTouches.length > 0) endPieceDrag(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+}
+
+function endPieceDrag(cx, cy) {
+  if (dragging === null) return;
+  const wrap = document.getElementById('game-wrap');
+  const wrapRect = wrap.getBoundingClientRect();
+  const piece = pieces[dragging];
+  piece.el.classList.remove('dragging');
+
+  const midX = cx - wrapRect.left;
+  const midY = cy - wrapRect.top;
+
+  const targetSlot = slots[piece.slotTarget];
+  const snapDist = 55;
+  const slotCX = targetSlot.x + targetSlot.w / 2;
+  const slotCY = targetSlot.y + targetSlot.h / 2;
+  const dist = Math.hypot(midX - slotCX, midY - slotCY);
+
+  if (dist < snapDist && !targetSlot.filled) {
+    // Snap!
+    piece.el.style.left = `${targetSlot.x}px`;
+    piece.el.style.top = `${targetSlot.y}px`;
+    piece.el.style.zIndex = 10;
+    piece.el.classList.add('placed', 'snap-in');
+    piece.el.style.border = '2px solid rgba(34,197,94,0.6)';
+    setTimeout(() => piece.el.classList.remove('snap-in'), 250);
+    piece.placed = true;
+    targetSlot.filled = true;
+    targetSlot.el.classList.add('filled');
+
+    spawnParticles(slotCX, slotCY, '#22c55e', 14);
+    updatePiecesBadge();
+
+    // Check complete
+    if (pieces.every(p => p.placed)) {
+      setTimeout(() => onPuzzleComplete(), 400);
+    }
+  } else {
+    // Wrong slot: shake back
+    piece.el.style.left = `${piece.origX}px`;
+    piece.el.style.top = `${piece.origY}px`;
+    piece.el.style.zIndex = 16;
+
+    slots.forEach(s => s.el.classList.remove('highlight'));
+  }
+
+  slots.forEach(s => s.el.classList.remove('highlight'));
+  dragging = null;
+  removePieceDragListeners();
+}
+
+function removePieceDragListeners() {
+  document.removeEventListener('mousemove', onPieceDragMove);
+  document.removeEventListener('mouseup', onPieceDragEnd);
+  document.removeEventListener('touchmove', onPieceTouchMove);
+  document.removeEventListener('touchend', onPieceTouchEnd);
+}
+
+function updatePiecesBadge() {
+  const placed = pieces.filter(p => p.placed).length;
+  const total = pieces.length;
+  document.getElementById('pieces-badge').textContent = `조각 ${placed}/${total}`;
+}
+
+function onPuzzleComplete() {
+  correctCount++;
+  // Shine effect
+  const shine = document.createElement('div');
+  shine.className = 'shine-overlay';
+  document.getElementById('game-wrap').appendChild(shine);
+  setTimeout(() => shine.remove(), 900);
+
+  // Confetti
+  for (let i = 0; i < 8; i++) {
+    setTimeout(() => {
+      spawnParticles(100 + Math.random() * 600, 100 + Math.random() * 300,
+        ['#f97316','#ec4899','#a855f7','#06b6d4','#22c55e'][Math.floor(Math.random()*5)], 20);
+    }, i * 100);
+  }
+
+  const flash = document.getElementById('flash');
+  flash.style.background = 'rgba(34,197,94,0.18)';
+  flash.style.opacity = '1';
+  setTimeout(() => { flash.style.opacity = '0'; }, 500);
+
+  setTimeout(() => {
+    currentRound++;
+    if (currentRound >= TOTAL_ROUNDS) { showResult(); return; }
+    buildRound();
+  }, 2000);
+}
+
+function showResult() {
+  document.querySelectorAll('.puzzle-piece').forEach(p => p.remove());
+  document.querySelectorAll('.puzzle-slot').forEach(s => s.remove());
+  const stars = Math.round((correctCount / TOTAL_ROUNDS) * 3);
+  document.getElementById('result-title').textContent =
+    stars === 3 ? '퍼즐 마스터!' : stars === 2 ? '잘했어요!' : '다시 해봐요!';
+  document.getElementById('result-score').textContent =
+    `${correctCount}/${TOTAL_ROUNDS} 퍼즐 완성`;
+  renderStars(stars);
+  document.getElementById('result-screen').classList.add('show');
+}
+
+function renderStars(count) {
+  const c = document.getElementById('result-stars');
+  c.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox','0 0 24 24');
+    svg.classList.add('result-star');
+    const pts = [];
+    for(let j=0;j<10;j++){
+      const r=j%2===0?11:5;
+      const a=(j*Math.PI/5)-Math.PI/2;
+      pts.push(`${12+r*Math.cos(a)},${12+r*Math.sin(a)}`);
+    }
+    const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    poly.setAttribute('points',pts.join(' '));
+    poly.setAttribute('fill',i<count?'#fbbf24':'rgba(255,255,255,0.1)');
+    poly.setAttribute('stroke',i<count?'#f59e0b':'rgba(255,255,255,0.15)');
+    poly.setAttribute('stroke-width','1');
+    svg.appendChild(poly);
+    c.appendChild(svg);
+  }
+}
+
+function restartGame() {
+  document.querySelectorAll('.puzzle-piece').forEach(p => p.remove());
+  document.querySelectorAll('.puzzle-slot').forEach(s => s.remove());
+  currentRound = 0; correctCount = 0; particles = [];
+  document.getElementById('result-screen').classList.remove('show');
+  buildRound();
+}
+function goHome() { window.location.href = '../../index.html'; }
+
+// Init
+buildRound();
+</script>
+</body>
+</html>

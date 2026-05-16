@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>움직이는 과녁 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0118;
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --grad: linear-gradient(135deg, #a855f7, #ec4899);
+      --text: #f0e8ff;
+      --text-dim: rgba(240,232,255,0.55);
+      --correct: #22c55e;
+      --wrong: #ef4444;
+      --gold: #fbbf24;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Stars */
+    .stars-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .star {
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle var(--dur, 3s) ease-in-out infinite var(--delay, 0s);
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.4); }
+    }
+
+    /* Game container */
+    #game-wrap {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 0 80px rgba(168,85,247,0.2), 0 20px 60px rgba(0,0,0,0.7);
+      background: radial-gradient(ellipse at 50% 30%, #1a0533 0%, #0a0118 70%);
+      z-index: 1;
+    }
+
+    /* HUD */
+    #hud {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 50;
+      background: rgba(10,1,24,0.6);
+      backdrop-filter: blur(8px);
+    }
+    #btn-back {
+      background: rgba(255,255,255,0.1);
+      border: 1.5px solid rgba(255,255,255,0.2);
+      color: #fff;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 7px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    #btn-back:hover { background: rgba(255,255,255,0.2); }
+
+    #score-display {
+      font-size: 22px;
+      font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+    }
+
+    #timer-bar-wrap {
+      position: absolute;
+      top: 56px; left: 0; right: 0;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      z-index: 50;
+    }
+    #timer-bar {
+      height: 100%;
+      background: var(--grad);
+      width: 100%;
+      transition: width 0.1s linear;
+    }
+
+    #timer-text {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--text-dim);
+      min-width: 48px;
+      text-align: right;
+    }
+    #timer-text.urgent { color: #ef4444; animation: urgentPulse 0.5s ease infinite alternate; }
+    @keyframes urgentPulse {
+      from { opacity: 1; }
+      to { opacity: 0.5; }
+    }
+
+    /* Game area */
+    #game-area {
+      position: absolute;
+      top: 62px; left: 0; right: 0; bottom: 0;
+      cursor: crosshair;
+      z-index: 10;
+    }
+
+    /* Target container */
+    .target-container {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      pointer-events: all;
+      filter: drop-shadow(0 0 16px rgba(168,85,247,0.5));
+    }
+    .target-container.breathing {
+      animation: breathe 1.5s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.06); }
+    }
+    .target-container.hit {
+      animation: hitPop 0.25s ease forwards;
+    }
+    @keyframes hitPop {
+      0% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.3); }
+      100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    }
+
+    /* Red targets in multi mode */
+    .target-container.red-target svg circle:first-of-type {
+      fill: #ff2222 !important;
+    }
+    .target-container.decoy { filter: drop-shadow(0 0 10px rgba(100,100,255,0.4)); }
+
+    /* Click ripple */
+    .click-ripple {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      animation: rippleOut 0.5s ease-out forwards;
+    }
+    @keyframes rippleOut {
+      0% { width: 0px; height: 0px; opacity: 0.9; border: 3px solid #a855f7; }
+      100% { width: 80px; height: 80px; opacity: 0; border: 1px solid #a855f7; }
+    }
+    .click-ripple.miss {
+      animation: rippleOutMiss 0.4s ease-out forwards;
+    }
+    @keyframes rippleOutMiss {
+      0% { width: 0px; height: 0px; opacity: 0.8; border: 3px solid #ef4444; }
+      100% { width: 60px; height: 60px; opacity: 0; border: 1px solid #ef4444; }
+    }
+
+    /* Score popup */
+    .score-popup {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      font-family: 'Nunito', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      pointer-events: none;
+      animation: popUp 0.8s ease-out forwards;
+      z-index: 80;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    }
+    @keyframes popUp {
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+      60% { transform: translate(-50%, calc(-50% - 40px)) scale(1.1); opacity: 1; }
+      100% { transform: translate(-50%, calc(-50% - 70px)) scale(1); opacity: 0; }
+    }
+
+    /* Particle */
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: particleFly var(--dur, 0.8s) ease-out forwards;
+    }
+    @keyframes particleFly {
+      0% { transform: translate(-50%, -50%) translate(0,0) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+    }
+
+    /* Mode banner */
+    #mode-banner {
+      position: absolute;
+      top: 80px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(168,85,247,0.3);
+      border: 1px solid rgba(168,85,247,0.5);
+      border-radius: 20px;
+      padding: 6px 20px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+      z-index: 40;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    #mode-banner.show { opacity: 1; }
+
+    /* Red flash overlay */
+    #flash-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 90;
+      opacity: 0;
+    }
+    #flash-overlay.red-flash {
+      background: rgba(239,68,68,0.15);
+      animation: flashRed 0.3s ease-out forwards;
+    }
+    @keyframes flashRed {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    #flash-overlay.green-flash {
+      background: rgba(34,197,94,0.12);
+      animation: flashGreen 0.25s ease-out forwards;
+    }
+    @keyframes flashGreen {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* Overlay screens */
+    .overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      border-radius: 24px;
+      background: radial-gradient(ellipse at center, rgba(26,5,51,0.97) 0%, rgba(10,1,24,0.98) 100%);
+    }
+    .overlay.active { display: flex; animation: fadeInScale 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.85); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .overlay-title {
+      font-size: 42px;
+      font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .overlay-sub {
+      font-size: 18px;
+      color: var(--text-dim);
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.6;
+    }
+    .result-cards {
+      display: flex;
+      gap: 16px;
+      margin: 8px 0;
+    }
+    .result-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 20px 28px;
+      text-align: center;
+      min-width: 130px;
+    }
+    .result-card-val {
+      font-size: 36px;
+      font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+    .result-card-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+    .grade-badge {
+      font-size: 52px;
+      font-weight: 900;
+      animation: badgePop 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes badgePop {
+      from { transform: scale(0); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .overlay-btns {
+      display: flex;
+      gap: 14px;
+    }
+    .btn-primary {
+      padding: 14px 32px;
+      background: var(--grad);
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 17px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(168,85,247,0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(168,85,247,0.5); }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-secondary {
+      padding: 14px 28px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 50px;
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.14); color: var(--text); }
+
+    /* Star rating */
+    .star-rating {
+      display: flex;
+      gap: 8px;
+      margin: 4px 0;
+    }
+    .star-rating svg {
+      animation: starPop 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    .star-rating svg:nth-child(2) { animation-delay: 0.1s; }
+    .star-rating svg:nth-child(3) { animation-delay: 0.2s; }
+    @keyframes starPop {
+      from { transform: scale(0) rotate(-30deg); opacity: 0; }
+      to { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    /* Instruction */
+    #instruction {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-align: center;
+      pointer-events: none;
+      z-index: 30;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+<div class="stars-layer" id="starsLayer"></div>
+
+<div id="game-wrap">
+  <div id="flash-overlay"></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <a id="btn-back" href="../../index.html">← 홈</a>
+    <div id="score-display">0점</div>
+    <div id="timer-text">30</div>
+  </div>
+  <div id="timer-bar-wrap">
+    <div id="timer-bar"></div>
+  </div>
+
+  <!-- Mode banner -->
+  <div id="mode-banner">멀티 과녁 모드! 빨간 과녁만 맞혀요!</div>
+
+  <!-- Game area -->
+  <div id="game-area"></div>
+
+  <!-- Instruction -->
+  <div id="instruction">과녁 중앙을 맞혀요!</div>
+
+  <!-- Result screen -->
+  <div class="overlay" id="result-screen">
+    <div class="grade-badge" id="grade-badge"></div>
+    <div class="overlay-title" id="result-title">게임 종료!</div>
+    <div class="star-rating" id="star-rating"></div>
+    <div class="result-cards">
+      <div class="result-card">
+        <div class="result-card-val" id="res-score">0</div>
+        <div class="result-card-label">총점</div>
+      </div>
+      <div class="result-card">
+        <div class="result-card-val" id="res-accuracy">0%</div>
+        <div class="result-card-label">정확도</div>
+      </div>
+      <div class="result-card">
+        <div class="result-card-val" id="res-hits">0</div>
+        <div class="result-card-label">명중</div>
+      </div>
+    </div>
+    <div class="overlay-sub" id="result-msg"></div>
+    <div class="overlay-btns">
+      <button class="btn-primary" onclick="startGame()">다시 하기</button>
+      <a class="btn-secondary" href="../../index.html">홈으로</a>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════ STARS ════════════════════════════ */
+(function buildStars() {
+  const layer = document.getElementById('starsLayer');
+  for (let i = 0; i < 55; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2.5 + 0.8;
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%; top:${Math.random()*100}%;
+      --dur:${(Math.random()*3+2).toFixed(1)}s;
+      --delay:-${(Math.random()*5).toFixed(1)}s;
+    `;
+    layer.appendChild(s);
+  }
+})();
+
+/* ════════════════════════════ SVG TARGET ════════════════════════ */
+function buildTargetSVG(size, isRed) {
+  const c = size / 2;
+  const rings = 4;
+  const colors = isRed
+    ? ['#ff2222', '#ff6666', '#ffaaaa', '#ffdddd']
+    : ['#a855f7', '#c084fc', '#e9d5ff', '#f3e8ff'];
+  const strokeColors = isRed
+    ? ['#cc0000', '#dd4444', '#ee8888', '#ffbbbb']
+    : ['#7c3aed', '#9333ea', '#a855f7', '#c084fc'];
+  let svgContent = '';
+  for (let i = rings; i >= 1; i--) {
+    const r = (c - 6) * (i / rings);
+    svgContent += `<circle cx="${c}" cy="${c}" r="${r}" fill="${colors[rings - i]}" stroke="${strokeColors[rings - i]}" stroke-width="1.5"/>`;
+  }
+  // Crosshair
+  svgContent += `<line x1="${c - 8}" y1="${c}" x2="${c + 8}" y2="${c}" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>`;
+  svgContent += `<line x1="${c}" y1="${c - 8}" x2="${c}" y2="${c + 8}" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>`;
+  svgContent += `<circle cx="${c}" cy="${c}" r="4" fill="white" opacity="0.8"/>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;
+}
+
+/* ════════════════════════════ GAME STATE ════════════════════════ */
+const GAME_DURATION = 30;
+const AREA_W = 800, AREA_H = 538; // below HUD
+const TARGET_RADIUS = 60;
+const MULTI_START_TIME = 12; // switch to multi mode at 12s remaining
+
+let score = 0;
+let totalClicks = 0;
+let hitClicks = 0;
+let timeLeft = GAME_DURATION;
+let timerInterval = null;
+let targets = []; // array of { el, x, y, vx, vy, size, isRed, animFrame }
+let gameRunning = false;
+let multiMode = false;
+
+/* ════════════════════════════ MOVEMENT ════════════════════════= */
+function easeVelocity(v, max) {
+  // Clamp velocity with smooth easing
+  return Math.max(-max, Math.min(max, v));
+}
+
+function moveTarget(t) {
+  if (!gameRunning) return;
+
+  // Speed increases over time
+  const elapsed = GAME_DURATION - timeLeft;
+  const speedMult = 1 + elapsed * 0.04;
+
+  t.x += t.vx * speedMult;
+  t.y += t.vy * speedMult;
+
+  // Bounce off walls with slight randomization
+  const margin = t.size / 2 + 5;
+  if (t.x < margin) { t.x = margin; t.vx = Math.abs(t.vx) + (Math.random() - 0.5) * 0.3; }
+  if (t.x > AREA_W - margin) { t.x = AREA_W - margin; t.vx = -Math.abs(t.vx) - (Math.random() - 0.5) * 0.3; }
+  if (t.y < margin) { t.y = margin; t.vy = Math.abs(t.vy) + (Math.random() - 0.5) * 0.3; }
+  if (t.y > AREA_H - margin) { t.y = AREA_H - margin; t.vy = -Math.abs(t.vy) - (Math.random() - 0.5) * 0.3; }
+
+  t.vx = easeVelocity(t.vx, 5 * speedMult);
+  t.vy = easeVelocity(t.vy, 5 * speedMult);
+
+  t.el.style.left = t.x + 'px';
+  t.el.style.top = t.y + 'px';
+
+  t.animFrame = requestAnimationFrame(() => moveTarget(t));
+}
+
+/* ════════════════════════════ TARGET CREATE ════════════════════ */
+function createTarget(x, y, isRed) {
+  const area = document.getElementById('game-area');
+  const size = 100;
+  const el = document.createElement('div');
+  el.className = 'target-container breathing' + (isRed ? ' red-target' : '');
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.innerHTML = buildTargetSVG(size, isRed);
+  el.addEventListener('click', (e) => onTargetClick(e, t, el, isRed));
+  area.appendChild(el);
+
+  const angle = Math.random() * Math.PI * 2;
+  const speed = 1.8 + Math.random() * 1.5;
+  const t = {
+    el, x, y,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    size, isRed, animFrame: null
+  };
+  targets.push(t);
+  moveTarget(t);
+  return t;
+}
+
+function removeTarget(t) {
+  if (t.animFrame) cancelAnimationFrame(t.animFrame);
+  targets = targets.filter(x => x !== t);
+  t.el.remove();
+}
+
+function clearTargets() {
+  targets.forEach(t => {
+    if (t.animFrame) cancelAnimationFrame(t.animFrame);
+    t.el.remove();
+  });
+  targets = [];
+}
+
+/* ════════════════════════════ CLICK HANDLERS ══════════════════ */
+function onTargetClick(e, t, el, isRed) {
+  if (!gameRunning) return;
+  e.stopPropagation();
+
+  totalClicks++;
+
+  // Determine zone: get click relative to center of target
+  const rect = el.getBoundingClientRect();
+  const wrapRect = document.getElementById('game-area').getBoundingClientRect();
+  const cx = rect.left + rect.width / 2 - wrapRect.left;
+  const cy = rect.top + rect.height / 2 - wrapRect.top;
+  const clickX = e.clientX - wrapRect.left;
+  const clickY = e.clientY - wrapRect.top;
+  const dist = Math.hypot(clickX - cx, clickY - cy);
+  const half = t.size / 2;
+
+  let pts = 0;
+  if (multiMode && !isRed) {
+    // Wrong target in multi mode
+    showFlash('red');
+    createRipple(clickX, clickY, true);
+    showScorePopup(clickX, clickY, '-2', '#ef4444');
+    score = Math.max(0, score - 2);
+    updateHUD();
+    return;
+  }
+
+  hitClicks++;
+  if (dist < half * 0.25) pts = 10;
+  else if (dist < half * 0.6) pts = 7;
+  else pts = 5;
+
+  score += pts;
+  updateHUD();
+  showFlash('green');
+  createRipple(clickX, clickY, false);
+  showScorePopup(clickX, clickY, '+' + pts, pts === 10 ? '#fbbf24' : '#22c55e');
+  spawnParticles(cx, cy, isRed ? '#ff4444' : '#a855f7');
+
+  // Hit animation then respawn
+  el.classList.remove('breathing');
+  el.classList.add('hit');
+  removeTarget(t);
+
+  setTimeout(() => {
+    if (!gameRunning) return;
+    if (multiMode) {
+      // Respawn same type
+      spawnMultiMode();
+    } else {
+      spawnSingleTarget();
+    }
+  }, 300);
+}
+
+function onAreaClick(e) {
+  if (!gameRunning) return;
+  if (e.target.closest('.target-container')) return;
+  totalClicks++;
+  const rect = document.getElementById('game-area').getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  createRipple(x, y, true);
+}
+
+/* ════════════════════════════ SPAWN HELPERS ════════════════════ */
+function spawnSingleTarget() {
+  clearTargets();
+  const margin = 80;
+  const x = margin + Math.random() * (AREA_W - margin * 2);
+  const y = margin + Math.random() * (AREA_H - margin * 2);
+  createTarget(x, y, false);
+}
+
+function spawnMultiMode() {
+  clearTargets();
+  // 3 targets: 1 red, 2 decoy
+  const positions = [];
+  for (let i = 0; i < 3; i++) {
+    let x, y, ok;
+    let attempts = 0;
+    do {
+      ok = true;
+      x = 100 + Math.random() * (AREA_W - 200);
+      y = 80 + Math.random() * (AREA_H - 160);
+      for (const p of positions) {
+        if (Math.hypot(x - p.x, y - p.y) < 130) { ok = false; break; }
+      }
+      attempts++;
+    } while (!ok && attempts < 50);
+    positions.push({ x, y });
+  }
+  positions.forEach((p, i) => {
+    createTarget(p.x, p.y, i === 0); // first is red
+  });
+}
+
+/* ════════════════════════════ EFFECTS ═════════════════════════ */
+function createRipple(x, y, isMiss) {
+  const area = document.getElementById('game-area');
+  const r = document.createElement('div');
+  r.className = 'click-ripple' + (isMiss ? ' miss' : '');
+  r.style.left = x + 'px';
+  r.style.top = y + 'px';
+  area.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+}
+
+function showScorePopup(x, y, text, color) {
+  const area = document.getElementById('game-area');
+  const p = document.createElement('div');
+  p.className = 'score-popup';
+  p.style.left = x + 'px';
+  p.style.top = y + 'px';
+  p.style.color = color;
+  p.textContent = text;
+  area.appendChild(p);
+  setTimeout(() => p.remove(), 900);
+}
+
+function spawnParticles(x, y, color) {
+  const area = document.getElementById('game-area');
+  const count = 12;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const angle = (i / count) * Math.PI * 2;
+    const dist = 40 + Math.random() * 50;
+    const tx = Math.cos(angle) * dist;
+    const ty = Math.sin(angle) * dist;
+    const size = 4 + Math.random() * 6;
+    p.style.cssText = `
+      left: ${x}px; top: ${y}px;
+      width: ${size}px; height: ${size}px;
+      background: ${color};
+      --tx: ${tx}px; --ty: ${ty}px;
+      --dur: ${0.5 + Math.random() * 0.4}s;
+    `;
+    area.appendChild(p);
+    setTimeout(() => p.remove(), 1000);
+  }
+}
+
+function showFlash(type) {
+  const overlay = document.getElementById('flash-overlay');
+  overlay.className = '';
+  void overlay.offsetWidth;
+  overlay.className = type === 'green' ? 'green-flash' : 'red-flash';
+}
+
+/* ════════════════════════════ HUD UPDATE ═══════════════════════ */
+function updateHUD() {
+  document.getElementById('score-display').textContent = score + '점';
+}
+
+/* ════════════════════════════ TIMER ════════════════════════════ */
+function startTimer() {
+  const bar = document.getElementById('timer-bar');
+  const timerText = document.getElementById('timer-text');
+
+  timerInterval = setInterval(() => {
+    timeLeft -= 0.1;
+    const pct = (timeLeft / GAME_DURATION) * 100;
+    bar.style.width = Math.max(0, pct) + '%';
+    timerText.textContent = Math.ceil(timeLeft);
+
+    if (timeLeft <= 8) {
+      timerText.classList.add('urgent');
+    }
+
+    // Switch to multi mode
+    if (!multiMode && timeLeft <= MULTI_START_TIME) {
+      multiMode = true;
+      const banner = document.getElementById('mode-banner');
+      banner.classList.add('show');
+      setTimeout(() => banner.classList.remove('show'), 2500);
+      document.getElementById('instruction').textContent = '빨간 과녁만 맞혀요!';
+      clearTargets();
+      spawnMultiMode();
+    }
+
+    if (timeLeft <= 0) {
+      endGame();
+    }
+  }, 100);
+}
+
+/* ════════════════════════════ GAME FLOW ════════════════════════ */
+function startGame() {
+  score = 0;
+  totalClicks = 0;
+  hitClicks = 0;
+  timeLeft = GAME_DURATION;
+  multiMode = false;
+  gameRunning = true;
+
+  document.getElementById('result-screen').classList.remove('active');
+  document.getElementById('timer-text').classList.remove('urgent');
+  document.getElementById('timer-bar').style.width = '100%';
+  document.getElementById('instruction').textContent = '과녁 중앙을 맞혀요!';
+  document.getElementById('mode-banner').classList.remove('show');
+  updateHUD();
+
+  clearTargets();
+  spawnSingleTarget();
+
+  if (timerInterval) clearInterval(timerInterval);
+  startTimer();
+}
+
+function endGame() {
+  gameRunning = false;
+  clearInterval(timerInterval);
+  clearTargets();
+
+  const accuracy = totalClicks > 0 ? Math.round((hitClicks / totalClicks) * 100) : 0;
+
+  // Grade
+  let grade, msg, stars;
+  if (score >= 200) {
+    grade = 'S'; msg = '완벽한 명사수! 정말 대단해요!'; stars = 3;
+  } else if (score >= 120) {
+    grade = 'A'; msg = '훌륭해요! 거의 명사수 수준이에요!'; stars = 3;
+  } else if (score >= 70) {
+    grade = 'B'; msg = '잘했어요! 조금만 더 연습하면 최고!'; stars = 2;
+  } else if (score >= 30) {
+    grade = 'C'; msg = '도전 정신이 멋져요! 다시 해봐요!'; stars = 1;
+  } else {
+    grade = 'D'; msg = '처음엔 다 어렵죠! 다시 해봐요!'; stars = 1;
+  }
+
+  document.getElementById('grade-badge').textContent = grade;
+  document.getElementById('result-title').textContent = score >= 120 ? '명사수!' : '게임 종료!';
+  document.getElementById('res-score').textContent = score;
+  document.getElementById('res-accuracy').textContent = accuracy + '%';
+  document.getElementById('res-hits').textContent = hitClicks;
+  document.getElementById('result-msg').textContent = msg;
+
+  // Stars
+  const starRating = document.getElementById('star-rating');
+  starRating.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const filled = i < stars;
+    starRating.innerHTML += `<svg width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="18,3 22,14 34,14 25,21 28,33 18,26 8,33 11,21 2,14 14,14"
+        fill="${filled ? '#fbbf24' : 'rgba(255,255,255,0.15)'}"
+        stroke="${filled ? '#f59e0b' : 'rgba(255,255,255,0.1)'}" stroke-width="1"/>
+    </svg>`;
+  }
+
+  document.getElementById('result-screen').classList.add('active');
+}
+
+/* ════════════════════════════ INIT ════════════════════════════ */
+document.getElementById('game-area').addEventListener('click', onAreaClick);
+startGame();
+</script>
+</body>
+</html>

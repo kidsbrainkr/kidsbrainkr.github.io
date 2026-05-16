@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>개구리 숫자 점프</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #060e1f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+    }
+
+    /* ── Game Container ── */
+    #game-wrap {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      overflow: hidden;
+      border-radius: 24px;
+      box-shadow: 0 0 80px rgba(0, 180, 255, 0.15), 0 20px 60px rgba(0,0,0,0.7);
+    }
+
+    /* ── Sky ── */
+    #sky {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 38%;
+      background: linear-gradient(180deg, #020b1e 0%, #0a1e3e 60%, #0d2650 100%);
+      z-index: 0;
+    }
+
+    /* Stars */
+    .star {
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle var(--dur, 3s) ease-in-out infinite var(--delay, 0s);
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.3); }
+    }
+
+    /* ── Water / Pond ── */
+    #pond {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 68%;
+      background: linear-gradient(180deg, #0a2a4a 0%, #051525 100%);
+      z-index: 1;
+    }
+
+    /* Water shimmer lines */
+    #pond::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 60px,
+        rgba(0, 150, 255, 0.04) 60px,
+        rgba(0, 150, 255, 0.04) 62px
+      );
+      animation: waterShimmer 8s linear infinite;
+    }
+    @keyframes waterShimmer {
+      from { background-position: 0 0; }
+      to { background-position: 62px 0; }
+    }
+
+    /* Ripple SVG overlay */
+    #ripple-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 2;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .ripple-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(100, 200, 255, 0.12);
+      animation: rippleExpand var(--dur, 6s) ease-out infinite var(--delay, 0s);
+    }
+    @keyframes rippleExpand {
+      0% { transform: scale(0.6); opacity: 0.5; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+
+    /* Shore/bank strip */
+    #shore {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 22px;
+      background: linear-gradient(180deg, #1a5c2a 0%, #0d3a1a 60%, transparent 100%);
+      z-index: 3;
+    }
+
+    /* ── HUD ── */
+    #hud {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 100;
+    }
+
+    #btn-back {
+      background: rgba(255,255,255,0.1);
+      border: 1.5px solid rgba(255,255,255,0.2);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    #btn-back:hover { background: rgba(255,255,255,0.2); }
+
+    #counter {
+      font-size: 18px;
+      font-weight: 800;
+      color: #a8d8ff;
+      letter-spacing: 1px;
+      text-shadow: 0 0 12px rgba(100,180,255,0.6);
+    }
+
+    #hearts {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+    .heart {
+      font-size: 22px;
+      line-height: 1;
+      transition: transform 0.3s;
+      filter: drop-shadow(0 0 4px rgba(255,80,100,0.8));
+    }
+    .heart.lost {
+      filter: grayscale(1) opacity(0.3);
+      transform: scale(0.8);
+    }
+    @keyframes heartLost {
+      0% { transform: scale(1.4); }
+      50% { transform: scale(0.6); }
+      100% { transform: scale(0.8); }
+    }
+
+    /* ── Game Area ── */
+    #game-area {
+      position: absolute;
+      top: 0; left: 0;
+      width: 800px;
+      height: 600px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* ── Lily Pad ── */
+    .lily-pad {
+      position: absolute;
+      width: 84px;
+      height: 84px;
+      cursor: pointer;
+      pointer-events: all;
+      transform: translate(-50%, -50%);
+      transition: transform 0.15s;
+    }
+    .lily-pad:hover .pad-outer { filter: brightness(1.2); }
+    .lily-pad:active { transform: translate(-50%, -50%) scale(0.92); }
+
+    .lily-pad.visited .pad-outer {
+      filter: brightness(0.45) saturate(0.5);
+    }
+    .lily-pad.current .pad-glow {
+      opacity: 1;
+      animation: padGlow 1.2s ease-in-out infinite;
+    }
+    @keyframes padGlow {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+      50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.3; }
+    }
+
+    .lily-pad.wrong {
+      animation: shakePad 0.4s ease;
+    }
+    @keyframes shakePad {
+      0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+      20% { transform: translate(calc(-50% - 8px), -50%) rotate(-5deg); }
+      40% { transform: translate(calc(-50% + 8px), -50%) rotate(5deg); }
+      60% { transform: translate(calc(-50% - 5px), -50%) rotate(-3deg); }
+      80% { transform: translate(calc(-50% + 5px), -50%) rotate(3deg); }
+    }
+
+    .pad-glow {
+      position: absolute;
+      left: 50%; top: 50%;
+      width: 100px;
+      height: 100px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(100,255,150,0.5) 0%, transparent 70%);
+      opacity: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* ── Frog ── */
+    #frog {
+      position: absolute;
+      width: 62px;
+      height: 62px;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 50;
+      transition: left 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                  top 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+    }
+    #frog.jumping {
+      animation: frogJump 0.55s ease;
+    }
+    @keyframes frogJump {
+      0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+      30% { transform: translate(-50%, calc(-50% - 28px)) scale(1.15, 0.88) rotate(-5deg); }
+      60% { transform: translate(-50%, calc(-50% - 14px)) scale(0.92, 1.1) rotate(3deg); }
+      85% { transform: translate(-50%, calc(-50% + 6px)) scale(1.08, 0.92); }
+      100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    }
+    #frog.happy {
+      animation: frogHappy 0.6s ease infinite alternate;
+    }
+    @keyframes frogHappy {
+      0% { transform: translate(-50%, -50%) scale(1) rotate(-8deg); }
+      100% { transform: translate(-50%, -50%) scale(1.1) rotate(8deg); }
+    }
+    #frog.sad {
+      animation: frogSad 1s ease infinite;
+    }
+    @keyframes frogSad {
+      0%, 100% { transform: translate(-50%, -50%) rotate(-5deg); }
+      50% { transform: translate(-50%, calc(-50% + 4px)) rotate(5deg); }
+    }
+
+    /* ── Splash ── */
+    .splash {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 60;
+      animation: splashAnim 0.6s ease-out forwards;
+    }
+    @keyframes splashAnim {
+      0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.9;
+           border: 3px solid rgba(100, 220, 255, 0.9); background: rgba(100,220,255,0.3); }
+      50% { transform: translate(-50%, -50%) scale(1); opacity: 0.6;
+            border: 2px solid rgba(100,220,255,0.5); background: rgba(100,220,255,0.1); }
+      100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0;
+             border: 1px solid rgba(100,220,255,0.1); background: transparent; }
+    }
+    .splash-inner {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      left: 50%; top: 50%;
+      pointer-events: none;
+      animation: splashInner 0.5s ease-out forwards;
+    }
+    @keyframes splashInner {
+      0% { transform: translate(-50%, -50%) scale(0.1); opacity: 1;
+           background: rgba(180,240,255,0.8); }
+      100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0;
+             background: transparent; }
+    }
+
+    /* Wrong flash */
+    .wrong-flash {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 60;
+      animation: wrongFlash 0.4s ease-out forwards;
+    }
+    @keyframes wrongFlash {
+      0% { opacity: 0.8; background: rgba(255,60,60,0.6); transform: translate(-50%,-50%) scale(0.5); }
+      50% { opacity: 0.5; background: rgba(255,60,60,0.3); transform: translate(-50%,-50%) scale(1); }
+      100% { opacity: 0; background: transparent; transform: translate(-50%,-50%) scale(1.4); }
+    }
+
+    /* ── Overlay Screens ── */
+    .overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 18px;
+      border-radius: 24px;
+    }
+    .overlay.active { display: flex; animation: fadeIn 0.5s ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    #win-screen {
+      background: radial-gradient(ellipse at center, rgba(0,60,30,0.97) 0%, rgba(0,20,10,0.98) 100%);
+    }
+    #fail-screen {
+      background: radial-gradient(ellipse at center, rgba(40,0,0,0.97) 0%, rgba(10,0,0,0.98) 100%);
+    }
+
+    .overlay-title {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-shadow: 0 0 30px currentColor;
+    }
+    #win-screen .overlay-title { color: #7dffb0; }
+    #fail-screen .overlay-title { color: #ff7070; }
+
+    .overlay-msg {
+      font-size: 20px;
+      color: rgba(255,255,255,0.8);
+      text-align: center;
+    }
+
+    .overlay-frog {
+      width: 100px;
+      height: 100px;
+      filter: drop-shadow(0 0 20px rgba(100,255,150,0.4));
+    }
+
+    .overlay-btns {
+      display: flex;
+      gap: 14px;
+      margin-top: 8px;
+    }
+    .overlay-btn {
+      padding: 14px 30px;
+      border-radius: 30px;
+      border: none;
+      font-size: 17px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      font-family: inherit;
+    }
+    .overlay-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .overlay-btn:active { transform: scale(0.95); }
+    .btn-replay { background: linear-gradient(135deg, #43e97b, #38f9d7); color: #003320; }
+    .btn-home { background: rgba(255,255,255,0.12); color: #fff; border: 1.5px solid rgba(255,255,255,0.25); }
+
+    /* stars during win */
+    .win-star {
+      position: absolute;
+      font-size: 28px;
+      animation: winStarFloat var(--dur, 2s) ease-in-out infinite var(--delay, 0s);
+      pointer-events: none;
+    }
+    @keyframes winStarFloat {
+      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+      50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-wrap">
+  <!-- Sky -->
+  <div id="sky" id="sky-layer"></div>
+
+  <!-- Pond -->
+  <div id="pond">
+    <div id="shore"></div>
+    <div id="ripple-overlay"></div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <a id="btn-back" href="../../index.html">← 홈</a>
+    <div id="counter">1 / 12</div>
+    <div id="hearts">
+      <span class="heart" id="h1">❤️</span>
+      <span class="heart" id="h2">❤️</span>
+      <span class="heart" id="h3">❤️</span>
+    </div>
+  </div>
+
+  <!-- Game Area (lily pads + frog rendered here) -->
+  <div id="game-area"></div>
+
+  <!-- Win Screen -->
+  <div class="overlay" id="win-screen">
+    <div class="overlay-title">🎉 완성!</div>
+    <svg class="overlay-frog" id="win-frog" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="overlay-msg">연잎을 모두 건넜어요!<br>숫자 순서를 잘 알고 있네요!</div>
+    <div class="overlay-btns">
+      <button class="overlay-btn btn-replay" onclick="startGame()">다시 하기</button>
+      <button class="overlay-btn btn-home" onclick="location.href='../../index.html'">홈으로</button>
+    </div>
+  </div>
+
+  <!-- Fail Screen -->
+  <div class="overlay" id="fail-screen">
+    <div class="overlay-title">아이쿠!</div>
+    <svg class="overlay-frog" id="fail-frog" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="overlay-msg">하트를 모두 잃었어요 😢<br>다시 도전해봐요!</div>
+    <div id="fail-hearts" style="font-size:26px;">🤍🤍🤍</div>
+    <div class="overlay-btns">
+      <button class="overlay-btn btn-replay" onclick="startGame()">다시 하기</button>
+      <button class="overlay-btn btn-home" onclick="location.href='../../index.html'">홈으로</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════
+   SVG FROG DEFINITION
+   ════════════════════════════════════════════ */
+
+function buildFrogSVG(variant = 'normal') {
+  // variant: normal | happy | sad
+  const mouthPaths = {
+    normal: 'M 38 66 Q 50 74 62 66',
+    happy:  'M 35 64 Q 50 78 65 64',
+    sad:    'M 38 72 Q 50 64 62 72'
+  };
+  const eyeAngle = variant === 'happy' ? '0' : (variant === 'sad' ? '-10' : '0');
+  const mouth = mouthPaths[variant] || mouthPaths.normal;
+  const blushOpacity = variant === 'happy' ? 0.7 : 0.3;
+
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Shadow -->
+  <ellipse cx="50" cy="96" rx="24" ry="5" fill="rgba(0,0,0,0.25)"/>
+  <!-- Body -->
+  <ellipse cx="50" cy="72" rx="30" ry="23" fill="#2d8f3c"/>
+  <ellipse cx="50" cy="72" rx="26" ry="19" fill="#38b048"/>
+  <!-- Belly -->
+  <ellipse cx="50" cy="76" rx="18" ry="13" fill="#a8d8a8"/>
+  <!-- Head -->
+  <circle cx="50" cy="52" r="27" fill="#2d8f3c"/>
+  <circle cx="50" cy="50" r="24" fill="#38b048"/>
+  <!-- Head highlight -->
+  <ellipse cx="42" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.15)" transform="rotate(-20 42 38)"/>
+  <!-- Eye sockets (raised) -->
+  <circle cx="36" cy="40" r="10" fill="#2d8f3c"/>
+  <circle cx="64" cy="40" r="10" fill="#2d8f3c"/>
+  <circle cx="36" cy="38" r="9" fill="#4ac85a"/>
+  <circle cx="64" cy="38" r="9" fill="#4ac85a"/>
+  <!-- Eyes white -->
+  <circle cx="36" cy="37" r="7" fill="white"/>
+  <circle cx="64" cy="37" r="7" fill="white"/>
+  <!-- Pupils -->
+  <circle cx="37.5" cy="37" r="4.5" fill="#1a1a1a"/>
+  <circle cx="65.5" cy="37" r="4.5" fill="#1a1a1a"/>
+  <!-- Eye shine -->
+  <circle cx="39" cy="34.5" r="1.8" fill="white"/>
+  <circle cx="67" cy="34.5" r="1.8" fill="white"/>
+  <!-- Small eye shine -->
+  <circle cx="35.5" cy="38.5" r="0.8" fill="rgba(255,255,255,0.6)"/>
+  <circle cx="63.5" cy="38.5" r="0.8" fill="rgba(255,255,255,0.6)"/>
+  <!-- Nostrils -->
+  <ellipse cx="46" cy="54" rx="2" ry="1.5" fill="#1e6b2a" transform="rotate(-10 46 54)"/>
+  <ellipse cx="54" cy="54" rx="2" ry="1.5" fill="#1e6b2a" transform="rotate(10 54 54)"/>
+  <!-- Mouth -->
+  <path d="${mouth}" stroke="#1e6b2a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Blush -->
+  <ellipse cx="30" cy="56" rx="6" ry="4" fill="rgba(255,120,120,${blushOpacity})"/>
+  <ellipse cx="70" cy="56" rx="6" ry="4" fill="rgba(255,120,120,${blushOpacity})"/>
+  <!-- Front legs -->
+  <ellipse cx="24" cy="78" rx="8" ry="5" fill="#2d8f3c" transform="rotate(-30 24 78)"/>
+  <ellipse cx="76" cy="78" rx="8" ry="5" fill="#2d8f3c" transform="rotate(30 76 78)"/>
+  <!-- Feet -->
+  <ellipse cx="18" cy="84" rx="9" ry="4" fill="#38b048" transform="rotate(-10 18 84)"/>
+  <ellipse cx="82" cy="84" rx="9" ry="4" fill="#38b048" transform="rotate(10 82 84)"/>
+  <!-- Toes -->
+  <circle cx="11" cy="83" r="3" fill="#2d8f3c"/>
+  <circle cx="15" cy="87" r="3" fill="#2d8f3c"/>
+  <circle cx="20" cy="88" r="3" fill="#2d8f3c"/>
+  <circle cx="89" cy="83" r="3" fill="#2d8f3c"/>
+  <circle cx="85" cy="87" r="3" fill="#2d8f3c"/>
+  <circle cx="80" cy="88" r="3" fill="#2d8f3c"/>
+</svg>`;
+}
+
+function buildLilyPadSVG(number) {
+  return `<svg viewBox="0 0 84 84" xmlns="http://www.w3.org/2000/svg" class="pad-outer" width="84" height="84">
+  <!-- Outer shadow ring -->
+  <ellipse cx="42" cy="44" rx="36" ry="34" fill="rgba(0,0,0,0.3)"/>
+  <!-- Pad base dark -->
+  <circle cx="42" cy="42" r="35" fill="#1a5e28"/>
+  <!-- Pad main -->
+  <circle cx="42" cy="42" r="33" fill="#228b38"/>
+  <!-- Pad lighter center -->
+  <circle cx="42" cy="42" r="25" fill="#2aaa44"/>
+  <!-- Leaf veins -->
+  <line x1="42" y1="9" x2="42" y2="75" stroke="rgba(20,80,30,0.5)" stroke-width="1.5"/>
+  <line x1="9" y1="42" x2="75" y2="42" stroke="rgba(20,80,30,0.5)" stroke-width="1.5"/>
+  <line x1="16" y1="16" x2="68" y2="68" stroke="rgba(20,80,30,0.35)" stroke-width="1"/>
+  <line x1="68" y1="16" x2="16" y2="68" stroke="rgba(20,80,30,0.35)" stroke-width="1"/>
+  <!-- Notch (realistic lily pad gap) -->
+  <path d="M 42 42 L 42 9 A 33 33 0 0 0 14 26 Z" fill="#1a5e28" opacity="0.7"/>
+  <!-- Pad rim highlight -->
+  <circle cx="42" cy="42" r="33" fill="none" stroke="rgba(100,220,100,0.25)" stroke-width="2"/>
+  <!-- Dewdrop -->
+  <circle cx="54" cy="30" r="3.5" fill="rgba(180,240,255,0.6)"/>
+  <circle cx="53" cy="29" r="1.2" fill="rgba(255,255,255,0.9)"/>
+  <!-- Number -->
+  <text x="42" y="49" text-anchor="middle" dominant-baseline="middle"
+    font-family="'Segoe UI','Malgun Gothic',sans-serif"
+    font-size="26" font-weight="900" fill="white"
+    style="text-shadow: 0 2px 6px rgba(0,0,0,0.8);"
+    filter="url(#numShadow)">${number}</text>
+  <defs>
+    <filter id="numShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.8)"/>
+    </filter>
+  </defs>
+</svg>`;
+}
+
+/* ════════════════════════════════════════════
+   SCENE SETUP
+   ════════════════════════════════════════════ */
+
+function buildStars() {
+  const sky = document.querySelector('#sky');
+  sky.innerHTML = '';
+  const count = 55;
+  for (let i = 0; i < count; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2.5 + 0.8;
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%; top:${Math.random()*100}%;
+      --dur:${(Math.random()*3+2).toFixed(1)}s;
+      --delay:-${(Math.random()*4).toFixed(1)}s;
+    `;
+    sky.appendChild(s);
+  }
+}
+
+function buildRipples() {
+  const overlay = document.getElementById('ripple-overlay');
+  overlay.innerHTML = '';
+  for (let i = 0; i < 6; i++) {
+    const r = document.createElement('div');
+    r.className = 'ripple-ring';
+    const size = 60 + Math.random() * 120;
+    r.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${10 + Math.random()*80}%; top:${10 + Math.random()*80}%;
+      transform-origin: center;
+      --dur:${(5 + Math.random()*5).toFixed(1)}s;
+      --delay:-${(Math.random()*8).toFixed(1)}s;
+    `;
+    overlay.appendChild(r);
+  }
+}
+
+/* ════════════════════════════════════════════
+   PAD PLACEMENT (no-overlap grid+jitter)
+   ════════════════════════════════════════════ */
+
+function generatePadPositions() {
+  // 4 cols x 3 rows within [80..720] x [90..550]
+  const cols = 4, rows = 3;
+  const xStep = (720 - 80) / (cols - 1);
+  const yStep = (550 - 100) / (rows - 1);
+  const positions = [];
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const baseX = 80 + c * xStep;
+      const baseY = 100 + r * yStep;
+      // Jitter within ±50px, ensure within bounds
+      const jx = (Math.random() - 0.5) * 90;
+      const jy = (Math.random() - 0.5) * 70;
+      const x = Math.max(60, Math.min(740, baseX + jx));
+      const y = Math.max(80, Math.min(560, baseY + jy));
+      positions.push({ x, y });
+    }
+  }
+
+  // Shuffle so numbers are randomly placed
+  for (let i = positions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [positions[i], positions[j]] = [positions[j], positions[i]];
+  }
+  return positions;
+}
+
+/* ════════════════════════════════════════════
+   GAME STATE
+   ════════════════════════════════════════════ */
+let padPositions = [];
+let nextTarget = 1;
+let hearts = 3;
+let frogX = 400, frogY = 540;
+let isAnimating = false;
+const TOTAL = 12;
+
+function startGame() {
+  // Reset state
+  nextTarget = 1;
+  hearts = 3;
+  isAnimating = false;
+
+  // Hide overlays
+  document.getElementById('win-screen').classList.remove('active');
+  document.getElementById('fail-screen').classList.remove('active');
+
+  // Reset hearts display
+  for (let i = 1; i <= 3; i++) {
+    const h = document.getElementById('h' + i);
+    h.classList.remove('lost');
+    h.textContent = '❤️';
+  }
+
+  // Counter
+  updateCounter();
+
+  // Build scene
+  buildStars();
+  buildRipples();
+
+  // Generate pad positions
+  padPositions = generatePadPositions();
+
+  // Render game area
+  renderGameArea();
+}
+
+function renderGameArea() {
+  const area = document.getElementById('game-area');
+  area.innerHTML = '';
+
+  // Starting frog position (on first pad or default)
+  frogX = padPositions[0].x;
+  frogY = padPositions[0].y - 2;
+
+  // Create lily pads (numbers 1..12)
+  for (let i = 0; i < TOTAL; i++) {
+    const num = i + 1; // pad with number = index+1 → position[i]
+    const pos = padPositions[i];
+    const pad = document.createElement('div');
+    pad.className = 'lily-pad';
+    pad.id = `pad-${num}`;
+    pad.dataset.num = num;
+    pad.style.left = pos.x + 'px';
+    pad.style.top = pos.y + 'px';
+    pad.innerHTML = `<div class="pad-glow"></div>${buildLilyPadSVG(num)}`;
+    pad.addEventListener('click', () => onPadClick(num));
+    area.appendChild(pad);
+  }
+
+  // Frog (starts floating near bottom center before jumping on pad 1 once clicked?
+  // Actually let's put frog near start below pad #1)
+  const frogEl = document.createElement('div');
+  frogEl.id = 'frog';
+  frogEl.innerHTML = buildFrogSVG('normal');
+  // Start frog at bottom center waiting
+  frogX = 400;
+  frogY = 575;
+  frogEl.style.left = frogX + 'px';
+  frogEl.style.top = frogY + 'px';
+  area.appendChild(frogEl);
+}
+
+function updateCounter() {
+  document.getElementById('counter').textContent = `${Math.min(nextTarget, TOTAL)} / ${TOTAL}`;
+}
+
+/* ════════════════════════════════════════════
+   PAD CLICK HANDLER
+   ════════════════════════════════════════════ */
+
+function onPadClick(num) {
+  if (isAnimating) return;
+
+  if (num === nextTarget) {
+    handleCorrect(num);
+  } else {
+    handleWrong(num);
+  }
+}
+
+function handleCorrect(num) {
+  isAnimating = true;
+
+  const pad = document.getElementById(`pad-${num}`);
+  const pos = padPositions[num - 1];
+
+  // Remove current glow from previous pad
+  if (num > 1) {
+    const prevPad = document.getElementById(`pad-${num - 1}`);
+    if (prevPad) prevPad.classList.remove('current');
+  }
+
+  // Mark as visited (except the current one being landed on)
+  pad.classList.add('current');
+
+  // Jump frog
+  jumpFrogTo(pos.x, pos.y, () => {
+    // Splash effect
+    createSplash(pos.x, pos.y);
+
+    // After landing: mark visited, dim it (actually keep current glowing)
+    // If the frog just landed — it stays "current" (glowing)
+    // When next pad is clicked, previous one gets marked visited
+    if (num > 1) {
+      const prevPad = document.getElementById(`pad-${num - 1}`);
+      if (prevPad) {
+        prevPad.classList.remove('current');
+        prevPad.classList.add('visited');
+      }
+    }
+
+    nextTarget++;
+    updateCounter();
+
+    if (nextTarget > TOTAL) {
+      // All done!
+      setTimeout(showWin, 600);
+    } else {
+      isAnimating = false;
+    }
+  });
+}
+
+function handleWrong(num) {
+  const pad = document.getElementById(`pad-${num}`);
+
+  // Shake pad
+  pad.classList.add('wrong');
+  setTimeout(() => pad.classList.remove('wrong'), 450);
+
+  // Wrong flash
+  const pos = padPositions[num - 1];
+  createWrongFlash(pos.x, pos.y);
+
+  // Lose heart
+  hearts--;
+  updateHearts();
+
+  if (hearts <= 0) {
+    setTimeout(showFail, 500);
+  }
+}
+
+function updateHearts() {
+  for (let i = 1; i <= 3; i++) {
+    const h = document.getElementById('h' + i);
+    if (i > hearts) {
+      h.classList.add('lost');
+      h.style.animation = 'heartLost 0.4s ease';
+      setTimeout(() => h.style.animation = '', 400);
+    }
+  }
+}
+
+/* ════════════════════════════════════════════
+   FROG ANIMATION
+   ════════════════════════════════════════════ */
+
+function jumpFrogTo(x, y, callback) {
+  const frog = document.getElementById('frog');
+  frog.classList.remove('jumping');
+
+  // Force reflow
+  void frog.offsetWidth;
+
+  frog.classList.add('jumping');
+  frog.style.left = x + 'px';
+  frog.style.top = (y - 4) + 'px';
+
+  frogX = x;
+  frogY = y - 4;
+
+  setTimeout(() => {
+    frog.classList.remove('jumping');
+    if (callback) callback();
+  }, 580);
+}
+
+/* ════════════════════════════════════════════
+   EFFECTS
+   ════════════════════════════════════════════ */
+
+function createSplash(x, y) {
+  const area = document.getElementById('game-area');
+  const s = document.createElement('div');
+  s.className = 'splash';
+  s.style.left = x + 'px';
+  s.style.top = y + 'px';
+  const inner = document.createElement('div');
+  inner.className = 'splash-inner';
+  s.appendChild(inner);
+  area.appendChild(s);
+  setTimeout(() => s.remove(), 700);
+}
+
+function createWrongFlash(x, y) {
+  const area = document.getElementById('game-area');
+  const f = document.createElement('div');
+  f.className = 'wrong-flash';
+  f.style.left = x + 'px';
+  f.style.top = y + 'px';
+  area.appendChild(f);
+  setTimeout(() => f.remove(), 500);
+}
+
+/* ════════════════════════════════════════════
+   WIN / FAIL SCREENS
+   ════════════════════════════════════════════ */
+
+function showWin() {
+  const frog = document.getElementById('frog');
+  if (frog) {
+    frog.classList.add('happy');
+    frog.innerHTML = buildFrogSVG('happy');
+  }
+
+  const winFrog = document.getElementById('win-frog');
+  winFrog.innerHTML = buildFrogSVG('happy').replace(/<svg[^>]*>/, '').replace('</svg>', '');
+
+  const screen = document.getElementById('win-screen');
+  screen.classList.add('active');
+
+  // Floating stars decoration
+  const stars = ['⭐','🌟','✨'];
+  for (let i = 0; i < 6; i++) {
+    const ws = document.createElement('div');
+    ws.className = 'win-star';
+    ws.textContent = stars[i % stars.length];
+    ws.style.cssText = `
+      left:${10+Math.random()*80}%;
+      top:${10+Math.random()*80}%;
+      --dur:${(1.5+Math.random()*1.5).toFixed(1)}s;
+      --delay:-${(Math.random()*2).toFixed(1)}s;
+    `;
+    screen.appendChild(ws);
+  }
+}
+
+function showFail() {
+  const frog = document.getElementById('frog');
+  if (frog) {
+    frog.classList.add('sad');
+    frog.innerHTML = buildFrogSVG('sad');
+  }
+
+  const failFrog = document.getElementById('fail-frog');
+  failFrog.innerHTML = buildFrogSVG('sad').replace(/<svg[^>]*>/, '').replace('</svg>', '');
+
+  document.getElementById('fail-screen').classList.add('active');
+}
+
+/* ════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════ */
+startGame();
+</script>
+</body>
+</html>

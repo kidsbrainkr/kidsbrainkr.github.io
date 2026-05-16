@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>탕그램 퍼즐 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0118;
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --grad: linear-gradient(135deg, #a855f7, #ec4899);
+      --text: #f0e8ff;
+      --text-dim: rgba(240,232,255,0.55);
+      --correct: #22c55e;
+      --card: rgba(255,255,255,0.06);
+      --card-border: rgba(255,255,255,0.1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Nunito', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; overflow: hidden;
+      user-select: none; -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .stars-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .star {
+      position: absolute; background: #fff; border-radius: 50%;
+      animation: twinkle var(--dur,3s) ease-in-out infinite var(--delay,0s);
+    }
+    @keyframes twinkle {
+      0%,100%{opacity:.2;transform:scale(1);}50%{opacity:1;transform:scale(1.4);}
+    }
+    #game-wrap {
+      position: relative; width: 800px; height: 600px; border-radius: 24px;
+      overflow: hidden;
+      background: radial-gradient(ellipse at 50% 30%, #1a0533 0%, #0a0118 70%);
+      box-shadow: 0 0 80px rgba(168,85,247,.2), 0 20px 60px rgba(0,0,0,.7);
+      z-index: 1;
+    }
+    #hud {
+      position: absolute; top:0; left:0; right:0; height:52px;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 20px; z-index:50;
+      background:rgba(10,1,24,.7); backdrop-filter:blur(8px);
+    }
+    .hud-btn {
+      background:rgba(255,255,255,.1); border:1.5px solid rgba(255,255,255,.2);
+      color:#fff; font-family:inherit; font-size:13px; font-weight:700;
+      padding:7px 16px; border-radius:20px; cursor:pointer; text-decoration:none;
+      transition:background .2s;
+    }
+    .hud-btn:hover{background:rgba(255,255,255,.2);}
+    .hud-btn.purple{background:rgba(168,85,247,.2);border-color:rgba(168,85,247,.4);color:#c084fc;}
+    .hud-btn.purple:hover{background:rgba(168,85,247,.35);}
+    #round-display{font-size:17px;font-weight:800;color:var(--text-dim);}
+    #round-display span{
+      background:var(--grad);-webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;background-clip:text;
+    }
+    #main-area{
+      position:absolute;top:52px;left:0;right:0;bottom:0;
+      display:flex;align-items:stretch;
+    }
+    /* Silhouette panel */
+    #sil-panel{
+      width:240px;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;padding:16px;
+      border-right:1px solid rgba(255,255,255,.08);
+    }
+    #sil-label{font-size:12px;font-weight:700;color:var(--text-dim);letter-spacing:.05em;margin-bottom:10px;}
+    #sil-box{
+      width:180px;height:180px;
+      display:flex;align-items:center;justify-content:center;
+      filter:drop-shadow(0 0 14px rgba(168,85,247,.5));
+    }
+    #puzzle-name{
+      font-size:20px;font-weight:900;margin-top:12px;
+      background:var(--grad);-webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;background-clip:text;
+    }
+    #hint-area{
+      margin-top:10px;font-size:12px;color:var(--text-dim);
+      text-align:center;line-height:1.5;min-height:34px;
+      opacity:0;transition:opacity .3s;
+    }
+    #hint-area.vis{opacity:1;}
+    #progress-dots{display:flex;gap:8px;margin-top:16px;}
+    .dot{
+      width:12px;height:12px;border-radius:50%;
+      background:rgba(255,255,255,.15);transition:background .3s;
+    }
+    .dot.done{background:linear-gradient(135deg,#a855f7,#ec4899);}
+    .dot.active{background:#a855f7;animation:dotPulse 1s ease-in-out infinite;}
+    @keyframes dotPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.3);}}
+    /* Board panel */
+    #board-panel{
+      flex:1;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;padding:16px;
+      position:relative;
+    }
+    #board-label{font-size:12px;font-weight:700;color:var(--text-dim);letter-spacing:.05em;margin-bottom:10px;}
+    #board{
+      position:relative;width:340px;height:340px;
+      background:rgba(255,255,255,.025);
+      border:2px dashed rgba(168,85,247,.25);border-radius:16px;
+      overflow:visible;
+    }
+    .piece{
+      position:absolute;cursor:grab;touch-action:none;
+      filter:drop-shadow(0 4px 10px rgba(0,0,0,.5));
+      transition:filter .15s;
+    }
+    .piece:active{cursor:grabbing;}
+    .piece.selected{filter:drop-shadow(0 0 14px #fbbf24) drop-shadow(0 4px 10px rgba(0,0,0,.5));}
+    .piece.snapped{filter:drop-shadow(0 0 10px rgba(34,197,94,.7));cursor:default;}
+    #board-hint{
+      font-size:12px;color:var(--text-dim);font-weight:700;
+      text-align:center;margin-top:10px;
+    }
+    /* Complete msg */
+    #complete-overlay{
+      display:none;position:absolute;inset:0;z-index:80;
+      align-items:center;justify-content:center;
+      background:rgba(10,1,24,.65);border-radius:16px;
+    }
+    #complete-overlay.active{display:flex;}
+    #complete-msg{
+      font-size:32px;font-weight:900;
+      background:var(--grad);-webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;background-clip:text;
+      animation:msgPop .4s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes msgPop{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+    /* Particles */
+    .particle{
+      position:absolute;border-radius:50%;pointer-events:none;
+      animation:particleFly var(--dur,.8s) ease-out forwards;
+    }
+    @keyframes particleFly{
+      0%{transform:translate(-50%,-50%) translate(0,0) scale(1);opacity:1;}
+      100%{transform:translate(-50%,-50%) translate(var(--tx),var(--ty)) scale(0);opacity:0;}
+    }
+    /* Flash */
+    #flash-overlay{
+      position:absolute;inset:0;pointer-events:none;z-index:90;opacity:0;border-radius:24px;
+    }
+    #flash-overlay.gf{background:rgba(34,197,94,.15);animation:ff .5s ease-out forwards;}
+    @keyframes ff{0%{opacity:1;}100%{opacity:0;}}
+    /* Result overlay */
+    .overlay{
+      display:none;position:absolute;inset:0;z-index:200;
+      align-items:center;justify-content:center;flex-direction:column;
+      gap:18px;border-radius:24px;
+      background:radial-gradient(ellipse at center,rgba(26,5,51,.97) 0%,rgba(10,1,24,.98) 100%);
+    }
+    .overlay.active{display:flex;animation:fis .5s cubic-bezier(.34,1.56,.64,1);}
+    @keyframes fis{from{opacity:0;transform:scale(.85);}to{opacity:1;transform:scale(1);}}
+    .overlay-title{
+      font-size:38px;font-weight:900;
+      background:var(--grad);-webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .overlay-sub{font-size:17px;color:var(--text-dim);font-weight:700;text-align:center;}
+    .star-rating{display:flex;gap:10px;}
+    .star-rating svg{animation:starPop .4s cubic-bezier(.34,1.56,.64,1) both;}
+    .star-rating svg:nth-child(2){animation-delay:.12s;}
+    .star-rating svg:nth-child(3){animation-delay:.24s;}
+    @keyframes starPop{from{transform:scale(0) rotate(-30deg);opacity:0;}to{transform:scale(1) rotate(0);opacity:1;}}
+    .overlay-btns{display:flex;gap:14px;}
+    .btn-primary{
+      padding:14px 32px;background:var(--grad);border:none;
+      border-radius:50px;color:#fff;font-family:inherit;
+      font-size:17px;font-weight:800;cursor:pointer;
+      box-shadow:0 4px 20px rgba(168,85,247,.4);transition:transform .15s;
+    }
+    .btn-primary:hover{transform:translateY(-2px);}
+    .btn-secondary{
+      padding:14px 28px;background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.15);border-radius:50px;
+      color:var(--text-dim);font-family:inherit;font-size:16px;font-weight:800;
+      cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;
+      transition:background .2s;
+    }
+    .btn-secondary:hover{background:rgba(255,255,255,.14);color:var(--text);}
+  </style>
+</head>
+<body>
+<div class="stars-layer" id="starsLayer"></div>
+<div id="game-wrap">
+  <div id="flash-overlay"></div>
+  <div id="hud">
+    <a class="hud-btn" href="../../index.html">← 홈</a>
+    <div id="round-display">라운드 <span id="round-num">1</span> / 5</div>
+    <button class="hud-btn purple" onclick="showHint()">힌트</button>
+  </div>
+  <div id="main-area">
+    <div id="sil-panel">
+      <div id="sil-label">완성 목표</div>
+      <div id="sil-box"></div>
+      <div id="puzzle-name"></div>
+      <div id="hint-area"></div>
+      <div id="progress-dots"></div>
+    </div>
+    <div id="board-panel">
+      <div id="board-label">조각을 맞춰보세요</div>
+      <div id="board">
+        <div id="complete-overlay"><div id="complete-msg">완성!</div></div>
+      </div>
+      <div id="board-hint">탭 → 선택 &nbsp;|&nbsp; 다시 탭 → 45도 회전 &nbsp;|&nbsp; 드래그 → 이동</div>
+    </div>
+  </div>
+  <div class="overlay" id="result-screen">
+    <div class="overlay-title">모두 완성!</div>
+    <div class="star-rating" id="star-rating"></div>
+    <div class="overlay-sub" id="result-msg"></div>
+    <div class="overlay-btns">
+      <button class="btn-primary" onclick="startGame()">다시 하기</button>
+      <a class="btn-secondary" href="../../index.html">홈으로</a>
+    </div>
+  </div>
+</div>
+<script>
+/* ═══ STARS ═══ */
+(function(){
+  const l=document.getElementById('starsLayer');
+  for(let i=0;i<55;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=Math.random()*2.5+.8;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--dur:${(Math.random()*3+2).toFixed(1)}s;--delay:-${(Math.random()*5).toFixed(1)}s;`;
+    l.appendChild(s);
+  }
+})();
+
+/* ═══ PUZZLE DATA ═══ */
+// All positions in a 340x340 board coordinate space
+// Each piece: polygon points (relative), initX/Y (scatter position), snapX/Y (target position)
+const COLORS=[
+  {f:'#a855f7',s:'#7c3aed'},{f:'#ec4899',s:'#be185d'},
+  {f:'#3b82f6',s:'#1d4ed8'},{f:'#22c55e',s:'#15803d'},
+  {f:'#f59e0b',s:'#b45309'},{f:'#06b6d4',s:'#0e7490'},
+  {f:'#f43f5e',s:'#be123c'}
+];
+
+// Silhouettes drawn in a 180x180 viewBox
+const PUZZLES=[
+  {
+    name:'집',
+    hint:'지붕(삼각형)과 벽(사각형)을 찾아요!',
+    sil:`<polygon points="90,10 160,65 160,170 20,170 20,65" fill="rgba(168,85,247,.35)" stroke="rgba(168,85,247,.8)" stroke-width="2"/>`,
+    pieces:[
+      {pts:'0,0 100,0 100,80 0,80',  initX:10,  initY:10,  sx:20,  sy:90,  label:'벽 왼쪽'},
+      {pts:'0,0 80,0 80,80 0,80',    initX:220, initY:10,  sx:120, sy:90,  label:'벽 오른쪽'},
+      {pts:'0,55 70,0 140,55',        initX:80,  initY:10,  sx:20,  sy:35,  label:'지붕'},
+      {pts:'0,0 40,0 40,55 0,55',    initX:10,  initY:200, sx:60,  sy:90,  label:'문'},
+    ]
+  },
+  {
+    name:'토끼',
+    hint:'귀가 긴 귀여운 동물이에요!',
+    sil:`
+      <ellipse cx="90" cy="130" rx="50" ry="40" fill="rgba(168,85,247,.35)" stroke="rgba(168,85,247,.8)" stroke-width="2"/>
+      <rect x="65" y="30" width="20" height="70" rx="10" fill="rgba(168,85,247,.35)" stroke="rgba(168,85,247,.8)" stroke-width="2"/>
+      <rect x="95" y="25" width="20" height="75" rx="10" fill="rgba(168,85,247,.35)" stroke="rgba(168,85,247,.8)" stroke-width="2"/>`,
+    pieces:[
+      {pts:'0,0 80,0 80,70 0,70',   initX:10,  initY:10,  sx:50,  sy:100,label:'몸통'},
+      {pts:'0,0 40,0 40,70 0,70',   initX:210, initY:10,  sx:100, sy:100,label:'몸통2'},
+      {pts:'0,0 20,0 20,70 0,70',   initX:20,  initY:200, sx:65,  sy:30, label:'왼쪽 귀'},
+      {pts:'0,0 20,0 20,75 0,75',   initX:180, initY:195, sx:95,  sy:25, label:'오른쪽 귀'},
+      {pts:'0,0 60,0 60,20 0,20',   initX:120, initY:215, sx:60,  sy:155,label:'발'},
+    ]
+  },
+  {
+    name:'자동차',
+    hint:'바퀴가 달린 빠른 탈것!',
+    sil:`
+      <rect x="15" y="85" width="150" height="65" rx="8" fill="rgba(168,85,247,.35)" stroke="rgba(168,85,247,.8)" stroke-width="2"/>
+      <rect x="45" y="50" width="90" height="45" rx="12" fill="rgba(168,85,247,.35)" stroke="rgba(168,85,247,.8)" stroke-width="2"/>
+      <circle cx="50" cy="155" r="20" fill="rgba(168,85,247,.5)" stroke="rgba(168,85,247,.9)" stroke-width="2"/>
+      <circle cx="130" cy="155" r="20" fill="rgba(168,85,247,.5)" stroke="rgba(168,85,247,.9)" stroke-width="2"/>`,
+    pieces:[
+      {pts:'0,0 90,0 90,50 0,50',  initX:10,  initY:10,  sx:15,  sy:85,  label:'차체 왼쪽'},
+      {pts:'0,0 75,0 75,50 0,50',  initX:230, initY:10,  sx:90,  sy:85,  label:'차체 오른쪽'},
+      {pts:'0,0 70,0 70,40 0,40',  initX:20,  initY:200, sx:45,  sy:50,  label:'지붕'},
+      {pts:'0,0 30,0 30,30 0,30',  initX:200, initY:195, sx:35,  sy:140, label:'바퀴1'},
+      {pts:'0,0 30,0 30,30 0,30',  initX:280, initY:195, sx:115, sy:140, label:'바퀴2'},
+    ]
+  },
+  {
+    name:'로켓',
+    hint:'하늘 높이 날아가요!',
+    sil:`
+      <polygon points="90,12 120,75 120,165 60,165 60,75" fill="rgba(168,85,247,.35)" stroke="rgba(168,85,247,.8)" stroke-width="2"/>
+      <polygon points="60,165 38,192 60,178" fill="rgba(168,85,247,.35)" stroke="rgba(168,85,247,.8)" stroke-width="2"/>
+      <polygon points="120,165 142,192 120,178" fill="rgba(168,85,247,.35)" stroke="rgba(168,85,247,.8)" stroke-width="2"/>`,
+    pieces:[
+      {pts:'0,0 60,0 60,90 0,90',  initX:15,  initY:15,  sx:60,  sy:75,  label:'몸통'},
+      {pts:'0,63 30,0 60,63',       initX:220, initY:20,  sx:60,  sy:12,  label:'앞부분'},
+      {pts:'0,0 22,27 22,15',       initX:20,  initY:200, sx:38,  sy:178, label:'왼쪽 날개'},
+      {pts:'0,27 22,0 22,15',       initX:160, initY:200, sx:120, sy:178, label:'오른쪽 날개'},
+      {pts:'0,0 60,0 60,15 0,15',   initX:80,  initY:220, sx:60,  sy:150, label:'엔진'},
+    ]
+  },
+  {
+    name:'물고기',
+    hint:'바다 속 친구예요!',
+    sil:`
+      <ellipse cx="85" cy="100" rx="65" ry="42" fill="rgba(168,85,247,.35)" stroke="rgba(168,85,247,.8)" stroke-width="2"/>
+      <polygon points="150,100 178,72 178,128" fill="rgba(168,85,247,.35)" stroke="rgba(168,85,247,.8)" stroke-width="2"/>
+      <circle cx="55" cy="90" r="9" fill="rgba(255,255,255,.5)" stroke="rgba(168,85,247,.8)" stroke-width="2"/>`,
+    pieces:[
+      {pts:'0,0 100,0 100,65 0,65', initX:10,  initY:20,  sx:20,  sy:68,  label:'몸통 앞'},
+      {pts:'0,0 50,0 50,65 0,65',   initX:240, initY:20,  sx:100, sy:68,  label:'몸통 뒤'},
+      {pts:'0,28 28,0 28,56',        initX:20,  initY:200, sx:150, sy:72,  label:'꼬리지느러미'},
+      {pts:'0,0 18,0 18,18 0,18',   initX:170, initY:205, sx:46,  sy:81,  label:'눈'},
+      {pts:'0,0 50,0 25,22',         initX:100, initY:220, sx:40,  sy:142, label:'아래지느러미'},
+    ]
+  }
+];
+
+/* ═══ STATE ═══ */
+let currentRound=0, snappedCount=0, totalHints=0, selectedState=null, dragging=null;
+let pieceStates=[];
+
+/* ═══ STARS DOTS ═══ */
+function buildDots(){
+  const c=document.getElementById('progress-dots');c.innerHTML='';
+  for(let i=0;i<5;i++){
+    const d=document.createElement('div');
+    d.className='dot'+(i<currentRound?' done':i===currentRound?' active':'');
+    c.appendChild(d);
+  }
+}
+
+/* ═══ SILHOUETTE ═══ */
+function buildSilhouette(p){
+  document.getElementById('sil-box').innerHTML=`<svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">${p.sil}</svg>`;
+  document.getElementById('puzzle-name').textContent=p.name;
+}
+
+/* ═══ PIECES ═══ */
+function buildPieces(puzzle){
+  const board=document.getElementById('board');
+  board.querySelectorAll('.piece').forEach(el=>el.remove());
+  pieceStates=[];snappedCount=0;selectedState=null;
+
+  puzzle.pieces.forEach((pd,idx)=>{
+    const col=COLORS[idx%COLORS.length];
+    const el=document.createElement('div');
+    el.className='piece';el.dataset.idx=idx;
+    const pts=pd.pts.split(' ').map(p=>p.split(',').map(Number));
+    const maxX=Math.max(...pts.map(p=>p[0]))+6;
+    const maxY=Math.max(...pts.map(p=>p[1]))+6;
+    el.innerHTML=`<svg width="${maxX}" height="${maxY}" viewBox="0 0 ${maxX} ${maxY}" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="${pd.pts}" fill="${col.f}" stroke="${col.s}" stroke-width="2" opacity=".9"/>
+    </svg>`;
+    el.style.left=pd.initX+'px';el.style.top=pd.initY+'px';
+    const st={el,pd,rot:0,snapped:false};
+    pieceStates.push(st);
+    el.addEventListener('click',e=>onPieceClick(e,st));
+    el.addEventListener('mousedown',e=>startDrag(e,st));
+    el.addEventListener('touchstart',e=>startDrag(e,st),{passive:false});
+    board.appendChild(el);
+  });
+}
+
+function onPieceClick(e,st){
+  if(st.snapped)return;e.stopPropagation();
+  if(selectedState===st){
+    st.rot=(st.rot+45)%360;
+    st.el.style.transform=`rotate(${st.rot}deg)`;
+  } else {
+    if(selectedState){selectedState.el.classList.remove('selected');}
+    selectedState=st;st.el.classList.add('selected');st.el.style.zIndex=20;
+  }
+}
+
+function startDrag(e,st){
+  if(st.snapped)return;e.preventDefault();
+  if(selectedState&&selectedState!==st){selectedState.el.classList.remove('selected');}
+  selectedState=st;st.el.classList.add('selected');st.el.style.zIndex=30;
+  const isT=e.type==='touchstart';
+  const cx=isT?e.touches[0].clientX:e.clientX;
+  const cy=isT?e.touches[0].clientY:e.clientY;
+  const r=st.el.getBoundingClientRect();
+  dragging={st,ox:cx-r.left,oy:cy-r.top};
+  const onMove=ev=>{
+    if(!dragging)return;
+    const mx=ev.type==='touchmove'?ev.touches[0].clientX:ev.clientX;
+    const my=ev.type==='touchmove'?ev.touches[0].clientY:ev.clientY;
+    const br=document.getElementById('board').getBoundingClientRect();
+    dragging.st.el.style.left=(mx-br.left-dragging.ox)+'px';
+    dragging.st.el.style.top=(my-br.top-dragging.oy)+'px';
+    ev.preventDefault();
+  };
+  const onEnd=()=>{
+    if(!dragging)return;
+    checkSnap(dragging.st);dragging=null;
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('touchmove',onMove);
+    document.removeEventListener('mouseup',onEnd);
+    document.removeEventListener('touchend',onEnd);
+  };
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('touchmove',onMove,{passive:false});
+  document.addEventListener('mouseup',onEnd);
+  document.addEventListener('touchend',onEnd);
+}
+
+function checkSnap(st){
+  if(st.snapped)return;
+  const x=parseFloat(st.el.style.left),y=parseFloat(st.el.style.top);
+  const d=Math.hypot(x-st.pd.sx,y-st.pd.sy);
+  if(d<60){
+    st.el.style.left=st.pd.sx+'px';st.el.style.top=st.pd.sy+'px';
+    st.el.style.transform='rotate(0deg)';
+    st.el.classList.remove('selected');st.el.classList.add('snapped');
+    st.el.style.zIndex=5;st.snapped=true;st.rot=0;
+    if(selectedState===st)selectedState=null;
+    snappedCount++;
+    spawnParticles(st.pd.sx+20,st.pd.sy+20);
+    if(snappedCount>=PUZZLES[currentRound].pieces.length)onComplete();
+  }
+}
+
+function spawnParticles(x,y){
+  const board=document.getElementById('board');
+  const cols=['#a855f7','#ec4899','#22c55e','#fbbf24','#3b82f6'];
+  for(let i=0;i<10;i++){
+    const p=document.createElement('div');p.className='particle';
+    const a=(i/10)*Math.PI*2,d=25+Math.random()*30;
+    p.style.cssText=`left:${x}px;top:${y}px;width:${4+Math.random()*5}px;height:${4+Math.random()*5}px;background:${cols[i%cols.length]};--tx:${Math.cos(a)*d}px;--ty:${Math.sin(a)*d}px;--dur:${(.5+Math.random()*.3).toFixed(2)}s;`;
+    board.appendChild(p);setTimeout(()=>p.remove(),900);
+  }
+}
+
+function onComplete(){
+  const fl=document.getElementById('flash-overlay');fl.className='gf';setTimeout(()=>fl.className='',600);
+  const co=document.getElementById('complete-overlay');co.classList.add('active');
+  setTimeout(()=>{
+    co.classList.remove('active');currentRound++;
+    if(currentRound>=5)showResults();else loadRound(currentRound);
+  },1600);
+}
+
+function showHint(){
+  totalHints++;
+  const ha=document.getElementById('hint-area');
+  ha.textContent=PUZZLES[currentRound].hint;ha.classList.add('vis');
+  setTimeout(()=>ha.classList.remove('vis'),4500);
+}
+
+function loadRound(r){
+  document.getElementById('hint-area').classList.remove('vis');
+  document.getElementById('round-num').textContent=r+1;
+  buildDots();buildSilhouette(PUZZLES[r]);buildPieces(PUZZLES[r]);
+}
+
+function showResults(){
+  const stars=totalHints===0?3:totalHints<=2?2:1;
+  const msgs=['탕그램 천재! 힌트 없이 전부 완성!','훌륭해요! 모든 퍼즐을 완성했어요!','대단해요! 5개 퍼즐을 모두 완성했어요!'];
+  document.getElementById('result-msg').textContent=msgs[3-stars];
+  const sr=document.getElementById('star-rating');sr.innerHTML='';
+  for(let i=0;i<3;i++){
+    const f=i<stars;
+    sr.innerHTML+=`<svg width="44" height="44" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg"><polygon points="22,3 26,16 40,16 30,24 34,38 22,30 10,38 14,24 4,16 18,16" fill="${f?'#fbbf24':'rgba(255,255,255,.15)'}" stroke="${f?'#f59e0b':'rgba(255,255,255,.1)'}" stroke-width="1.5"/></svg>`;
+  }
+  document.getElementById('result-screen').classList.add('active');
+}
+
+function startGame(){
+  currentRound=0;totalHints=0;selectedState=null;dragging=null;
+  document.getElementById('result-screen').classList.remove('active');
+  loadRound(0);
+}
+startGame();
+</script>
+</body>
+</html>

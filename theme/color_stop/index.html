@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>멈춰! 탭해! — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0118;
+      --card: rgba(255,255,255,0.06);
+      --card-border: rgba(255,255,255,0.12);
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --grad: linear-gradient(135deg, #a855f7, #ec4899);
+      --text: #f0e8ff;
+      --text-dim: rgba(240,232,255,0.55);
+      --correct: #22c55e;
+      --wrong: #ef4444;
+      --radius: 20px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+    }
+
+    /* 별 55개 */
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: white;
+      animation: twinkle var(--d, 3s) var(--delay, 0s) infinite alternate ease-in-out;
+    }
+    @keyframes twinkle {
+      from { opacity: var(--min-op, 0.2); transform: scale(1); }
+      to   { opacity: var(--max-op, 0.9); transform: scale(1.4); }
+    }
+
+    /* 게임 영역 */
+    #game-area {
+      position: relative;
+      z-index: 1;
+      width: 800px;
+      height: 600px;
+      background: rgba(10,1,24,0.85);
+      border: 1px solid var(--card-border);
+      border-radius: 28px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HUD */
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px 10px;
+      flex-shrink: 0;
+    }
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 50px;
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.1); }
+
+    .score-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+    .progress-dots {
+      display: flex;
+      gap: 5px;
+    }
+    .dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.2);
+      transition: all 0.3s;
+    }
+    .dot.correct { background: var(--correct); border-color: var(--correct); }
+    .dot.wrong   { background: var(--wrong);   border-color: var(--wrong); }
+
+    /* 스크린들 */
+    .screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .screen.hidden { display: none; }
+
+    /* 인트로 */
+    #intro-screen h1 {
+      font-size: 2.6rem;
+      font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    #intro-screen p {
+      font-size: 1rem;
+      color: var(--text-dim);
+      text-align: center;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    /* 목표 제시 */
+    #target-screen {
+      gap: 20px;
+    }
+    #target-screen .label {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--text-dim);
+    }
+    #target-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    #target-display .target-name {
+      font-size: 2rem;
+      font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    #target-display svg {
+      filter: drop-shadow(0 0 20px rgba(168,85,247,0.5));
+    }
+
+    /* 플레이 */
+    #play-screen {
+      position: relative;
+      flex: 1;
+      padding: 0;
+    }
+
+    #shape-container {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .shape-wrapper {
+      cursor: pointer;
+      animation: zoomIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes zoomIn {
+      from { transform: scale(0) rotate(-20deg); opacity: 0; }
+      to   { transform: scale(1) rotate(0deg);   opacity: 1; }
+    }
+    .shape-wrapper.zoom-out {
+      animation: zoomOut 0.2s ease-in forwards;
+    }
+    @keyframes zoomOut {
+      from { transform: scale(1); opacity: 1; }
+      to   { transform: scale(0); opacity: 0; }
+    }
+
+    /* 타이머 바 */
+    #timer-bar-wrap {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+    }
+    #timer-bar {
+      height: 100%;
+      background: var(--grad);
+      transition: width linear;
+      border-radius: 3px;
+    }
+
+    /* 목표 힌트 (플레이 중) */
+    #play-hint {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(168,85,247,0.15);
+      border: 1px solid rgba(168,85,247,0.3);
+      border-radius: 30px;
+      padding: 6px 20px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    /* 라운드 카운터 */
+    #round-counter {
+      position: absolute;
+      bottom: 18px;
+      right: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-dim);
+    }
+
+    /* 피드백 오버레이 */
+    #feedback-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .feedback-text {
+      font-size: 3rem;
+      font-weight: 900;
+      animation: feedbackPop 0.5s ease-out forwards;
+    }
+    @keyframes feedbackPop {
+      0%   { transform: scale(0.5); opacity: 0; }
+      50%  { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(1);   opacity: 0; }
+    }
+
+    /* 게임 플래시 */
+    #flash-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      opacity: 0;
+      border-radius: 28px;
+    }
+    #flash-overlay.flash-wrong {
+      background: rgba(239,68,68,0.35);
+      animation: flashAnim 0.4s ease-out forwards;
+    }
+    #flash-overlay.flash-correct {
+      background: rgba(34,197,94,0.25);
+      animation: flashAnim 0.4s ease-out forwards;
+    }
+    @keyframes flashAnim {
+      0%   { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* 파티클 */
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 20;
+      animation: particleFly var(--dur, 0.8s) ease-out forwards;
+    }
+    @keyframes particleFly {
+      0%   { transform: translate(0,0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+    }
+
+    /* shake */
+    .shake {
+      animation: shakeAnim 0.4s ease-out;
+    }
+    @keyframes shakeAnim {
+      0%,100% { transform: translateX(0); }
+      20%  { transform: translateX(-10px); }
+      40%  { transform: translateX(10px); }
+      60%  { transform: translateX(-8px); }
+      80%  { transform: translateX(8px); }
+    }
+
+    /* 버튼 공통 */
+    .btn-primary {
+      padding: 14px 36px;
+      background: var(--grad);
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(168,85,247,0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(168,85,247,0.5); }
+    .btn-primary:active { transform: scale(0.96); }
+    .btn-secondary {
+      padding: 12px 28px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 50px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+
+    /* 결과 화면 */
+    #result-screen {
+      gap: 16px;
+    }
+    #result-screen h2 {
+      font-size: 2rem;
+      font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .result-accuracy {
+      font-size: 3.5rem;
+      font-weight: 900;
+      color: var(--correct);
+    }
+    .result-label { font-size: 1rem; color: var(--text-dim); }
+    .stars-row {
+      display: flex;
+      gap: 10px;
+      margin: 8px 0;
+    }
+    .result-star {
+      animation: starPop 0.4s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+      opacity: 0;
+    }
+    @keyframes starPop {
+      from { transform: scale(0) rotate(-30deg); opacity: 0; }
+      to   { transform: scale(1) rotate(0deg);   opacity: 1; }
+    }
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    /* 응원 메시지 */
+    #cheer-msg {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--text-dim);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- 별 배경 (JS로 생성) -->
+<div class="stars" id="stars"></div>
+
+<div id="game-area">
+  <!-- HUD -->
+  <div class="hud">
+    <a href="../../index.html" class="btn-back">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      홈
+    </a>
+    <div class="score-display">
+      <div class="progress-dots" id="progress-dots"></div>
+    </div>
+  </div>
+
+  <!-- 인트로 -->
+  <div class="screen" id="intro-screen">
+    <h1>멈춰! 탭해!</h1>
+    <p>목표 도형이 나오면 빠르게 탭하고<br>다른 도형이 나오면 참아야 해요!</p>
+    <svg width="120" height="120" viewBox="0 0 120 120">
+      <!-- 귀여운 정지 신호 SVG -->
+      <circle cx="60" cy="60" r="55" fill="rgba(168,85,247,0.15)" stroke="#a855f7" stroke-width="3"/>
+      <circle cx="60" cy="60" r="40" fill="rgba(236,72,153,0.2)" stroke="#ec4899" stroke-width="2"/>
+      <!-- STOP 손 -->
+      <rect x="45" y="30" width="10" height="45" rx="5" fill="#f0e8ff"/>
+      <rect x="57" y="35" width="10" height="40" rx="5" fill="#f0e8ff"/>
+      <rect x="69" y="38" width="10" height="37" rx="5" fill="#f0e8ff"/>
+      <rect x="81" y="42" width="10" height="30" rx="5" fill="#f0e8ff"/>
+      <rect x="45" y="75" width="46" height="12" rx="6" fill="#f0e8ff"/>
+    </svg>
+    <button class="btn-primary" id="start-btn" style="margin-top:24px">시작하기</button>
+  </div>
+
+  <!-- 목표 제시 -->
+  <div class="screen hidden" id="target-screen">
+    <div class="label">이것이 나오면 탭하세요!</div>
+    <div id="target-display">
+      <svg id="target-svg" width="140" height="140" viewBox="0 0 140 140"></svg>
+      <div class="target-name" id="target-name-text"></div>
+    </div>
+    <div style="margin-top:10px; color:var(--text-dim); font-size:0.9rem; text-align:center;">
+      다른 것이 나오면 <strong style="color:var(--wrong)">참아야 해요!</strong>
+    </div>
+    <button class="btn-primary" id="ready-btn" style="margin-top:24px">준비됐어요!</button>
+  </div>
+
+  <!-- 플레이 -->
+  <div class="screen hidden" id="play-screen">
+    <div id="play-hint"></div>
+    <div id="shape-container"></div>
+    <div id="round-counter"></div>
+    <div id="timer-bar-wrap"><div id="timer-bar"></div></div>
+    <div id="feedback-overlay"></div>
+    <div id="flash-overlay"></div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="screen hidden" id="result-screen">
+    <h2 id="result-title">결과 발표!</h2>
+    <div class="result-accuracy" id="result-accuracy"></div>
+    <div class="result-label">정확도</div>
+    <div class="stars-row" id="stars-row"></div>
+    <div id="cheer-msg"></div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="location.href='../../index.html'">홈으로</button>
+      <button class="btn-primary" id="retry-btn">다시하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── 별 생성 ──
+(function() {
+  const starsEl = document.getElementById('stars');
+  for (let i = 0; i < 55; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2.5 + 0.5;
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%;
+      top:${Math.random()*100}%;
+      --d:${(Math.random()*3+1.5).toFixed(1)}s;
+      --delay:${(Math.random()*3).toFixed(1)}s;
+      --min-op:${(Math.random()*0.2+0.1).toFixed(2)};
+      --max-op:${(Math.random()*0.5+0.5).toFixed(2)};
+    `;
+    starsEl.appendChild(s);
+  }
+})();
+
+// ── 게임 설정 ──
+const TOTAL_ROUNDS = 10;
+
+// 도형 정의
+const SHAPES = [
+  { id:'red-circle',    color:'#ef4444', name:'빨간 원',     type:'circle' },
+  { id:'blue-circle',   color:'#3b82f6', name:'파란 원',     type:'circle' },
+  { id:'pink-circle',   color:'#f472b6', name:'분홍 원',     type:'circle' },
+  { id:'red-rect',      color:'#ef4444', name:'빨간 네모',   type:'rect'   },
+  { id:'yellow-rect',   color:'#eab308', name:'노란 네모',   type:'rect'   },
+  { id:'green-circle',  color:'#22c55e', name:'초록 원',     type:'circle' },
+  { id:'orange-tri',    color:'#f97316', name:'주황 세모',   type:'tri'    },
+  { id:'purple-circle', color:'#a855f7', name:'보라 원',     type:'circle' },
+];
+
+// 헷갈리기 쌍 (비슷한 색)
+const CONFUSE_PAIRS = {
+  'red-circle':  ['pink-circle'],
+  'blue-circle': ['purple-circle'],
+};
+
+function drawShape(svgEl, shape, size = 120) {
+  svgEl.innerHTML = '';
+  svgEl.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  const half = size / 2;
+  const r = half - 10;
+  // 그림자
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  defs.innerHTML = `<filter id="glow"><feGaussianBlur stdDeviation="6" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+  svgEl.appendChild(defs);
+
+  let el;
+  if (shape.type === 'circle') {
+    el = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    el.setAttribute('cx', half); el.setAttribute('cy', half); el.setAttribute('r', r);
+  } else if (shape.type === 'rect') {
+    el = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    el.setAttribute('x', 10); el.setAttribute('y', 10);
+    el.setAttribute('width', size-20); el.setAttribute('height', size-20);
+    el.setAttribute('rx', 14);
+  } else {
+    el = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    el.setAttribute('points', `${half},10 ${size-10},${size-10} 10,${size-10}`);
+  }
+  el.setAttribute('fill', shape.color);
+  el.setAttribute('filter', 'url(#glow)');
+  svgEl.appendChild(el);
+
+  // 하이라이트
+  let hl;
+  if (shape.type === 'circle') {
+    hl = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+    hl.setAttribute('cx', half-r*0.25); hl.setAttribute('cy', half-r*0.3);
+    hl.setAttribute('rx', r*0.35);      hl.setAttribute('ry', r*0.2);
+  } else {
+    hl = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+    hl.setAttribute('cx', half-10); hl.setAttribute('cy', half-15);
+    hl.setAttribute('rx', 18); hl.setAttribute('ry', 10);
+  }
+  hl.setAttribute('fill', 'rgba(255,255,255,0.25)');
+  svgEl.appendChild(hl);
+}
+
+// ── 상태 ──
+let targetShape, rounds = [], currentRound = 0;
+let gameActive = false, shapeTimeout, timerInterval;
+let correctCount = 0, wrongCount = 0;
+
+// 타이밍 (라운드별로 빨라짐)
+function getDisplayTime(round) {
+  return Math.max(800, 1800 - round * 90);
+}
+
+// ── 게임 초기화 ──
+function initGame() {
+  // 목표 무작위 선택
+  targetShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+
+  // 라운드 생성: 목표 4개 + 비목표 6개 (비슷한 색 포함)
+  const confuses = CONFUSE_PAIRS[targetShape.id] || [];
+  const others = SHAPES.filter(s => s.id !== targetShape.id && !confuses.includes(s.id));
+
+  rounds = [];
+  // 4개 정답
+  for (let i = 0; i < 4; i++) rounds.push({ shape: targetShape, isTarget: true });
+  // 혼란 유발 (비슷한 색 2개)
+  confuses.forEach(cid => {
+    const c = SHAPES.find(s => s.id === cid);
+    if (c) rounds.push({ shape: c, isTarget: false });
+    if (c) rounds.push({ shape: c, isTarget: false });
+  });
+  // 나머지 채우기
+  while (rounds.length < TOTAL_ROUNDS) {
+    rounds.push({ shape: others[Math.floor(Math.random() * others.length)], isTarget: false });
+  }
+  // 섞기
+  for (let i = rounds.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rounds[i], rounds[j]] = [rounds[j], rounds[i]];
+  }
+  rounds = rounds.slice(0, TOTAL_ROUNDS);
+
+  currentRound = 0;
+  correctCount = 0;
+  wrongCount = 0;
+
+  // 진행 점 초기화
+  const dots = document.getElementById('progress-dots');
+  dots.innerHTML = '';
+  for (let i = 0; i < TOTAL_ROUNDS; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    d.id = `dot-${i}`;
+    dots.appendChild(d);
+  }
+}
+
+// ── 화면 전환 ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ── 목표 제시 화면 ──
+function showTargetScreen() {
+  initGame();
+  const svg = document.getElementById('target-svg');
+  drawShape(svg, targetShape, 140);
+  document.getElementById('target-name-text').textContent = targetShape.name + ' 이 나오면!';
+  showScreen('target-screen');
+}
+
+// ── 플레이 시작 ──
+function startPlay() {
+  showScreen('play-screen');
+  const hint = document.getElementById('play-hint');
+  hint.textContent = `${targetShape.name} → 탭!`;
+  gameActive = true;
+  showNextShape();
+}
+
+function showNextShape() {
+  if (currentRound >= TOTAL_ROUNDS) {
+    showResult();
+    return;
+  }
+
+  const container = document.getElementById('shape-container');
+  container.innerHTML = '';
+
+  const roundData = rounds[currentRound];
+  document.getElementById('round-counter').textContent = `${currentRound + 1} / ${TOTAL_ROUNDS}`;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'shape-wrapper';
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '160');
+  svg.setAttribute('height', '160');
+  drawShape(svg, roundData.shape, 160);
+  wrapper.appendChild(svg);
+
+  container.appendChild(wrapper);
+
+  // 탭 이벤트
+  wrapper.addEventListener('click', handleTap);
+  wrapper.addEventListener('touchstart', (e) => { e.preventDefault(); handleTap(); }, { passive: false });
+
+  // 타이머 바
+  const displayTime = getDisplayTime(currentRound);
+  const bar = document.getElementById('timer-bar');
+  bar.style.transition = 'none';
+  bar.style.width = '100%';
+  requestAnimationFrame(() => {
+    bar.style.transition = `width ${displayTime}ms linear`;
+    bar.style.width = '0%';
+  });
+
+  // 자동 넘기기 (탭 없이 시간 초과 = 비목표면 정답)
+  clearTimeout(shapeTimeout);
+  shapeTimeout = setTimeout(() => {
+    if (!gameActive) return;
+    if (!roundData.isTarget) {
+      // 잘 참았음 - 정답
+      markResult(true, false);
+    } else {
+      // 목표였는데 탭 안 함 - 오답 (놓침)
+      markResult(false, false);
+    }
+    nextRound(wrapper);
+  }, displayTime);
+}
+
+function handleTap() {
+  if (!gameActive) return;
+  const roundData = rounds[currentRound];
+  clearTimeout(shapeTimeout);
+
+  if (roundData.isTarget) {
+    markResult(true, true);
+    spawnParticles(true);
+    flashOverlay(true);
+    feedbackText('정답!', '#22c55e');
+  } else {
+    markResult(false, true);
+    flashOverlay(false);
+    feedbackText('아니야!', '#ef4444');
+    shakeGame();
+  }
+
+  const wrapper = document.querySelector('.shape-wrapper');
+  nextRound(wrapper);
+}
+
+function nextRound(wrapper) {
+  gameActive = false;
+  if (wrapper) wrapper.classList.add('zoom-out');
+  setTimeout(() => {
+    currentRound++;
+    gameActive = true;
+    showNextShape();
+  }, 300);
+}
+
+function markResult(correct, tapped) {
+  const dot = document.getElementById(`dot-${currentRound}`);
+  if (correct) {
+    dot.classList.add('correct');
+    correctCount++;
+  } else {
+    dot.classList.add('wrong');
+    wrongCount++;
+  }
+}
+
+// ── 결과 ──
+function showResult() {
+  showScreen('result-screen');
+  const accuracy = Math.round((correctCount / TOTAL_ROUNDS) * 100);
+  document.getElementById('result-accuracy').textContent = accuracy + '%';
+
+  let title, cheer;
+  if (accuracy >= 90)     { title = '완벽해요!';    cheer = '정말 대단해요! 집중력이 최고야!'; }
+  else if (accuracy >= 70){ title = '잘했어요!';    cheer = '훌륭해요! 조금만 더 연습하면 완벽!'; }
+  else if (accuracy >= 50){ title = '괜찮아요!';    cheer = '잘 참았어요! 다시 한번 도전해봐요!'; }
+  else                    { title = '연습이 필요해요'; cheer = '괜찮아요! 천천히 연습해봐요!'; }
+
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('cheer-msg').textContent = cheer;
+
+  const stars = accuracy >= 90 ? 3 : accuracy >= 70 ? 2 : accuracy >= 50 ? 1 : 0;
+  const starsRow = document.getElementById('stars-row');
+  starsRow.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '50'); svg.setAttribute('height', '50');
+    svg.setAttribute('viewBox', '0 0 50 50');
+    svg.classList.add('result-star');
+    svg.style.animationDelay = `${i * 0.15}s`;
+    const filled = i < stars;
+    svg.innerHTML = `<polygon points="25,5 30,18 44,18 33,27 37,41 25,32 13,41 17,27 6,18 20,18"
+      fill="${filled ? '#facc15' : 'rgba(255,255,255,0.1)'}"
+      stroke="${filled ? '#f59e0b' : 'rgba(255,255,255,0.15)'}" stroke-width="2"/>`;
+    starsRow.appendChild(svg);
+  }
+}
+
+// ── 이펙트 ──
+function flashOverlay(correct) {
+  const el = document.getElementById('flash-overlay');
+  el.className = '';
+  void el.offsetWidth;
+  el.className = correct ? 'flash-correct' : 'flash-wrong';
+}
+
+function feedbackText(text, color) {
+  const el = document.getElementById('feedback-overlay');
+  el.innerHTML = `<div class="feedback-text" style="color:${color}">${text}</div>`;
+  setTimeout(() => { el.innerHTML = ''; }, 600);
+}
+
+function spawnParticles(correct) {
+  const area = document.getElementById('game-area');
+  const colors = correct
+    ? ['#22c55e','#86efac','#bbf7d0','#facc15']
+    : ['#ef4444','#fca5a5','#fecaca'];
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random() * 12 + 6;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.random() * 120 + 60;
+    p.style.cssText = `
+      width:${size}px; height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      left:50%; top:50%;
+      --tx:${Math.cos(angle)*dist}px;
+      --ty:${Math.sin(angle)*dist}px;
+      --dur:${(Math.random()*0.4+0.5).toFixed(2)}s;
+    `;
+    area.appendChild(p);
+    setTimeout(() => p.remove(), 1000);
+  }
+}
+
+function shakeGame() {
+  const area = document.getElementById('game-area');
+  area.classList.remove('shake');
+  void area.offsetWidth;
+  area.classList.add('shake');
+  area.addEventListener('animationend', () => area.classList.remove('shake'), { once: true });
+}
+
+// ── 이벤트 바인딩 ──
+document.getElementById('start-btn').addEventListener('click', showTargetScreen);
+document.getElementById('ready-btn').addEventListener('click', startPlay);
+document.getElementById('retry-btn').addEventListener('click', showTargetScreen);
+</script>
+</body>
+</html>

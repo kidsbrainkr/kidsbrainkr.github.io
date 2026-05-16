@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Referrer-Policy" content="no-referrer-when-downgrade">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>감정 거울 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0118;
+      --card: rgba(255,255,255,0.06);
+      --card-border: rgba(255,255,255,0.1);
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --grad: linear-gradient(135deg, #a855f7, #ec4899);
+      --grad-soft: linear-gradient(135deg, rgba(168,85,247,0.3), rgba(236,72,153,0.3));
+      --text: #f0e8ff;
+      --text-dim: rgba(240,232,255,0.55);
+      --correct: #22c55e;
+      --wrong: #ef4444;
+      --radius: 20px;
+      --shadow: 0 8px 32px rgba(168,85,247,0.25);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+    }
+
+    /* Stars background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 15% 20%, rgba(255,255,255,0.7) 0%, transparent 100%),
+        radial-gradient(1px 1px at 40% 70%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 70% 15%, rgba(255,255,255,0.8) 0%, transparent 100%),
+        radial-gradient(1px 1px at 85% 50%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 25% 85%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 60% 40%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 90% 80%, rgba(255,255,255,0.7) 0%, transparent 100%),
+        radial-gradient(1px 1px at 5% 55%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 50% 95%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 78% 62%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 33% 38%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 12% 72%, rgba(255,255,255,0.5) 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 480px;
+      padding: 16px 16px 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* ── Top bar ── */
+    .top-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 50px;
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+
+    .score-display {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .score-display span {
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: 1.1rem;
+    }
+
+    /* ── Progress bar ── */
+    .progress-wrap {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--grad);
+      border-radius: 4px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 0%;
+    }
+
+    /* ── Round label ── */
+    .round-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Face container ── */
+    .face-container {
+      width: 240px;
+      height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 28px;
+      animation: faceBounce 2.4s ease-in-out infinite;
+      filter: drop-shadow(0 0 28px rgba(168,85,247,0.4));
+    }
+    @keyframes faceBounce {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .face-container.flash-correct {
+      animation: flashCorrect 0.4s ease forwards;
+    }
+    .face-container.shake-wrong {
+      animation: shakeWrong 0.45s ease forwards;
+    }
+    @keyframes flashCorrect {
+      0% { filter: drop-shadow(0 0 28px rgba(168,85,247,0.4)); }
+      40% { filter: drop-shadow(0 0 50px rgba(34,197,94,0.9)) brightness(1.3); }
+      100% { filter: drop-shadow(0 0 28px rgba(168,85,247,0.4)); }
+    }
+    @keyframes shakeWrong {
+      0%,100% { transform: translateX(0); }
+      15% { transform: translateX(-12px); }
+      30% { transform: translateX(12px); }
+      45% { transform: translateX(-8px); }
+      60% { transform: translateX(8px); }
+      75% { transform: translateX(-4px); }
+      90% { transform: translateX(4px); }
+    }
+
+    /* ── Instruction text ── */
+    .instruction {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 22px;
+      text-align: center;
+    }
+
+    /* ── Answer buttons ── */
+    .answers-grid {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .btn-answer {
+      width: 140px;
+      padding: 14px 10px;
+      border: 2px solid var(--card-border);
+      border-radius: 50px;
+      background: var(--card);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
+      letter-spacing: 0.02em;
+    }
+    .btn-answer:hover:not(:disabled) {
+      transform: translateY(-3px) scale(1.04);
+      background: rgba(168,85,247,0.2);
+      border-color: var(--purple);
+      box-shadow: 0 6px 20px rgba(168,85,247,0.3);
+    }
+    .btn-answer:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+    .btn-answer:disabled { cursor: not-allowed; opacity: 0.6; }
+
+    .btn-answer.correct {
+      background: rgba(34,197,94,0.25);
+      border-color: var(--correct);
+      color: #86efac;
+      box-shadow: 0 0 18px rgba(34,197,94,0.4);
+    }
+    .btn-answer.wrong {
+      background: rgba(239,68,68,0.2);
+      border-color: var(--wrong);
+      color: #fca5a5;
+    }
+
+    /* ── Feedback text ── */
+    .feedback-text {
+      min-height: 32px;
+      font-size: 1.3rem;
+      font-weight: 900;
+      margin-top: 18px;
+      text-align: center;
+      transition: opacity 0.2s;
+    }
+    .feedback-text.good { color: var(--correct); }
+    .feedback-text.bad { color: var(--wrong); }
+
+    /* ── Overlay flash ── */
+    .overlay-flash {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .overlay-flash.green { background: rgba(34,197,94,0.15); }
+    .overlay-flash.red { background: rgba(239,68,68,0.15); }
+    .overlay-flash.show { opacity: 1; }
+
+    /* ── Results screen ── */
+    .results-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 18px;
+      width: 100%;
+      padding-top: 20px;
+    }
+    .results-screen.active { display: flex; animation: fadeSlide 0.5s ease; }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .results-emoji-big {
+      font-size: 5rem;
+      line-height: 1;
+      animation: resultPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes resultPop {
+      from { transform: scale(0); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .results-title {
+      font-size: 1.6rem;
+      font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .results-score-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 28px 40px;
+      box-shadow: var(--shadow);
+    }
+    .results-score-big {
+      font-size: 3.5rem;
+      font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+    .results-score-label {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+
+    .results-message {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .results-buttons {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      padding: 14px 32px;
+      background: var(--grad);
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(168,85,247,0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(168,85,247,0.5); }
+    .btn-primary:active { transform: scale(0.97); }
+
+    .btn-secondary {
+      padding: 14px 28px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 50px;
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+    /* ── Game screen ── */
+    .game-screen {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .game-screen.hidden { display: none; }
+  </style>
+</head>
+<body>
+<div class="overlay-flash" id="overlayFlash"></div>
+
+<div class="wrapper">
+  <!-- Top bar -->
+  <div class="top-bar">
+    <a class="btn-back" href="../../index.html">← 메인으로</a>
+    <div class="score-display" id="scoreDisplay">점수 <span id="scoreVal">0</span></div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-wrap">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <!-- Game screen -->
+  <div class="game-screen" id="gameScreen">
+    <div class="round-label" id="roundLabel">1 / 10 라운드</div>
+    <div class="face-container" id="faceContainer"></div>
+    <div class="instruction">이 표정은 어떤 감정일까요?</div>
+    <div class="answers-grid" id="answersGrid"></div>
+    <div class="feedback-text" id="feedbackText"></div>
+  </div>
+
+  <!-- Results screen -->
+  <div class="results-screen" id="resultsScreen">
+    <div class="results-emoji-big" id="resultEmoji"></div>
+    <div class="results-title" id="resultTitle"></div>
+    <div class="results-score-card">
+      <div class="results-score-big" id="resultScore"></div>
+      <div class="results-score-label">10문제 중</div>
+    </div>
+    <div class="results-message" id="resultMessage"></div>
+    <div class="results-buttons">
+      <button class="btn-primary" onclick="startGame()">다시 하기</button>
+      <a class="btn-secondary" href="../../index.html">🏠 홈으로</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  SVG FACE FUNCTIONS
+// ═══════════════════════════════════════════════
+
+const FACE_SIZE = 220;
+const CX = 110, CY = 110, R = 95;
+
+function faceBase(fill, glowColor) {
+  return `
+    <defs>
+      <radialGradient id="faceGrad" cx="40%" cy="35%" r="65%">
+        <stop offset="0%" stop-color="${fill[0]}"/>
+        <stop offset="100%" stop-color="${fill[1]}"/>
+      </radialGradient>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="6" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <!-- glow ring -->
+    <circle cx="${CX}" cy="${CY}" r="${R+8}" fill="none" stroke="${glowColor}" stroke-width="3" opacity="0.35"/>
+    <!-- face -->
+    <circle cx="${CX}" cy="${CY}" r="${R}" fill="url(#faceGrad)"/>
+  `;
+}
+
+// 기쁨 (happy): curved up eyes, big smile, rosy cheeks
+function svgHappy() {
+  return `<svg width="${FACE_SIZE}" height="${FACE_SIZE}" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+    ${faceBase(['#FFE566','#FFB830'], '#FFE566')}
+    <!-- rosy cheeks -->
+    <ellipse cx="75" cy="135" rx="20" ry="13" fill="#FF8FAB" opacity="0.5"/>
+    <ellipse cx="145" cy="135" rx="20" ry="13" fill="#FF8FAB" opacity="0.5"/>
+    <!-- left eye (arc ^) -->
+    <path d="M78 92 Q88 78 98 92" stroke="#3B2000" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <!-- right eye -->
+    <path d="M122 92 Q132 78 142 92" stroke="#3B2000" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <!-- big smile -->
+    <path d="M72 130 Q110 170 148 130" stroke="#3B2000" stroke-width="5" fill="rgba(255,100,100,0.35)" stroke-linecap="round"/>
+    <!-- shine -->
+    <ellipse cx="82" cy="80" rx="12" ry="8" fill="rgba(255,255,255,0.45)" transform="rotate(-20 82 80)"/>
+  </svg>`;
+}
+
+// 슬픔 (sad): droopy eyes, frown, teardrop
+function svgSad() {
+  return `<svg width="${FACE_SIZE}" height="${FACE_SIZE}" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+    ${faceBase(['#B8D4F8','#7EB3F0'], '#7EB3F0')}
+    <!-- droopy left eye -->
+    <path d="M78 96 Q88 110 98 96" stroke="#1a3a6a" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <circle cx="88" cy="101" r="5" fill="#1a3a6a"/>
+    <!-- droopy right eye -->
+    <path d="M122 96 Q132 110 142 96" stroke="#1a3a6a" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <circle cx="132" cy="101" r="5" fill="#1a3a6a"/>
+    <!-- sad eyebrows slant down to center -->
+    <path d="M75 82 Q88 90 100 86" stroke="#1a3a6a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M120 86 Q132 90 145 82" stroke="#1a3a6a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <!-- frown -->
+    <path d="M78 148 Q110 128 142 148" stroke="#1a3a6a" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <!-- teardrop -->
+    <path d="M92 118 Q96 134 92 140 Q86 134 92 118Z" fill="#5BA8FF" opacity="0.85"/>
+    <!-- shine -->
+    <ellipse cx="82" cy="78" rx="12" ry="8" fill="rgba(255,255,255,0.4)" transform="rotate(-20 82 78)"/>
+  </svg>`;
+}
+
+// 화남 (angry): V-shaped brows, straight frown, red tinge
+function svgAngry() {
+  return `<svg width="${FACE_SIZE}" height="${FACE_SIZE}" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+    ${faceBase(['#FF8A65','#E53935'], '#FF4444')}
+    <!-- redness overlay -->
+    <circle cx="${CX}" cy="${CY}" r="${R}" fill="#FF2200" opacity="0.18"/>
+    <!-- V brow left (slants DOWN from outer to inner) -->
+    <path d="M72 84 L96 96" stroke="#4a0000" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <!-- V brow right -->
+    <path d="M124 96 L148 84" stroke="#4a0000" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+    <!-- eyes (narrowed, slanted) -->
+    <path d="M76 106 Q88 100 100 106" stroke="#4a0000" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <circle cx="88" cy="108" r="5" fill="#4a0000"/>
+    <path d="M120 106 Q132 100 144 106" stroke="#4a0000" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <circle cx="132" cy="108" r="5" fill="#4a0000"/>
+    <!-- straight frown -->
+    <path d="M82 150 Q110 138 138 150" stroke="#4a0000" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <!-- shine -->
+    <ellipse cx="82" cy="78" rx="12" ry="8" fill="rgba(255,255,255,0.3)" transform="rotate(-20 82 78)"/>
+  </svg>`;
+}
+
+// 놀람 (surprised): big circle eyes, open oval mouth
+function svgSurprised() {
+  return `<svg width="${FACE_SIZE}" height="${FACE_SIZE}" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+    ${faceBase(['#FFF3B0','#FFD166'], '#FFD166')}
+    <!-- raised brows -->
+    <path d="M74 80 Q88 70 102 78" stroke="#3B2000" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M118 78 Q132 70 146 80" stroke="#3B2000" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <!-- big circle eyes -->
+    <circle cx="88" cy="103" r="14" fill="white" stroke="#3B2000" stroke-width="3"/>
+    <circle cx="88" cy="103" r="7" fill="#2d1a00"/>
+    <circle cx="91" cy="99" r="2.5" fill="white"/>
+    <circle cx="132" cy="103" r="14" fill="white" stroke="#3B2000" stroke-width="3"/>
+    <circle cx="132" cy="103" r="7" fill="#2d1a00"/>
+    <circle cx="135" cy="99" r="2.5" fill="white"/>
+    <!-- open oval mouth -->
+    <ellipse cx="110" cy="148" rx="18" ry="14" fill="#2d1a00"/>
+    <ellipse cx="110" cy="152" rx="14" ry="8" fill="#c0375e" opacity="0.7"/>
+    <!-- shine -->
+    <ellipse cx="82" cy="75" rx="12" ry="7" fill="rgba(255,255,255,0.4)" transform="rotate(-20 82 75)"/>
+  </svg>`;
+}
+
+// 두려움 (scared): wide eyes, sweat drop, slight frown, pale
+function svgScared() {
+  return `<svg width="${FACE_SIZE}" height="${FACE_SIZE}" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+    ${faceBase(['#E8F4F8','#C8DDE8'], '#99CCDD')}
+    <!-- pale blue tinge -->
+    <circle cx="${CX}" cy="${CY}" r="${R}" fill="#88AABB" opacity="0.12"/>
+    <!-- raised alarmed brows -->
+    <path d="M74 82 Q88 72 102 80" stroke="#1a3050" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M118 80 Q132 72 146 82" stroke="#1a3050" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <!-- wide scared eyes (bigger than normal) -->
+    <circle cx="88" cy="105" r="16" fill="white" stroke="#1a3050" stroke-width="3"/>
+    <circle cx="88" cy="105" r="8" fill="#1a2840"/>
+    <circle cx="91" cy="100" r="3" fill="white"/>
+    <circle cx="132" cy="105" r="16" fill="white" stroke="#1a3050" stroke-width="3"/>
+    <circle cx="132" cy="105" r="8" fill="#1a2840"/>
+    <circle cx="135" cy="100" r="3" fill="white"/>
+    <!-- slight frown -->
+    <path d="M84 148 Q110 138 136 148" stroke="#1a3050" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <!-- sweat drop left -->
+    <path d="M68 92 Q72 104 68 112 Q62 104 68 92Z" fill="#5BA8FF" opacity="0.8"/>
+    <!-- sweat drop right -->
+    <path d="M152 92 Q156 104 152 112 Q146 104 152 92Z" fill="#5BA8FF" opacity="0.8"/>
+    <!-- shine -->
+    <ellipse cx="80" cy="76" rx="12" ry="7" fill="rgba(255,255,255,0.45)" transform="rotate(-20 80 76)"/>
+  </svg>`;
+}
+
+// 부끄러움 (embarrassed): heavy blush, half-closed eyes, hand covering mouth
+function svgEmbarrassed() {
+  return `<svg width="${FACE_SIZE}" height="${FACE_SIZE}" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+    ${faceBase(['#FFD6E7','#FFB3D1'], '#FF88BB')}
+    <!-- heavy blush cheeks -->
+    <ellipse cx="72" cy="132" rx="26" ry="18" fill="#FF5FA0" opacity="0.55"/>
+    <ellipse cx="148" cy="132" rx="26" ry="18" fill="#FF5FA0" opacity="0.55"/>
+    <!-- half-closed eyes (wavy bottom) -->
+    <path d="M76 100 Q88 95 100 100" stroke="#6B1A3A" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <path d="M76 100 Q88 107 100 100" stroke="#6B1A3A" stroke-width="3" fill="#FFB3D1" stroke-linecap="round"/>
+    <path d="M120 100 Q132 95 144 100" stroke="#6B1A3A" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <path d="M120 100 Q132 107 144 100" stroke="#6B1A3A" stroke-width="3" fill="#FFB3D1" stroke-linecap="round"/>
+    <!-- downward glancing pupils -->
+    <ellipse cx="88" cy="104" rx="5" ry="4" fill="#6B1A3A"/>
+    <ellipse cx="132" cy="104" rx="5" ry="4" fill="#6B1A3A"/>
+    <!-- hand covering mouth area -->
+    <!-- palm -->
+    <rect x="82" y="132" width="56" height="30" rx="14" fill="#FFD6A0" stroke="#D4A870" stroke-width="2"/>
+    <!-- fingers across top -->
+    <rect x="83" y="128" width="10" height="16" rx="5" fill="#FFD6A0" stroke="#D4A870" stroke-width="2"/>
+    <rect x="97" y="125" width="10" height="18" rx="5" fill="#FFD6A0" stroke="#D4A870" stroke-width="2"/>
+    <rect x="111" y="124" width="10" height="18" rx="5" fill="#FFD6A0" stroke="#D4A870" stroke-width="2"/>
+    <rect x="125" y="126" width="10" height="16" rx="5" fill="#FFD6A0" stroke="#D4A870" stroke-width="2"/>
+    <!-- shine -->
+    <ellipse cx="82" cy="80" rx="12" ry="7" fill="rgba(255,255,255,0.4)" transform="rotate(-20 82 80)"/>
+  </svg>`;
+}
+
+const EMOTIONS = [
+  { id: 'happy',       label: '기쁨',    svg: svgHappy },
+  { id: 'sad',         label: '슬픔',    svg: svgSad },
+  { id: 'angry',       label: '화남',    svg: svgAngry },
+  { id: 'surprised',   label: '놀람',    svg: svgSurprised },
+  { id: 'scared',      label: '두려움',  svg: svgScared },
+  { id: 'embarrassed', label: '부끄러움',svg: svgEmbarrassed },
+];
+
+// ═══════════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════════
+
+const TOTAL_ROUNDS = 10;
+
+let state = {
+  round: 0,
+  score: 0,
+  answered: false,
+  currentEmotion: null,
+  sequence: [],    // array of emotion indices for all 10 rounds
+};
+
+function buildSequence() {
+  // Build a balanced sequence so all 6 emotions appear, then shuffle
+  const base = [];
+  for (let i = 0; i < 6; i++) base.push(i);
+  // need 10 — add 4 more random
+  for (let i = 0; i < 4; i++) base.push(Math.floor(Math.random() * 6));
+  return shuffle(base);
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function getChoiceCount(round) {
+  // rounds 1-3 (index 0-2): 3 choices; rest: 4 choices
+  return round < 3 ? 3 : 4;
+}
+
+function buildChoices(correctIdx, count) {
+  const choices = new Set([correctIdx]);
+  const pool = EMOTIONS.map((_, i) => i).filter(i => i !== correctIdx);
+  const shuffledPool = shuffle(pool);
+  for (let i = 0; i < count - 1; i++) choices.add(shuffledPool[i]);
+  return shuffle([...choices]);
+}
+
+// ═══════════════════════════════════════════════
+//  GAME FLOW
+// ═══════════════════════════════════════════════
+
+function startGame() {
+  state.round = 0;
+  state.score = 0;
+  state.answered = false;
+  state.sequence = buildSequence();
+
+  document.getElementById('resultsScreen').classList.remove('active');
+  document.getElementById('gameScreen').classList.remove('hidden');
+  updateScore();
+  nextRound();
+}
+
+function nextRound() {
+  if (state.round >= TOTAL_ROUNDS) {
+    showResults();
+    return;
+  }
+
+  state.answered = false;
+  const emotionIdx = state.sequence[state.round];
+  state.currentEmotion = EMOTIONS[emotionIdx];
+
+  // UI updates
+  document.getElementById('roundLabel').textContent = `${state.round + 1} / ${TOTAL_ROUNDS} 라운드`;
+  document.getElementById('progressFill').style.width = `${(state.round / TOTAL_ROUNDS) * 100}%`;
+  document.getElementById('feedbackText').textContent = '';
+  document.getElementById('feedbackText').className = 'feedback-text';
+
+  // Face
+  const faceEl = document.getElementById('faceContainer');
+  faceEl.className = 'face-container';
+  faceEl.innerHTML = state.currentEmotion.svg();
+
+  // Choices
+  const choiceCount = getChoiceCount(state.round);
+  const choices = buildChoices(emotionIdx, choiceCount);
+  const grid = document.getElementById('answersGrid');
+  grid.innerHTML = '';
+  choices.forEach(idx => {
+    const btn = document.createElement('button');
+    btn.className = 'btn-answer';
+    btn.textContent = EMOTIONS[idx].label;
+    btn.dataset.idx = idx;
+    btn.addEventListener('click', () => handleAnswer(idx, btn));
+    grid.appendChild(btn);
+  });
+}
+
+function handleAnswer(chosenIdx, btn) {
+  if (state.answered) return;
+  state.answered = true;
+
+  const allBtns = document.querySelectorAll('.btn-answer');
+  allBtns.forEach(b => { b.disabled = true; });
+
+  const correct = state.currentEmotion === EMOTIONS[chosenIdx];
+  const faceEl = document.getElementById('faceContainer');
+  const feedbackEl = document.getElementById('feedbackText');
+  const flashEl = document.getElementById('overlayFlash');
+
+  if (correct) {
+    state.score++;
+    updateScore();
+    btn.classList.add('correct');
+    feedbackEl.textContent = '잘했어요! 🌟';
+    feedbackEl.className = 'feedback-text good';
+    faceEl.classList.add('flash-correct');
+    flashEl.className = 'overlay-flash green show';
+    setTimeout(() => { flashEl.className = 'overlay-flash green'; }, 250);
+  } else {
+    btn.classList.add('wrong');
+    feedbackEl.textContent = '아쉬워요! 다음엔 잘 할 수 있어요!';
+    feedbackEl.className = 'feedback-text bad';
+    faceEl.classList.add('shake-wrong');
+    flashEl.className = 'overlay-flash red show';
+    setTimeout(() => { flashEl.className = 'overlay-flash red'; }, 250);
+    // highlight correct
+    allBtns.forEach(b => {
+      if (parseInt(b.dataset.idx) === EMOTIONS.indexOf(state.currentEmotion)) {
+        b.classList.add('correct');
+      }
+    });
+  }
+
+  state.round++;
+  setTimeout(() => {
+    nextRound();
+  }, 1400);
+}
+
+function updateScore() {
+  document.getElementById('scoreVal').textContent = state.score;
+}
+
+function showResults() {
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('progressFill').style.width = '100%';
+
+  const s = state.score;
+  let emoji, title, msg;
+
+  if (s === 10) {
+    emoji = '🏆'; title = '완벽해요!';
+    msg = '모든 감정을 맞혔어요!\n정말 대단한 감정 박사예요!';
+  } else if (s >= 8) {
+    emoji = '⭐'; title = '정말 잘했어요!';
+    msg = '거의 다 맞혔어요!\n감정 이해 능력이 훌륭해요!';
+  } else if (s >= 5) {
+    emoji = '😊'; title = '잘했어요!';
+    msg = '절반 이상 맞혔어요!\n조금만 더 연습하면 완벽해요!';
+  } else {
+    emoji = '💪'; title = '다시 해봐요!';
+    msg = '감정을 연습하면\n금방 잘하게 될 거예요!';
+  }
+
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultScore').textContent = `${s} / 10`;
+  document.getElementById('resultMessage').textContent = msg;
+
+  const screen = document.getElementById('resultsScreen');
+  screen.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+
+startGame();
+</script>
+</body>
+</html>

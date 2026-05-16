@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>시계 읽기 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0118;
+      --card: rgba(255,255,255,0.06);
+      --card-border: rgba(255,255,255,0.12);
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --cyan: #06b6d4;
+      --amber: #f59e0b;
+      --grad: linear-gradient(135deg, #a855f7, #06b6d4);
+      --text: #f0e8ff;
+      --text-dim: rgba(240,232,255,0.55);
+      --correct: #22c55e;
+      --wrong: #ef4444;
+      --radius: 20px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Nunito', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow: hidden;
+    }
+    .star {
+      position: fixed;
+      border-radius: 50%;
+      background: #fff;
+      animation: twinkle var(--dur, 3s) ease-in-out infinite var(--delay, 0s);
+      pointer-events: none;
+      z-index: 0;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.15; transform: scale(1); }
+      50% { opacity: 0.9; transform: scale(1.4); }
+    }
+
+    #game-wrap {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      background: linear-gradient(160deg, #0d0225 0%, #0a0118 60%, #0a1a2e 100%);
+      border-radius: 28px;
+      border: 1px solid rgba(6,182,212,0.2);
+      box-shadow: 0 0 80px rgba(6,182,212,0.1), 0 24px 64px rgba(0,0,0,0.7);
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    /* HUD */
+    #hud {
+      position: absolute;
+      top: 16px; left: 20px; right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 20;
+    }
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50px;
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+    .hearts { display: flex; gap: 6px; }
+    .heart-icon { width: 28px; height: 28px; }
+    .heart-icon.lost { opacity: 0.2; }
+
+    #round-bar {
+      position: absolute;
+      top: 60px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 6px; z-index: 20;
+    }
+    .rd-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: background 0.3s;
+    }
+    .rd-dot.done { background: var(--cyan); }
+    .rd-dot.active { background: var(--purple); box-shadow: 0 0 8px var(--purple); }
+
+    /* Question */
+    #question-area {
+      position: absolute;
+      top: 82px; left: 50%; transform: translateX(-50%);
+      text-align: center; z-index: 20; pointer-events: none;
+      white-space: nowrap;
+    }
+    .q-label {
+      font-size: 0.75rem; font-weight: 700;
+      color: var(--text-dim); letter-spacing: 0.06em;
+      text-transform: uppercase; margin-bottom: 2px;
+    }
+    .q-text {
+      font-size: 1.6rem; font-weight: 900; color: #fff;
+      text-shadow: 0 0 20px rgba(6,182,212,0.5);
+    }
+
+    /* Clock container */
+    #clock-area {
+      position: absolute;
+      top: 140px; left: 50%; transform: translateX(-50%);
+      z-index: 10;
+    }
+    #clock-svg {
+      width: 240px; height: 240px;
+      filter: drop-shadow(0 0 24px rgba(6,182,212,0.3));
+      transition: filter 0.4s;
+    }
+    #clock-svg.correct-glow { filter: drop-shadow(0 0 30px rgba(34,197,94,0.8)); }
+    #clock-svg.wrong-glow { filter: drop-shadow(0 0 30px rgba(239,68,68,0.8)); }
+
+    /* Answer buttons */
+    #answer-btns {
+      position: absolute;
+      bottom: 24px; left: 50%; transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      z-index: 20;
+    }
+    .ans-btn {
+      width: 170px; height: 64px;
+      border-radius: 18px;
+      background: var(--card);
+      border: 1.5px solid var(--card-border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 1.2rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s, border-color 0.2s, box-shadow 0.2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ans-btn:hover {
+      background: rgba(6,182,212,0.2);
+      border-color: var(--cyan);
+      transform: translateY(-3px);
+      box-shadow: 0 4px 16px rgba(6,182,212,0.25);
+    }
+    .ans-btn:active { transform: scale(0.93); }
+    .ans-btn.correct-ans {
+      background: rgba(34,197,94,0.25);
+      border-color: var(--correct);
+      color: var(--correct);
+    }
+    .ans-btn.wrong-ans {
+      background: rgba(239,68,68,0.25);
+      border-color: var(--wrong);
+      color: var(--wrong);
+    }
+
+    /* Flash */
+    #flash {
+      position: absolute; inset: 0; border-radius: 28px;
+      pointer-events: none; z-index: 30; opacity: 0;
+      transition: opacity 0.12s;
+    }
+
+    /* Particle canvas */
+    #particle-canvas {
+      position: absolute; inset: 0;
+      pointer-events: none; z-index: 25;
+    }
+
+    /* Shake */
+    @keyframes shake {
+      0%, 100% { transform: translateX(-50%) translateX(0); }
+      20% { transform: translateX(-50%) translateX(-12px); }
+      40% { transform: translateX(-50%) translateX(12px); }
+      60% { transform: translateX(-50%) translateX(-8px); }
+      80% { transform: translateX(-50%) translateX(6px); }
+    }
+    .clock-shake { animation: shake 0.4s ease; }
+
+    /* Intro spin */
+    @keyframes spinIn {
+      0% { transform: rotate(var(--from-deg)); }
+      80% { transform: rotate(var(--to-deg)) rotate(2deg); }
+      100% { transform: rotate(var(--to-deg)); }
+    }
+
+    /* Result */
+    #result-screen {
+      position: absolute; inset: 0;
+      background: rgba(10,1,24,0.93);
+      border-radius: 28px;
+      display: none;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 50; gap: 18px;
+    }
+    #result-screen.show { display: flex; }
+    .result-title {
+      font-size: 2.4rem; font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .result-stars { display: flex; gap: 12px; }
+    .result-star { width: 52px; height: 52px; }
+    .result-score { font-size: 1.1rem; font-weight: 700; color: var(--text-dim); }
+    .result-btns { display: flex; gap: 14px; margin-top: 8px; }
+    .res-btn {
+      padding: 14px 28px; border-radius: 50px;
+      font-family: inherit; font-size: 1rem; font-weight: 900;
+      cursor: pointer; border: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .res-btn:hover { transform: translateY(-3px); }
+    .res-btn.primary {
+      background: var(--grad); color: #fff;
+      box-shadow: 0 4px 20px rgba(6,182,212,0.35);
+    }
+    .res-btn.secondary {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--text);
+    }
+
+    /* Mode badge */
+    .mode-badge {
+      position: absolute;
+      top: 88px; right: 24px;
+      padding: 4px 12px;
+      background: rgba(6,182,212,0.15);
+      border: 1px solid rgba(6,182,212,0.3);
+      border-radius: 50px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--cyan);
+      letter-spacing: 0.04em;
+      z-index: 20;
+    }
+  </style>
+</head>
+<body>
+
+<div id="stars-container"></div>
+
+<div id="game-wrap">
+  <div id="hud">
+    <a class="btn-back" href="../../index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      홈
+    </a>
+    <div class="hearts" id="hearts-container"></div>
+  </div>
+
+  <div id="round-bar"></div>
+
+  <div id="question-area">
+    <div class="q-label">질문</div>
+    <div class="q-text" id="q-text">몇 시예요?</div>
+  </div>
+
+  <div class="mode-badge" id="mode-badge">정각</div>
+
+  <div id="clock-area">
+    <svg id="clock-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <!-- Clock face -->
+      <circle cx="100" cy="100" r="96" fill="#0f1f3d" stroke="rgba(6,182,212,0.5)" stroke-width="3"/>
+      <circle cx="100" cy="100" r="90" fill="none" stroke="rgba(6,182,212,0.15)" stroke-width="1"/>
+      <!-- Tick marks -->
+      <g id="tick-marks"></g>
+      <!-- Hour numbers -->
+      <g id="hour-numbers"></g>
+      <!-- Hands -->
+      <line id="hour-hand" x1="100" y1="100" x2="100" y2="48" stroke="#f0e8ff" stroke-width="6" stroke-linecap="round"/>
+      <line id="minute-hand" x1="100" y1="100" x2="100" y2="32" stroke="#06b6d4" stroke-width="3.5" stroke-linecap="round"/>
+      <!-- Center dot -->
+      <circle cx="100" cy="100" r="5" fill="#a855f7"/>
+    </svg>
+  </div>
+
+  <div id="answer-btns"></div>
+
+  <div id="flash"></div>
+  <canvas id="particle-canvas"></canvas>
+
+  <div id="result-screen">
+    <div class="result-title" id="result-title">잘했어요!</div>
+    <div class="result-stars" id="result-stars"></div>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-btns">
+      <button class="res-btn secondary" onclick="goHome()">홈으로</button>
+      <button class="res-btn primary" onclick="restartGame()">다시하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Stars
+(function() {
+  const c = document.getElementById('stars-container');
+  for (let i = 0; i < 55; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2.5 + 0.8;
+    s.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}vw;top:${Math.random()*100}vh;--dur:${2+Math.random()*4}s;--delay:${Math.random()*4}s;`;
+    c.appendChild(s);
+  }
+})();
+
+// Build clock tick marks & numbers
+(function buildClockFace() {
+  const tickG = document.getElementById('tick-marks');
+  const numG = document.getElementById('hour-numbers');
+  const cx = 100, cy = 100, r = 86;
+
+  for (let i = 0; i < 60; i++) {
+    const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+    const isHour = i % 5 === 0;
+    const len = isHour ? 10 : 5;
+    const x1 = cx + (r - len) * Math.cos(angle);
+    const y1 = cy + (r - len) * Math.sin(angle);
+    const x2 = cx + r * Math.cos(angle);
+    const y2 = cy + r * Math.sin(angle);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', isHour ? 'rgba(240,232,255,0.7)' : 'rgba(240,232,255,0.25)');
+    line.setAttribute('stroke-width', isHour ? '2' : '1');
+    line.setAttribute('stroke-linecap', 'round');
+    tickG.appendChild(line);
+  }
+
+  for (let h = 1; h <= 12; h++) {
+    const angle = (h / 12) * Math.PI * 2 - Math.PI / 2;
+    const nr = 70;
+    const x = cx + nr * Math.cos(angle);
+    const y = cy + nr * Math.sin(angle);
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', x); text.setAttribute('y', y);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'central');
+    text.setAttribute('fill', 'rgba(240,232,255,0.85)');
+    text.setAttribute('font-size', '12');
+    text.setAttribute('font-weight', '800');
+    text.setAttribute('font-family', 'Nunito, sans-serif');
+    text.textContent = h;
+    numG.appendChild(text);
+  }
+})();
+
+// Game State
+const TOTAL_ROUNDS = 8;
+let currentRound = 0;
+let lives = 3;
+let score = 0;
+let correctAnswers = 0;
+let answering = false;
+let currentHour = 0;
+let currentMinute = 0;
+
+// Particles
+const pCanvas = document.getElementById('particle-canvas');
+const pCtx = pCanvas.getContext('2d');
+let particles = [];
+(function initCanvas() {
+  pCanvas.width = 800; pCanvas.height = 600;
+})();
+
+function spawnParticles(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+    const speed = 3 + Math.random() * 5;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,
+      decay: 0.018 + Math.random() * 0.02,
+      size: 5 + Math.random() * 7,
+      color,
+    });
+  }
+}
+
+function animateParticles() {
+  pCtx.clearRect(0, 0, 800, 600);
+  particles = particles.filter(p => p.life > 0);
+  for (const p of particles) {
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.18; p.vx *= 0.97;
+    p.life -= p.decay;
+    pCtx.save();
+    pCtx.globalAlpha = Math.max(0, p.life);
+    pCtx.fillStyle = p.color;
+    pCtx.beginPath();
+    pCtx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+    pCtx.fill();
+    pCtx.restore();
+  }
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+// Clock hand angles
+function setClockHands(h, m, animated) {
+  const minuteDeg = (m / 60) * 360;
+  const hourDeg = ((h % 12) / 12) * 360 + (m / 60) * 30;
+  const minuteAngle = (minuteDeg - 90) * Math.PI / 180;
+  const hourAngle = (hourDeg - 90) * Math.PI / 180;
+
+  const cx = 100, cy = 100;
+  const hr = 45, mr = 58;
+
+  const hourHand = document.getElementById('hour-hand');
+  const minuteHand = document.getElementById('minute-hand');
+
+  if (animated) {
+    // Spin animation: do 1 full rotation then land on correct position
+    animateHandSpin(hourHand, hourAngle, cx, cy, hr, true);
+    animateHandSpin(minuteHand, minuteAngle, cx, cy, mr, false);
+  } else {
+    const hx2 = cx + hr * Math.cos(hourAngle);
+    const hy2 = cy + hr * Math.sin(hourAngle);
+    hourHand.setAttribute('x2', hx2);
+    hourHand.setAttribute('y2', hy2);
+    const mx2 = cx + mr * Math.cos(minuteAngle);
+    const my2 = cy + mr * Math.sin(minuteAngle);
+    minuteHand.setAttribute('x2', mx2);
+    minuteHand.setAttribute('y2', my2);
+  }
+}
+
+function animateHandSpin(hand, targetAngle, cx, cy, r, isHour) {
+  const duration = 1200;
+  const start = performance.now();
+  const startAngle = -Math.PI / 2; // top
+  const extraRotations = isHour ? Math.PI * 2 : Math.PI * 4; // spin before settling
+
+  function frame(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const currentAngle = startAngle + extraRotations * ease + (targetAngle - startAngle) * ease;
+    const x2 = cx + r * Math.cos(currentAngle);
+    const y2 = cy + r * Math.sin(currentAngle);
+    hand.setAttribute('x2', x2);
+    hand.setAttribute('y2', y2);
+    if (t < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+// Generate round data
+function getMode(round) {
+  if (round < 3) return 'exact';
+  if (round < 6) return 'half';
+  return 'quarter';
+}
+
+function generateTime(mode) {
+  let h, m;
+  h = 1 + Math.floor(Math.random() * 12);
+  if (mode === 'exact') {
+    m = 0;
+  } else if (mode === 'half') {
+    m = Math.random() < 0.5 ? 0 : 30;
+  } else {
+    const choices = [0, 15, 30, 45];
+    m = choices[Math.floor(Math.random() * choices.length)];
+  }
+  return { h, m };
+}
+
+function formatTime(h, m) {
+  if (m === 0) return `${h}시 정각`;
+  return `${h}시 ${m}분`;
+}
+
+function generateWrongAnswers(correctH, correctM, mode) {
+  const wrongs = [];
+  while (wrongs.length < 3) {
+    let h = 1 + Math.floor(Math.random() * 12);
+    let m;
+    if (mode === 'exact') { m = 0; }
+    else if (mode === 'half') { m = Math.random() < 0.5 ? 0 : 30; }
+    else { const ch = [0,15,30,45]; m = ch[Math.floor(Math.random()*4)]; }
+
+    if (h === correctH && m === correctM) continue;
+    const key = `${h}:${m}`;
+    if (wrongs.some(w => `${w.h}:${w.m}` === key)) continue;
+    wrongs.push({ h, m });
+  }
+  return wrongs;
+}
+
+function generateRound() {
+  const mode = getMode(currentRound);
+  const { h, m } = generateTime(mode);
+  currentHour = h;
+  currentMinute = m;
+
+  // Mode badge
+  const badge = document.getElementById('mode-badge');
+  badge.textContent = mode === 'exact' ? '정각' : mode === 'half' ? '30분 단위' : '15분 단위';
+
+  // Question
+  document.getElementById('q-text').textContent = '몇 시예요?';
+
+  // Animate clock hands
+  setClockHands(h, m, true);
+
+  // Build answer buttons after spin completes
+  setTimeout(() => {
+    buildAnswerButtons(h, m, mode);
+  }, 1300);
+
+  updateRoundDots();
+}
+
+function buildAnswerButtons(h, m, mode) {
+  const container = document.getElementById('answer-btns');
+  container.innerHTML = '';
+  const wrongs = generateWrongAnswers(h, m, mode);
+  const allOptions = [{ h, m }, ...wrongs].sort(() => Math.random() - 0.5);
+
+  allOptions.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'ans-btn';
+    btn.textContent = formatTime(opt.h, opt.m);
+    btn.addEventListener('click', () => handleAnswer(opt.h === h && opt.m === m, btn));
+    container.appendChild(btn);
+  });
+
+  answering = false;
+}
+
+function handleAnswer(isCorrect, btn) {
+  if (answering) return;
+  answering = true;
+
+  const clockSvg = document.getElementById('clock-svg');
+
+  if (isCorrect) {
+    btn.classList.add('correct-ans');
+    clockSvg.classList.add('correct-glow');
+    score += 10 + (currentRound * 2);
+    correctAnswers++;
+
+    // Particles at clock center
+    spawnParticles(400, 260, '#06b6d4', 30);
+    spawnParticles(400, 260, '#a855f7', 20);
+
+    // Flash green
+    const flash = document.getElementById('flash');
+    flash.style.background = 'rgba(34,197,94,0.18)';
+    flash.style.opacity = '1';
+    setTimeout(() => { flash.style.opacity = '0'; }, 400);
+
+    setTimeout(() => {
+      clockSvg.classList.remove('correct-glow');
+      currentRound++;
+      if (currentRound >= TOTAL_ROUNDS) { showResult(); return; }
+      generateRound();
+    }, 1400);
+
+  } else {
+    btn.classList.add('wrong-ans');
+    clockSvg.classList.add('wrong-glow');
+    lives--;
+    updateHearts();
+
+    const clockArea = document.getElementById('clock-area');
+    clockArea.classList.add('clock-shake');
+
+    const flash = document.getElementById('flash');
+    flash.style.background = 'rgba(239,68,68,0.25)';
+    flash.style.opacity = '1';
+    setTimeout(() => { flash.style.opacity = '0'; }, 400);
+
+    setTimeout(() => {
+      btn.classList.remove('wrong-ans');
+      clockSvg.classList.remove('wrong-glow');
+      clockArea.classList.remove('clock-shake');
+      if (lives <= 0) { showResult(); return; }
+      answering = false;
+    }, 900);
+  }
+}
+
+function updateHearts() {
+  const container = document.getElementById('hearts-container');
+  container.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.classList.add('heart-icon');
+    if (i >= lives) svg.classList.add('lost');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z');
+    path.setAttribute('fill', i < lives ? '#f43f5e' : 'none');
+    path.setAttribute('stroke', i < lives ? '#f43f5e' : 'rgba(255,255,255,0.2)');
+    path.setAttribute('stroke-width', '1.5');
+    svg.appendChild(path);
+    container.appendChild(svg);
+  }
+}
+
+function updateRoundDots() {
+  const bar = document.getElementById('round-bar');
+  bar.innerHTML = '';
+  for (let i = 0; i < TOTAL_ROUNDS; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'rd-dot';
+    if (i < currentRound) dot.classList.add('done');
+    else if (i === currentRound) dot.classList.add('active');
+    bar.appendChild(dot);
+  }
+}
+
+function showResult() {
+  const screen = document.getElementById('result-screen');
+  screen.classList.add('show');
+  const stars = Math.round((correctAnswers / TOTAL_ROUNDS) * 3);
+  document.getElementById('result-title').textContent =
+    stars === 3 ? '시계 마스터!' : stars === 2 ? '잘했어요!' : '계속 연습해봐요!';
+  document.getElementById('result-score').textContent =
+    `${correctAnswers}/${TOTAL_ROUNDS} 정답  |  ${score}점`;
+  renderStars(stars);
+}
+
+function renderStars(count) {
+  const container = document.getElementById('result-stars');
+  container.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.classList.add('result-star');
+    const pts = [];
+    for (let j = 0; j < 10; j++) {
+      const r2 = j % 2 === 0 ? 11 : 5;
+      const angle = (j * Math.PI / 5) - Math.PI / 2;
+      pts.push(`${12 + r2 * Math.cos(angle)},${12 + r2 * Math.sin(angle)}`);
+    }
+    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    poly.setAttribute('points', pts.join(' '));
+    poly.setAttribute('fill', i < count ? '#fbbf24' : 'rgba(255,255,255,0.1)');
+    poly.setAttribute('stroke', i < count ? '#f59e0b' : 'rgba(255,255,255,0.15)');
+    poly.setAttribute('stroke-width', '1');
+    svg.appendChild(poly);
+    container.appendChild(svg);
+  }
+}
+
+function restartGame() {
+  currentRound = 0; lives = 3; score = 0; correctAnswers = 0; answering = false;
+  particles = [];
+  document.getElementById('result-screen').classList.remove('show');
+  document.getElementById('answer-btns').innerHTML = '';
+  generateRound();
+  updateHearts();
+}
+
+function goHome() { window.location.href = '../../index.html'; }
+
+// Init
+updateHearts();
+generateRound();
+</script>
+</body>
+</html>

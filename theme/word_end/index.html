@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>끝말잇기 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#0a0118;--card:rgba(255,255,255,0.06);--card-border:rgba(255,255,255,0.12);
+      --purple:#a855f7;--pink:#ec4899;--grad:linear-gradient(135deg,#a855f7,#ec4899);
+      --text:#f0e8ff;--text-dim:rgba(240,232,255,0.55);
+      --correct:#22c55e;--wrong:#ef4444;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      font-family:'Nunito','Apple SD Gothic Neo',sans-serif;
+      background:var(--bg);color:var(--text);
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;overflow:hidden;
+    }
+    .stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+    .star{position:absolute;border-radius:50%;background:white;
+      animation:twinkle var(--d,3s) var(--delay,0s) infinite alternate ease-in-out;}
+    @keyframes twinkle{from{opacity:var(--min-op,.2);transform:scale(1);}to{opacity:var(--max-op,.9);transform:scale(1.4);}}
+
+    #game-area{
+      position:relative;z-index:1;width:800px;height:600px;
+      background:rgba(10,1,24,0.9);border:1px solid var(--card-border);
+      border-radius:28px;overflow:hidden;display:flex;flex-direction:column;
+    }
+    .hud{display:flex;justify-content:space-between;align-items:center;padding:14px 20px 10px;flex-shrink:0;}
+    .btn-back{
+      display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
+      background:var(--card);border:1px solid var(--card-border);border-radius:50px;
+      color:var(--text-dim);font-family:inherit;font-size:0.82rem;font-weight:700;
+      cursor:pointer;text-decoration:none;
+    }
+    .progress-dots{display:flex;gap:5px;}
+    .dot{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.2);transition:all 0.3s;}
+    .dot.correct{background:var(--correct);border-color:var(--correct);}
+    .dot.wrong{background:var(--wrong);border-color:var(--wrong);}
+    .combo-display{font-size:1rem;font-weight:800;color:#facc15;min-width:80px;text-align:right;}
+
+    .screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+    .screen.hidden{display:none;}
+
+    #intro-screen h1{
+      font-size:2.4rem;font-weight:900;
+      background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      margin-bottom:12px;text-align:center;
+    }
+    #intro-screen p{font-size:1rem;color:var(--text-dim);text-align:center;line-height:1.7;margin-bottom:24px;}
+
+    /* 플레이 */
+    #play-screen{gap:20px;}
+
+    /* 이전 단어 체인 */
+    #chain-display{
+      display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;
+      min-height:36px;
+    }
+    .chain-word{
+      padding:5px 14px;background:rgba(168,85,247,0.15);
+      border:1px solid rgba(168,85,247,0.3);border-radius:20px;
+      font-size:0.85rem;font-weight:700;color:var(--text-dim);
+      animation:slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn{from{transform:translateX(-20px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+    .chain-arrow{color:var(--purple);font-size:1rem;font-weight:800;}
+
+    /* 현재 단어 카드 */
+    #current-word-wrap{
+      text-align:center;
+    }
+    #current-word-sub{font-size:0.85rem;color:var(--text-dim);margin-bottom:8px;}
+    #current-word{
+      font-size:3rem;font-weight:900;
+      background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      animation:wordPop 0.4s cubic-bezier(.175,.885,.32,1.275);
+    }
+    @keyframes wordPop{from{transform:scale(0.7);opacity:0;}to{transform:scale(1);opacity:1;}}
+    #last-char{
+      font-size:1.1rem;font-weight:800;margin-top:4px;
+      color:var(--pink);
+    }
+
+    /* 선택지 */
+    #choices-grid{
+      display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:500px;
+    }
+    .choice-btn{
+      padding:14px 20px;background:var(--card);
+      border:2px solid var(--card-border);border-radius:16px;
+      color:var(--text);font-family:inherit;font-size:1.2rem;font-weight:800;
+      cursor:pointer;transition:all 0.2s;text-align:center;
+    }
+    .choice-btn:hover{background:rgba(168,85,247,0.1);border-color:var(--purple);}
+    .choice-btn.correct{border-color:var(--correct);background:rgba(34,197,94,0.15);color:var(--correct);}
+    .choice-btn.wrong{border-color:var(--wrong);background:rgba(239,68,68,0.15);color:var(--wrong);}
+
+    /* 힌트 */
+    #hint-text{
+      font-size:0.9rem;font-weight:700;color:var(--text-dim);
+      min-height:28px;text-align:center;
+    }
+
+    /* 콤보 이펙트 */
+    #combo-effect{
+      position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+      font-size:2.5rem;font-weight:900;color:#facc15;pointer-events:none;
+      opacity:0;z-index:50;text-shadow:0 2px 20px rgba(250,204,21,0.5);
+    }
+    #combo-effect.pop{animation:comboPop 0.6s ease-out forwards;}
+    @keyframes comboPop{0%{opacity:0;transform:translate(-50%,-50%) scale(0.5);}50%{opacity:1;transform:translate(-50%,-80%) scale(1.2);}100%{opacity:0;transform:translate(-50%,-100%) scale(1);}}
+
+    /* 결과 */
+    #result-screen{gap:14px;}
+    #result-screen h2{
+      font-size:2rem;font-weight:900;
+      background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    }
+    .result-score{font-size:3rem;font-weight:900;color:#facc15;}
+    .result-label{font-size:1rem;color:var(--text-dim);}
+    .stars-row{display:flex;gap:10px;margin:8px 0;}
+    .result-star{animation:starPop 0.4s cubic-bezier(.175,.885,.32,1.275) forwards;opacity:0;}
+    @keyframes starPop{from{transform:scale(0) rotate(-30deg);opacity:0;}to{transform:scale(1);opacity:1;}}
+    .btn-primary{
+      padding:14px 36px;background:var(--grad);border:none;border-radius:50px;color:#fff;
+      font-family:inherit;font-size:1.1rem;font-weight:800;cursor:pointer;
+      box-shadow:0 4px 20px rgba(168,85,247,0.4);transition:transform 0.15s;
+    }
+    .btn-primary:hover{transform:translateY(-2px);}
+    .btn-secondary{
+      padding:12px 28px;background:var(--card);border:1px solid var(--card-border);
+      border-radius:50px;color:var(--text);font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;
+    }
+    .btn-row{display:flex;gap:12px;margin-top:10px;}
+    .particle{
+      position:absolute;border-radius:50%;pointer-events:none;z-index:20;
+      animation:particleFly var(--dur,.8s) ease-out forwards;
+    }
+    @keyframes particleFly{0%{transform:translate(0,0) scale(1);opacity:1;}100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0;}}
+    .shake{animation:shakeAnim 0.4s ease-out;}
+    @keyframes shakeAnim{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-6px);}80%{transform:translateX(6px);}}
+  </style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div id="game-area">
+  <div class="hud">
+    <a href="../../index.html" class="btn-back">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      홈
+    </a>
+    <div class="progress-dots" id="progress-dots"></div>
+    <div class="combo-display" id="combo-display"></div>
+  </div>
+
+  <!-- 인트로 -->
+  <div class="screen" id="intro-screen">
+    <h1>끝말잇기</h1>
+    <p>컴퓨터가 단어를 말하면<br>끝 글자로 시작하는 단어를 골라요!</p>
+    <svg width="280" height="80" viewBox="0 0 280 80" style="margin-bottom:20px;">
+      <!-- 체인 예시 -->
+      <rect x="0" y="20" width="70" height="40" rx="10" fill="rgba(168,85,247,0.2)" stroke="#a855f7" stroke-width="1.5"/>
+      <text x="35" y="46" text-anchor="middle" fill="#f0e8ff" font-size="16" font-family="Nunito" font-weight="800">사과</text>
+      <path d="M72,40 L90,40" stroke="#a855f7" stroke-width="2" marker-end="url(#arr)"/>
+      <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#a855f7"/></marker></defs>
+      <rect x="92" y="20" width="70" height="40" rx="10" fill="rgba(236,72,153,0.2)" stroke="#ec4899" stroke-width="1.5"/>
+      <text x="127" y="46" text-anchor="middle" fill="#f0e8ff" font-size="16" font-family="Nunito" font-weight="800">과자</text>
+      <path d="M164,40 L182,40" stroke="#ec4899" stroke-width="2" marker-end="url(#arr2)"/>
+      <defs><marker id="arr2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ec4899"/></marker></defs>
+      <rect x="184" y="20" width="96" height="40" rx="10" fill="rgba(34,197,94,0.2)" stroke="#22c55e" stroke-width="1.5"/>
+      <text x="232" y="46" text-anchor="middle" fill="#f0e8ff" font-size="16" font-family="Nunito" font-weight="800">자동차</text>
+    </svg>
+    <button class="btn-primary" id="start-btn">시작하기</button>
+  </div>
+
+  <!-- 플레이 -->
+  <div class="screen hidden" id="play-screen">
+    <div id="chain-display"></div>
+    <div id="current-word-wrap">
+      <div id="current-word-sub">컴퓨터의 단어</div>
+      <div id="current-word"></div>
+      <div id="last-char"></div>
+    </div>
+    <div id="choices-grid"></div>
+    <div id="hint-text"></div>
+    <div id="combo-effect"></div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="screen hidden" id="result-screen">
+    <h2>끝말잇기 완료!</h2>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-label">정답 / 10라운드</div>
+    <div class="stars-row" id="stars-row"></div>
+    <div class="combo-best" id="combo-best" style="font-size:0.95rem;color:var(--purple);font-weight:800;"></div>
+    <div id="cheer-msg" style="font-size:1rem;color:var(--text-dim);text-align:center;"></div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="location.href='../../index.html'">홈으로</button>
+      <button class="btn-primary" id="retry-btn">다시하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 별 생성
+(function(){
+  const el=document.getElementById('stars');
+  for(let i=0;i<55;i++){
+    const s=document.createElement('div');s.className='star';
+    const size=Math.random()*2.5+0.5;
+    s.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${(Math.random()*3+1.5).toFixed(1)}s;--delay:${(Math.random()*3).toFixed(1)}s;--min-op:${(Math.random()*0.2+0.1).toFixed(2)};--max-op:${(Math.random()*0.5+0.5).toFixed(2)};`;
+    el.appendChild(s);
+  }
+})();
+
+// ── 단어 체인 데이터 ──
+// 각 라운드: 현재 단어, 정답 (끝 글자 이어받는 것), 오답들
+const QUIZ_CHAINS = [
+  { word:'사과',    correct:'과자',   hint:'달콤한 간식이에요',      wrong:['과일','국수','가방'] },
+  { word:'과자',    correct:'자동차', hint:'타고 다니는 것이에요',    wrong:['자전거','가위','국수'] },
+  { word:'자동차',  correct:'차도',   hint:'자동차가 달리는 길',      wrong:['차례','바람','자리'] },
+  { word:'차도',    correct:'도서관', hint:'책이 많은 곳이에요',      wrong:['도시락','소나무','기차'] },
+  { word:'도서관',  correct:'관심',   hint:'무언가에 흥미를 갖는 것', wrong:['관계','기쁨','관문'] },
+  { word:'관심',    correct:'심장',   hint:'두근두근 뛰는 곳',        wrong:['심부름','신발','마음'] },
+  { word:'심장',    correct:'장미',   hint:'예쁜 꽃이에요',           wrong:['장갑','바지','미소'] },
+  { word:'장미',    correct:'미소',   hint:'방긋 웃는 표정',          wrong:['미래','나비','소녀'] },
+  { word:'미소',    correct:'소나무', hint:'초록 나무예요',            wrong:['소풍','바나나','무지개'] },
+  { word:'소나무',  correct:'무지개', hint:'비 온 뒤 생겨요',         wrong:['무덤','주스','개구리'] },
+];
+
+let currentRound=0, correctCount=0, combo=0, maxCombo=0, answered=false;
+let chainHistory=[];
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function startGame(){
+  currentRound=0; correctCount=0; combo=0; maxCombo=0; answered=false;
+  chainHistory=[];
+  // 점 초기화
+  const dots=document.getElementById('progress-dots');
+  dots.innerHTML='';
+  for(let i=0;i<10;i++){
+    const d=document.createElement('div');d.className='dot';d.id=`dot-${i}`;dots.appendChild(d);
+  }
+  document.getElementById('combo-display').textContent='';
+  showScreen('play-screen');
+  showQuestion();
+}
+
+function showQuestion(){
+  answered=false;
+  document.getElementById('hint-text').textContent='';
+  const q=QUIZ_CHAINS[currentRound];
+
+  // 현재 단어
+  document.getElementById('current-word').textContent=q.word;
+  const lastChar=q.word.charAt(q.word.length-1);
+  document.getElementById('last-char').textContent=`"${lastChar}" 으로 시작하는 단어는?`;
+
+  // 체인 히스토리
+  const chainEl=document.getElementById('chain-display');
+  chainEl.innerHTML='';
+  if(chainHistory.length>0){
+    const recent=chainHistory.slice(-3);
+    recent.forEach((w,i)=>{
+      const span=document.createElement('span');span.className='chain-word';span.textContent=w;
+      chainEl.appendChild(span);
+      if(i<recent.length-1){const arr=document.createElement('span');arr.className='chain-arrow';arr.textContent='→';chainEl.appendChild(arr);}
+    });
+    const arr=document.createElement('span');arr.className='chain-arrow';arr.textContent='→';chainEl.appendChild(arr);
+    const cur=document.createElement('span');cur.className='chain-word';cur.style.borderColor='#a855f7';cur.textContent=q.word;chainEl.appendChild(cur);
+  }
+
+  // 선택지
+  const choices=[
+    {word:q.correct, isCorrect:true},
+    ...q.wrong.map(w=>({word:w,isCorrect:false}))
+  ];
+  for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+
+  const grid=document.getElementById('choices-grid');
+  grid.innerHTML='';
+  choices.forEach(ch=>{
+    const btn=document.createElement('button');
+    btn.className='choice-btn';
+    btn.textContent=ch.word;
+    btn.dataset.correct=ch.isCorrect;
+    btn.addEventListener('click',()=>handleChoice(btn,ch));
+    grid.appendChild(btn);
+  });
+}
+
+function handleChoice(btn, choice){
+  if(answered) return;
+  answered=true;
+
+  if(choice.isCorrect){
+    btn.classList.add('correct');
+    correctCount++;
+    combo++;
+    if(combo>maxCombo) maxCombo=combo;
+    document.getElementById(`dot-${currentRound}`).classList.add('correct');
+    chainHistory.push(QUIZ_CHAINS[currentRound].word);
+    spawnParticles();
+    if(combo>=2) showComboEffect(combo);
+    document.getElementById('combo-display').textContent=combo>=2?`콤보 x${combo}`:'';
+  } else {
+    btn.classList.add('wrong');
+    combo=0;
+    document.getElementById('combo-display').textContent='';
+    document.getElementById(`dot-${currentRound}`).classList.add('wrong');
+    // 정답 표시
+    document.querySelectorAll('.choice-btn').forEach(b=>{if(b.dataset.correct==='true')b.classList.add('correct');});
+    document.getElementById('hint-text').textContent=`힌트: ${QUIZ_CHAINS[currentRound].hint}`;
+    shakeGame();
+  }
+
+  setTimeout(()=>{
+    currentRound++;
+    if(currentRound>=10) showResult();
+    else showQuestion();
+  }, 1200);
+}
+
+function showComboEffect(combo){
+  const el=document.getElementById('combo-effect');
+  el.textContent=`콤보 x${combo}!`;
+  el.classList.remove('pop');
+  void el.offsetWidth;
+  el.classList.add('pop');
+}
+
+function spawnParticles(){
+  const area=document.getElementById('game-area');
+  const colors=['#a855f7','#ec4899','#22c55e','#facc15','#f9a8d4'];
+  for(let i=0;i<16;i++){
+    const p=document.createElement('div');p.className='particle';
+    const size=Math.random()*12+6,angle=Math.random()*Math.PI*2,dist=Math.random()*120+60;
+    p.style.cssText=`width:${size}px;height:${size}px;background:${colors[Math.floor(Math.random()*colors.length)]};left:50%;top:40%;--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px;--dur:${(Math.random()*0.4+0.5).toFixed(2)}s;`;
+    area.appendChild(p);
+    setTimeout(()=>p.remove(),1000);
+  }
+}
+
+function shakeGame(){
+  const a=document.getElementById('game-area');
+  a.classList.remove('shake');void a.offsetWidth;a.classList.add('shake');
+  a.addEventListener('animationend',()=>a.classList.remove('shake'),{once:true});
+}
+
+function showResult(){
+  showScreen('result-screen');
+  document.getElementById('result-score').textContent=`${correctCount} / 10`;
+  document.getElementById('combo-best').textContent=maxCombo>=2?`최고 콤보: ${maxCombo}연속!`:'';
+  const stars=correctCount>=9?3:correctCount>=7?2:correctCount>=5?1:0;
+  const cheers=['다시 연습해봐요!','잘했어요! 한국어 실력이 늘고 있어요!','훌륭해요! 말하기 왕!','완벽한 끝말잇기 챔피언!'];
+  document.getElementById('cheer-msg').textContent=cheers[stars];
+  const sr=document.getElementById('stars-row');sr.innerHTML='';
+  for(let i=0;i<3;i++){
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('width','50');svg.setAttribute('height','50');svg.setAttribute('viewBox','0 0 50 50');
+    svg.classList.add('result-star');svg.style.animationDelay=`${i*0.15}s`;
+    const f=i<stars;
+    svg.innerHTML=`<polygon points="25,5 30,18 44,18 33,27 37,41 25,32 13,41 17,27 6,18 20,18" fill="${f?'#facc15':'rgba(255,255,255,0.1)'}" stroke="${f?'#f59e0b':'rgba(255,255,255,0.15)'}" stroke-width="2"/>`;
+    sr.appendChild(svg);
+  }
+}
+
+document.getElementById('start-btn').addEventListener('click',startGame);
+document.getElementById('retry-btn').addEventListener('click',startGame);
+</script>
+</body>
+</html>

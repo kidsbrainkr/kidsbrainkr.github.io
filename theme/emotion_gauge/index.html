@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>기분 온도계 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0118;
+      --card: rgba(255,255,255,0.06);
+      --card-border: rgba(255,255,255,0.12);
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --cyan: #06b6d4;
+      --amber: #f59e0b;
+      --grad: linear-gradient(135deg, #ec4899, #f59e0b);
+      --text: #f0e8ff;
+      --text-dim: rgba(240,232,255,0.55);
+      --correct: #22c55e;
+      --wrong: #ef4444;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Nunito', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow: hidden;
+    }
+    .star {
+      position: fixed; border-radius: 50%; background: #fff;
+      animation: twinkle var(--dur,3s) ease-in-out infinite var(--delay,0s);
+      pointer-events: none; z-index: 0;
+    }
+    @keyframes twinkle {
+      0%,100%{opacity:.15;transform:scale(1)}50%{opacity:.9;transform:scale(1.4)}
+    }
+
+    #game-wrap {
+      position: relative;
+      width: 800px; height: 600px;
+      background: linear-gradient(160deg, #1a0a2e 0%, #0a0118 55%, #0f0a20 100%);
+      border-radius: 28px;
+      border: 1px solid rgba(236,72,153,0.2);
+      box-shadow: 0 0 80px rgba(236,72,153,0.1), 0 24px 64px rgba(0,0,0,0.7);
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    /* HUD */
+    #hud {
+      position: absolute;
+      top: 16px; left: 20px; right: 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      z-index: 20;
+    }
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50px;
+      color: var(--text-dim);
+      font-family: inherit; font-size: 0.82rem; font-weight: 800;
+      cursor: pointer; text-decoration: none;
+      transition: background .2s, color .2s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+
+    /* Progress */
+    .progress-wrap {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .progress-text {
+      font-size: 0.82rem; font-weight: 800; color: var(--text-dim);
+    }
+    .progress-bar-outer {
+      width: 120px; height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50px; overflow: hidden;
+    }
+    .progress-bar-inner {
+      height: 100%;
+      background: var(--grad);
+      border-radius: 50px;
+      transition: width 0.4s ease;
+    }
+
+    /* Situation card */
+    #situation-card {
+      position: absolute;
+      top: 64px; left: 24px; right: 24px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 20px 24px;
+      display: flex; align-items: center; gap: 20px;
+      z-index: 10;
+    }
+    #situation-icon {
+      width: 80px; height: 80px; flex-shrink: 0;
+    }
+    .situation-texts {}
+    .situation-label {
+      font-size: 0.72rem; font-weight: 700; color: var(--text-dim);
+      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
+    }
+    .situation-title {
+      font-size: 1.3rem; font-weight: 900; color: #fff;
+      margin-bottom: 4px;
+    }
+    .situation-question {
+      font-size: 0.92rem; font-weight: 700; color: var(--text-dim);
+    }
+
+    /* Thermometer */
+    #thermometer-area {
+      position: absolute;
+      left: 50px; top: 200px; bottom: 80px;
+      width: 60px;
+      display: flex; flex-direction: column; align-items: center;
+      z-index: 15;
+    }
+    #thermo-labels {
+      position: absolute;
+      right: -80px; top: 0; bottom: 30px;
+      display: flex; flex-direction: column;
+      justify-content: space-between;
+      width: 80px;
+    }
+    .thermo-label-text {
+      font-size: 0.65rem; font-weight: 800;
+      color: var(--text-dim); white-space: nowrap;
+    }
+    #thermo-svg {
+      width: 50px;
+      flex: 1;
+      cursor: ns-resize;
+    }
+
+    /* Character display */
+    #character-area {
+      position: absolute;
+      right: 60px; top: 200px;
+      width: 200px; height: 200px;
+      z-index: 15;
+    }
+    #character-svg {
+      width: 100%; height: 100%;
+      filter: drop-shadow(0 8px 24px rgba(168,85,247,0.3));
+    }
+
+    /* Emotion label */
+    #emotion-label {
+      position: absolute;
+      right: 60px; top: 410px;
+      width: 200px;
+      text-align: center;
+      font-size: 1.1rem; font-weight: 900;
+      color: #fff;
+      text-shadow: 0 0 16px rgba(236,72,153,0.5);
+      transition: color 0.3s;
+      z-index: 15;
+    }
+
+    /* Slider */
+    #slider-area {
+      position: absolute;
+      bottom: 60px; left: 160px; right: 60px;
+      z-index: 15;
+    }
+    .slider-labels {
+      display: flex; justify-content: space-between;
+      font-size: 0.78rem; font-weight: 800;
+      color: var(--text-dim); margin-bottom: 8px;
+    }
+    #mood-slider {
+      -webkit-appearance: none;
+      width: 100%; height: 14px;
+      border-radius: 50px;
+      background: linear-gradient(to right, #60a5fa, #facc15, #f43f5e);
+      outline: none;
+      cursor: pointer;
+    }
+    #mood-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid #a855f7;
+      box-shadow: 0 2px 12px rgba(168,85,247,0.5);
+      cursor: grab;
+      transition: transform 0.15s;
+    }
+    #mood-slider::-webkit-slider-thumb:active {
+      transform: scale(1.2);
+      cursor: grabbing;
+    }
+
+    /* Submit button */
+    #submit-btn {
+      position: absolute;
+      bottom: 16px; left: 50%; transform: translateX(-50%);
+      padding: 12px 40px;
+      border-radius: 50px;
+      background: var(--grad);
+      border: none;
+      color: #fff;
+      font-family: inherit; font-size: 1rem; font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(236,72,153,0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+      z-index: 20;
+    }
+    #submit-btn:hover { transform: translateX(-50%) translateY(-3px); }
+    #submit-btn:active { transform: translateX(-50%) scale(0.95); }
+
+    /* Feedback overlay */
+    #feedback-overlay {
+      position: absolute;
+      inset: 0; border-radius: 28px;
+      display: none; align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px;
+      z-index: 35; background: rgba(10,1,24,0.6);
+    }
+    #feedback-overlay.show { display: flex; }
+    .fb-badge {
+      padding: 12px 32px;
+      border-radius: 50px;
+      font-size: 1.4rem; font-weight: 900;
+    }
+    .fb-badge.ok { background: rgba(34,197,94,0.25); border: 2px solid #22c55e; color: #22c55e; }
+    .fb-badge.miss { background: rgba(239,68,68,0.25); border: 2px solid #ef4444; color: #ef4444; }
+    .fb-hint {
+      font-size: 0.92rem; font-weight: 700; color: var(--text-dim);
+    }
+
+    /* Flash */
+    #flash {
+      position: absolute; inset: 0; border-radius: 28px;
+      pointer-events: none; z-index: 30; opacity: 0;
+      transition: opacity 0.12s;
+    }
+
+    /* Particle canvas */
+    #particle-canvas {
+      position: absolute; inset: 0; pointer-events: none; z-index: 25;
+    }
+
+    /* Shake */
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-10px)}40%{transform:translateX(10px)}
+      60%{transform:translateX(-8px)}80%{transform:translateX(6px)}
+    }
+    .shake { animation: shake 0.4s ease; }
+
+    /* Result */
+    #result-screen {
+      position: absolute; inset: 0;
+      background: rgba(10,1,24,0.93);
+      border-radius: 28px;
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 50; gap: 18px;
+    }
+    #result-screen.show { display: flex; }
+    .result-title {
+      font-size: 2.4rem; font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .result-stars { display: flex; gap: 12px; }
+    .result-star { width: 52px; height: 52px; }
+    .result-score { font-size: 1.1rem; font-weight: 700; color: var(--text-dim); }
+    .result-btns { display: flex; gap: 14px; margin-top: 8px; }
+    .res-btn {
+      padding: 14px 28px; border-radius: 50px;
+      font-family: inherit; font-size: 1rem; font-weight: 900;
+      cursor: pointer; border: none;
+      transition: transform .15s;
+    }
+    .res-btn:hover { transform: translateY(-3px); }
+    .res-btn.primary { background: var(--grad); color: #fff; }
+    .res-btn.secondary {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+<div id="stars-container"></div>
+
+<div id="game-wrap">
+  <div id="hud">
+    <a class="btn-back" href="../../index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      홈
+    </a>
+    <div class="progress-wrap">
+      <span class="progress-text" id="progress-text">1 / 10</span>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="progress-bar" style="width:10%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Situation card -->
+  <div id="situation-card">
+    <svg id="situation-icon" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="situation-texts">
+      <div class="situation-label">상황</div>
+      <div class="situation-title" id="situation-title">생일 파티!</div>
+      <div class="situation-question">이런 상황이라면 기분이 어떨까요?</div>
+    </div>
+  </div>
+
+  <!-- Thermometer -->
+  <div id="thermometer-area">
+    <svg id="thermo-svg" viewBox="0 0 50 260" xmlns="http://www.w3.org/2000/svg">
+      <!-- Outer tube -->
+      <rect x="17" y="10" width="16" height="210" rx="8" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+      <!-- Fill -->
+      <rect id="thermo-fill" x="19" y="110" width="12" height="110" rx="6"
+        fill="url(#thermoGrad)"/>
+      <!-- Bulb -->
+      <circle cx="25" cy="230" r="16" fill="#f43f5e" opacity="0.9"/>
+      <circle cx="25" cy="230" r="10" fill="#fca5a5" opacity="0.5"/>
+      <!-- Defs -->
+      <defs>
+        <linearGradient id="thermoGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#f43f5e"/>
+          <stop offset="100%" stop-color="#facc15"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div id="thermo-labels">
+      <span class="thermo-label-text">100°</span>
+      <span class="thermo-label-text">75°</span>
+      <span class="thermo-label-text">50°</span>
+      <span class="thermo-label-text">25°</span>
+      <span class="thermo-label-text">0°</span>
+    </div>
+  </div>
+
+  <!-- Character -->
+  <div id="character-area">
+    <svg id="character-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <!-- Body -->
+      <ellipse cx="100" cy="145" rx="38" ry="45" fill="#fde68a" opacity="0.9"/>
+      <!-- Head -->
+      <circle cx="100" cy="88" r="46" fill="#fde68a"/>
+      <!-- Eyes -->
+      <ellipse id="eye-l" cx="84" cy="84" rx="8" ry="9" fill="#1e293b"/>
+      <ellipse id="eye-r" cx="116" cy="84" rx="8" ry="9" fill="#1e293b"/>
+      <!-- Eye shine -->
+      <circle cx="87" cy="81" r="3" fill="white"/>
+      <circle cx="119" cy="81" r="3" fill="white"/>
+      <!-- Mouth -->
+      <path id="mouth-path" d="M82 106 Q100 120 118 106" stroke="#1e293b" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <!-- Blush -->
+      <ellipse id="blush-l" cx="72" cy="100" rx="10" ry="6" fill="#f43f5e" opacity="0"/>
+      <ellipse id="blush-r" cx="128" cy="100" rx="10" ry="6" fill="#f43f5e" opacity="0"/>
+      <!-- Eyebrows -->
+      <path id="brow-l" d="M76 74 Q84 70 92 74" stroke="#1e293b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path id="brow-r" d="M108 74 Q116 70 124 74" stroke="#1e293b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- Arms -->
+      <path id="arm-l" d="M62 120 Q45 140 50 160" stroke="#fde68a" stroke-width="14" fill="none" stroke-linecap="round"/>
+      <path id="arm-r" d="M138 120 Q155 140 150 160" stroke="#fde68a" stroke-width="14" fill="none" stroke-linecap="round"/>
+      <!-- Legs -->
+      <rect x="82" y="185" width="14" height="14" rx="5" fill="#a78bfa"/>
+      <rect x="104" y="185" width="14" height="14" rx="5" fill="#a78bfa"/>
+    </svg>
+  </div>
+
+  <!-- Emotion label -->
+  <div id="emotion-label">보통이에요</div>
+
+  <!-- Slider -->
+  <div id="slider-area">
+    <div class="slider-labels">
+      <span>매우 슬픔</span>
+      <span>보통</span>
+      <span>매우 기쁨</span>
+    </div>
+    <input type="range" id="mood-slider" min="0" max="100" value="50">
+  </div>
+
+  <!-- Submit -->
+  <button id="submit-btn" onclick="submitAnswer()">결정!</button>
+
+  <!-- Feedback -->
+  <div id="feedback-overlay">
+    <div class="fb-badge" id="fb-badge">잘했어요!</div>
+    <div class="fb-hint" id="fb-hint"></div>
+  </div>
+
+  <div id="flash"></div>
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- Result -->
+  <div id="result-screen">
+    <div class="result-title" id="result-title">감정 박사!</div>
+    <div class="result-stars" id="result-stars"></div>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-btns">
+      <button class="res-btn secondary" onclick="goHome()">홈으로</button>
+      <button class="res-btn primary" onclick="restartGame()">다시하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Stars
+(function(){
+  const c=document.getElementById('stars-container');
+  for(let i=0;i<55;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    const sz=Math.random()*2.5+0.8;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}vw;top:${Math.random()*100}vh;--dur:${2+Math.random()*4}s;--delay:${Math.random()*4}s;`;
+    c.appendChild(s);
+  }
+})();
+
+// Situations
+const SITUATIONS = [
+  {
+    title: '생일 케이크!',
+    icon: 'birthday',
+    range: [70, 100],
+    hint: '생일은 정말 기쁜 날이에요!',
+    emotion: '기쁨'
+  },
+  {
+    title: '장난감을 잃어버렸어요',
+    icon: 'toy_lost',
+    range: [0, 30],
+    hint: '소중한 물건을 잃으면 슬프지요',
+    emotion: '슬픔'
+  },
+  {
+    title: '처음 만나는 사람!',
+    icon: 'stranger',
+    range: [20, 50],
+    hint: '낯선 사람을 만나면 긴장되지요',
+    emotion: '두려움'
+  },
+  {
+    title: '친구가 칭찬해줬어요',
+    icon: 'praise',
+    range: [60, 100],
+    hint: '칭찬을 받으면 기분이 좋아요!',
+    emotion: '기쁨'
+  },
+  {
+    title: '맛없는 음식을 먹었어요',
+    icon: 'yuck',
+    range: [10, 40],
+    hint: '맛없는 음식은 짜증이 나지요',
+    emotion: '짜증'
+  },
+  {
+    title: '강아지랑 놀아요!',
+    icon: 'puppy',
+    range: [70, 100],
+    hint: '강아지와 놀면 너무 즐거워요!',
+    emotion: '기쁨'
+  },
+  {
+    title: '어두운 방에 혼자...',
+    icon: 'dark',
+    range: [0, 30],
+    hint: '어두운 곳은 무서울 수 있어요',
+    emotion: '무서움'
+  },
+  {
+    title: '친구랑 싸웠어요',
+    icon: 'fight',
+    range: [10, 40],
+    hint: '친구와 싸우면 마음이 아파요',
+    emotion: '슬픔'
+  },
+  {
+    title: '새 옷을 입었어요!',
+    icon: 'new_outfit',
+    range: [60, 90],
+    hint: '새 옷을 입으면 설레고 기뻐요!',
+    emotion: '설렘'
+  },
+  {
+    title: '물건이 떨어졌어요!',
+    icon: 'drop',
+    range: [20, 60],
+    hint: '깜짝 놀라면 두근두근해요',
+    emotion: '놀람'
+  },
+];
+
+// SVG icon drawing functions
+function drawSituationIcon(type) {
+  const svg = document.getElementById('situation-icon');
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+
+  const icons = {
+    birthday: () => {
+      // Cake
+      const base = `<rect x="10" y="50" width="60" height="24" rx="6" fill="#fb923c"/>
+        <rect x="14" y="40" width="52" height="14" rx="5" fill="#f9a8d4"/>
+        <rect x="18" y="30" width="44" height="12" rx="4" fill="#fbcfe8"/>
+        <line x1="25" y1="30" x2="25" y2="18" stroke="#facc15" stroke-width="3" stroke-linecap="round"/>
+        <line x1="40" y1="30" x2="40" y2="16" stroke="#f87171" stroke-width="3" stroke-linecap="round"/>
+        <line x1="55" y1="30" x2="55" y2="18" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"/>
+        <ellipse cx="25" cy="17" rx="3" ry="5" fill="#fbbf24" opacity="0.9"/>
+        <ellipse cx="40" cy="15" rx="3" ry="5" fill="#f87171" opacity="0.9"/>
+        <ellipse cx="55" cy="17" rx="3" ry="5" fill="#60a5fa" opacity="0.9"/>`;
+      svg.innerHTML = base;
+    },
+    toy_lost: () => {
+      svg.innerHTML = `<rect x="18" y="28" width="44" height="36" rx="8" fill="#818cf8"/>
+        <rect x="26" y="20" width="28" height="12" rx="4" fill="#a78bfa"/>
+        <circle cx="30" cy="50" r="5" fill="#fff" opacity="0.7"/>
+        <circle cx="50" cy="50" r="5" fill="#fff" opacity="0.7"/>
+        <text x="40" y="48" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">?</text>
+        <path d="M20 72 Q40 80 60 72" stroke="#f43f5e" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <line x1="34" y1="68" x2="30" y2="72" stroke="#f43f5e" stroke-width="2"/>
+        <line x1="46" y1="68" x2="50" y2="72" stroke="#f43f5e" stroke-width="2"/>`;
+    },
+    stranger: () => {
+      svg.innerHTML = `<circle cx="40" cy="32" r="18" fill="#fde68a"/>
+        <rect x="22" y="48" width="36" height="24" rx="8" fill="#60a5fa"/>
+        <circle cx="33" cy="29" r="3" fill="#1e293b"/>
+        <circle cx="47" cy="29" r="3" fill="#1e293b"/>
+        <path d="M33 40 Q40 36 47 40" stroke="#1e293b" stroke-width="2" fill="none"/>
+        <line x1="10" y1="38" x2="22" y2="48" stroke="#60a5fa" stroke-width="8" stroke-linecap="round"/>
+        <line x1="70" y1="38" x2="58" y2="48" stroke="#60a5fa" stroke-width="8" stroke-linecap="round"/>
+        <text x="40" y="18" text-anchor="middle" font-size="11" fill="#f59e0b">?!</text>`;
+    },
+    praise: () => {
+      svg.innerHTML = `<circle cx="40" cy="36" r="20" fill="#fde68a"/>
+        <circle cx="33" cy="32" r="3" fill="#1e293b"/>
+        <circle cx="47" cy="32" r="3" fill="#1e293b"/>
+        <path d="M30 44 Q40 54 50 44" stroke="#1e293b" stroke-width="2.5" fill="none"/>
+        <text x="15" y="22" font-size="16">⭐</text>
+        <text x="55" y="22" font-size="16">⭐</text>
+        <text x="35" y="74" font-size="10" fill="#fbbf24" font-weight="800">최고!</text>`;
+    },
+    yuck: () => {
+      svg.innerHTML = `<ellipse cx="40" cy="52" rx="26" ry="18" fill="#86efac"/>
+        <ellipse cx="40" cy="48" rx="22" ry="14" fill="#4ade80"/>
+        <text x="40" y="54" text-anchor="middle" font-size="18" fill="#166534">~</text>
+        <circle cx="40" cy="30" r="14" fill="#fde68a"/>
+        <circle cx="34" cy="27" r="3" fill="#1e293b"/>
+        <circle cx="46" cy="27" r="3" fill="#1e293b"/>
+        <path d="M33 36 Q40 32 47 36" stroke="#1e293b" stroke-width="2.5" fill="none"/>`;
+    },
+    puppy: () => {
+      svg.innerHTML = `<ellipse cx="40" cy="52" rx="24" ry="20" fill="#fbbf24" opacity="0.9"/>
+        <circle cx="40" cy="36" r="18" fill="#fbbf24"/>
+        <ellipse cx="28" cy="28" rx="7" ry="12" fill="#f59e0b" transform="rotate(-15 28 28)"/>
+        <ellipse cx="52" cy="28" rx="7" ry="12" fill="#f59e0b" transform="rotate(15 52 28)"/>
+        <circle cx="34" cy="34" r="3" fill="#1e293b"/>
+        <circle cx="46" cy="34" r="3" fill="#1e293b"/>
+        <ellipse cx="40" cy="42" rx="6" ry="4" fill="#f43f5e"/>
+        <path d="M34 46 Q40 52 46 46" stroke="#1e293b" stroke-width="2.5" fill="none"/>`;
+    },
+    dark: () => {
+      svg.innerHTML = `<rect x="8" y="8" width="64" height="64" rx="12" fill="#1e1b4b"/>
+        <circle cx="40" cy="36" r="14" fill="#fde68a"/>
+        <circle cx="34" cy="33" r="3" fill="#1e293b"/>
+        <circle cx="46" cy="33" r="3" fill="#1e293b"/>
+        <path d="M33 42 Q40 38 47 42" stroke="#1e293b" stroke-width="2.5" fill="none"/>
+        <text x="14" y="66" font-size="11" fill="#6366f1">... 어두워</text>`;
+    },
+    fight: () => {
+      svg.innerHTML = `<circle cx="25" cy="30" r="14" fill="#fde68a"/>
+        <circle cx="55" cy="30" r="14" fill="#bfdbfe"/>
+        <circle cx="22" cy="27" r="2.5" fill="#1e293b"/>
+        <circle cx="28" cy="27" r="2.5" fill="#1e293b"/>
+        <circle cx="52" cy="27" r="2.5" fill="#1e293b"/>
+        <circle cx="58" cy="27" r="2.5" fill="#1e293b"/>
+        <path d="M20 36 Q25 32 30 36" stroke="#1e293b" stroke-width="2" fill="none"/>
+        <path d="M50 36 Q55 32 60 36" stroke="#1e293b" stroke-width="2" fill="none"/>
+        <line x1="38" y1="25" x2="42" y2="25" stroke="#f43f5e" stroke-width="3" stroke-linecap="round"/>
+        <text x="40" y="62" text-anchor="middle" font-size="9" fill="#f43f5e">ㅠㅠ</text>`;
+    },
+    new_outfit: () => {
+      svg.innerHTML = `<path d="M25 20 L40 14 L55 20 L62 36 L52 34 L52 68 L28 68 L28 34 L18 36 Z" fill="#a78bfa"/>
+        <rect x="32" y="14" width="16" height="10" rx="8" fill="#fde68a"/>
+        <circle cx="40" cy="12" r="7" fill="#fde68a"/>
+        <circle cx="37" cy="10" r="2.5" fill="#1e293b"/>
+        <circle cx="43" cy="10" r="2.5" fill="#1e293b"/>
+        <path d="M36 15 Q40 18 44 15" stroke="#1e293b" stroke-width="2" fill="none"/>
+        <text x="40" y="52" text-anchor="middle" font-size="18" fill="#fff" opacity="0.8">✦</text>`;
+    },
+    drop: () => {
+      svg.innerHTML = `<rect x="22" y="14" width="36" height="28" rx="5" fill="#818cf8"/>
+        <rect x="28" y="20" width="24" height="16" rx="3" fill="#c4b5fd" opacity="0.5"/>
+        <line x1="40" y1="42" x2="40" y2="60" stroke="#818cf8" stroke-width="3" stroke-dasharray="4,3"/>
+        <ellipse cx="40" cy="62" rx="8" ry="4" fill="#818cf8" opacity="0.5"/>
+        <text x="40" y="10" text-anchor="middle" font-size="14" fill="#fbbf24">!</text>`;
+    },
+  };
+
+  if (icons[type]) icons[type]();
+}
+
+// Emotion state
+const EMOTION_LABELS = [
+  { max: 10, label: '매우 슬퍼요', color: '#60a5fa' },
+  { max: 25, label: '슬퍼요', color: '#93c5fd' },
+  { max: 40, label: '조금 슬퍼요', color: '#bfdbfe' },
+  { max: 55, label: '보통이에요', color: '#e0e7ff' },
+  { max: 70, label: '조금 기뻐요', color: '#fde68a' },
+  { max: 85, label: '기뻐요', color: '#fb923c' },
+  { max: 100, label: '매우 기뻐요!', color: '#f43f5e' },
+];
+
+function getEmotionInfo(value) {
+  return EMOTION_LABELS.find(e => value <= e.max) || EMOTION_LABELS[EMOTION_LABELS.length - 1];
+}
+
+// Character face update
+function updateCharacter(value) {
+  const mouth = document.getElementById('mouth-path');
+  const browL = document.getElementById('brow-l');
+  const browR = document.getElementById('brow-r');
+  const blushL = document.getElementById('blush-l');
+  const blushR = document.getElementById('blush-r');
+  const armL = document.getElementById('arm-l');
+  const armR = document.getElementById('arm-r');
+
+  const t = value / 100; // 0=sad, 1=happy
+
+  // Mouth: sad = frown, neutral = flat, happy = smile
+  if (t < 0.3) {
+    mouth.setAttribute('d', `M82 112 Q100 100 118 112`); // frown
+  } else if (t < 0.6) {
+    mouth.setAttribute('d', `M84 108 Q100 110 116 108`); // slight smile
+  } else {
+    const cy = 90 + (t - 0.5) * 60;
+    mouth.setAttribute('d', `M82 104 Q100 ${Math.round(cy)} 118 104`); // big smile
+  }
+
+  // Eyebrows
+  if (t < 0.3) {
+    browL.setAttribute('d', 'M76 78 Q84 74 92 78'); // sad brows
+    browR.setAttribute('d', 'M108 78 Q116 74 124 78');
+  } else if (t > 0.7) {
+    browL.setAttribute('d', 'M76 70 Q84 66 92 70'); // happy raised
+    browR.setAttribute('d', 'M108 70 Q116 66 124 70');
+  } else {
+    browL.setAttribute('d', 'M76 74 Q84 70 92 74');
+    browR.setAttribute('d', 'M108 74 Q116 70 124 74');
+  }
+
+  // Blush (happy)
+  const blushOp = Math.max(0, (t - 0.5) * 2);
+  blushL.setAttribute('opacity', blushOp.toFixed(2));
+  blushR.setAttribute('opacity', blushOp.toFixed(2));
+
+  // Arms (raise when happy)
+  if (t > 0.75) {
+    armL.setAttribute('d', 'M62 120 Q38 100 35 80');
+    armR.setAttribute('d', 'M138 120 Q162 100 165 80');
+  } else if (t < 0.25) {
+    armL.setAttribute('d', 'M62 120 Q48 150 55 170');
+    armR.setAttribute('d', 'M138 120 Q152 150 145 170');
+  } else {
+    armL.setAttribute('d', 'M62 120 Q45 140 50 160');
+    armR.setAttribute('d', 'M138 120 Q155 140 150 160');
+  }
+
+  // Emotion label
+  const info = getEmotionInfo(value);
+  const lbl = document.getElementById('emotion-label');
+  lbl.textContent = info.label;
+  lbl.style.color = info.color;
+}
+
+// Thermometer
+function updateThermometer(value) {
+  const fill = document.getElementById('thermo-fill');
+  // full tube: y=10 height=210. bulb at y=220
+  const maxH = 210;
+  const h = Math.round((value / 100) * maxH);
+  const y = 10 + (maxH - h);
+  fill.setAttribute('y', y);
+  fill.setAttribute('height', h);
+}
+
+// Slider
+const slider = document.getElementById('mood-slider');
+slider.addEventListener('input', () => {
+  const v = parseInt(slider.value);
+  updateCharacter(v);
+  updateThermometer(v);
+});
+
+// Game state
+let currentSituationIndex = 0;
+let situationOrder = [];
+let correctCount = 0;
+let inFeedback = false;
+const TOTAL = 10;
+
+function shuffleSituations() {
+  situationOrder = SITUATIONS.map((_, i) => i).sort(() => Math.random() - 0.5);
+}
+
+// Particles
+const pCanvas = document.getElementById('particle-canvas');
+const pCtx = pCanvas.getContext('2d');
+let particles = [];
+pCanvas.width = 800; pCanvas.height = 600;
+
+function spawnParticles(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 3 + Math.random() * 5;
+    particles.push({ x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed,
+      life:1, decay:0.02+Math.random()*0.02, size:4+Math.random()*7, color });
+  }
+}
+function animateParticles() {
+  pCtx.clearRect(0,0,800,600);
+  particles = particles.filter(p=>p.life>0);
+  for(const p of particles){
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.18; p.vx*=0.97; p.life-=p.decay;
+    pCtx.save(); pCtx.globalAlpha=Math.max(0,p.life); pCtx.fillStyle=p.color;
+    pCtx.beginPath(); pCtx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2); pCtx.fill(); pCtx.restore();
+  }
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+function loadSituation(idx) {
+  const sit = SITUATIONS[situationOrder[idx]];
+  slider.value = 50;
+  updateCharacter(50);
+  updateThermometer(50);
+  document.getElementById('situation-title').textContent = sit.title;
+  drawSituationIcon(sit.icon);
+  document.getElementById('progress-text').textContent = `${idx + 1} / ${TOTAL}`;
+  document.getElementById('progress-bar').style.width = `${((idx + 1) / TOTAL) * 100}%`;
+  document.getElementById('feedback-overlay').classList.remove('show');
+  inFeedback = false;
+}
+
+function submitAnswer() {
+  if (inFeedback) return;
+  inFeedback = true;
+  const sit = SITUATIONS[situationOrder[currentSituationIndex]];
+  const val = parseInt(slider.value);
+  const [lo, hi] = sit.range;
+  const isCorrect = val >= lo && val <= hi;
+
+  const fb = document.getElementById('feedback-overlay');
+  const badge = document.getElementById('fb-badge');
+  const hint = document.getElementById('fb-hint');
+
+  if (isCorrect) {
+    badge.className = 'fb-badge ok';
+    badge.textContent = '맞아요!';
+    hint.textContent = sit.hint;
+    correctCount++;
+    spawnParticles(400, 300, '#22c55e', 24);
+    spawnParticles(400, 300, '#fbbf24', 16);
+    const flash = document.getElementById('flash');
+    flash.style.background = 'rgba(34,197,94,0.18)';
+    flash.style.opacity = '1';
+    setTimeout(() => { flash.style.opacity = '0'; }, 400);
+  } else {
+    badge.className = 'fb-badge miss';
+    badge.textContent = `${sit.emotion}이에요`;
+    hint.textContent = sit.hint;
+    const wrap = document.getElementById('game-wrap');
+    wrap.classList.add('shake');
+    const flash = document.getElementById('flash');
+    flash.style.background = 'rgba(239,68,68,0.25)';
+    flash.style.opacity = '1';
+    setTimeout(() => { flash.style.opacity = '0'; wrap.classList.remove('shake'); }, 400);
+  }
+
+  fb.classList.add('show');
+
+  setTimeout(() => {
+    currentSituationIndex++;
+    if (currentSituationIndex >= TOTAL) { showResult(); return; }
+    loadSituation(currentSituationIndex);
+  }, 1800);
+}
+
+function showResult() {
+  const stars = Math.round((correctCount / TOTAL) * 3);
+  document.getElementById('result-title').textContent =
+    stars === 3 ? '감정 박사!' : stars === 2 ? '잘했어요!' : '더 연습해봐요!';
+  document.getElementById('result-score').textContent =
+    `${correctCount}/${TOTAL} 정답`;
+  renderStars(stars);
+  document.getElementById('result-screen').classList.add('show');
+}
+
+function renderStars(count) {
+  const c = document.getElementById('result-stars');
+  c.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox','0 0 24 24');
+    svg.classList.add('result-star');
+    const pts = [];
+    for(let j=0;j<10;j++){
+      const r=j%2===0?11:5;
+      const a=(j*Math.PI/5)-Math.PI/2;
+      pts.push(`${12+r*Math.cos(a)},${12+r*Math.sin(a)}`);
+    }
+    const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    poly.setAttribute('points',pts.join(' '));
+    poly.setAttribute('fill',i<count?'#fbbf24':'rgba(255,255,255,0.1)');
+    poly.setAttribute('stroke',i<count?'#f59e0b':'rgba(255,255,255,0.15)');
+    poly.setAttribute('stroke-width','1');
+    svg.appendChild(poly);
+    c.appendChild(svg);
+  }
+}
+
+function restartGame() {
+  currentSituationIndex = 0; correctCount = 0; inFeedback = false;
+  particles = [];
+  document.getElementById('result-screen').classList.remove('show');
+  shuffleSituations();
+  loadSituation(0);
+}
+function goHome() { window.location.href = '../../index.html'; }
+
+// Init
+shuffleSituations();
+loadSituation(0);
+</script>
+</body>
+</html>
