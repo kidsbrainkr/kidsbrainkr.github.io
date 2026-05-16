@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>로봇 점프 — 쑥쑥 놀이터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0118;
+      --purple: #a855f7;
+      --cyan: #06b6d4;
+      --pink: #ec4899;
+      --green: #22c55e;
+      --text: #f0e8ff;
+      --text-dim: rgba(240,232,255,0.55);
+      --grad: linear-gradient(135deg, #a855f7, #06b6d4);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Nunito', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow: hidden;
+    }
+    .star {
+      position: fixed; border-radius: 50%; background: #fff;
+      animation: twinkle var(--dur,3s) ease-in-out infinite var(--delay,0s);
+      pointer-events: none; z-index: 0;
+    }
+    @keyframes twinkle {
+      0%,100%{opacity:.15;transform:scale(1)}50%{opacity:.9;transform:scale(1.4)}
+    }
+
+    /* Game container: phone portrait ratio */
+    #game-wrap {
+      position: relative;
+      width: 360px;
+      height: 640px;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 2px solid rgba(168,85,247,0.3);
+      box-shadow: 0 0 60px rgba(168,85,247,0.2), 0 24px 64px rgba(0,0,0,0.8);
+      background: #050010;
+      z-index: 1;
+      touch-action: none;
+    }
+
+    canvas#game-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: block;
+    }
+
+    /* HUD overlay (HTML) */
+    #hud {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      padding: 14px 16px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      z-index: 30;
+      pointer-events: none;
+    }
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 7px 14px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 50px;
+      color: var(--text-dim);
+      font-family: inherit; font-size: 0.78rem; font-weight: 800;
+      cursor: pointer; text-decoration: none;
+      pointer-events: all;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.1); }
+
+    .hud-right {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+    }
+    .height-display {
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(168,85,247,0.3);
+      border-radius: 50px;
+      padding: 6px 14px;
+      font-size: 0.88rem; font-weight: 900;
+      color: var(--text);
+    }
+    .record-display {
+      padding: 4px 12px;
+      font-size: 0.7rem; font-weight: 800;
+      color: var(--text-dim);
+    }
+
+    /* Charge gauge (right side) */
+    #charge-gauge {
+      position: absolute;
+      right: 14px; top: 50%; transform: translateY(-50%);
+      width: 14px;
+      height: 180px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 50px;
+      overflow: hidden;
+      z-index: 30;
+    }
+    #charge-fill {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 0%;
+      border-radius: 50px;
+      background: linear-gradient(to top, #a855f7, #06b6d4);
+      transition: none;
+    }
+
+    /* Start / Result screens */
+    #start-screen, #result-screen, #gameover-screen {
+      position: absolute; inset: 0;
+      background: rgba(5,0,16,0.92);
+      border-radius: 24px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 50; gap: 16px;
+    }
+    #start-screen { display: flex; }
+    #result-screen, #gameover-screen { display: none; }
+    .screen-title {
+      font-size: 2rem; font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-align: center;
+    }
+    .screen-sub {
+      font-size: 0.88rem; font-weight: 700;
+      color: var(--text-dim);
+      text-align: center; max-width: 260px; line-height: 1.5;
+    }
+    .screen-stat {
+      font-size: 1.3rem; font-weight: 900; color: var(--text);
+      background: rgba(168,85,247,0.15);
+      border: 1px solid rgba(168,85,247,0.3);
+      border-radius: 16px;
+      padding: 12px 28px;
+      text-align: center;
+    }
+    .btn-start {
+      padding: 14px 36px;
+      border-radius: 50px;
+      background: var(--grad);
+      border: none;
+      color: #fff;
+      font-family: inherit; font-size: 1rem; font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(168,85,247,0.4);
+      transition: transform .15s;
+    }
+    .btn-start:hover { transform: translateY(-3px); }
+
+    .btn-row { display: flex; gap: 12px; }
+    .btn-sec {
+      padding: 12px 24px;
+      border-radius: 50px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--text);
+      font-family: inherit; font-size: 0.9rem; font-weight: 900;
+      cursor: pointer; transition: transform .15s;
+    }
+    .btn-sec:hover { transform: translateY(-2px); }
+
+    /* Robot instruction visual */
+    .how-to {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-size: 0.8rem; font-weight: 700;
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body>
+<div id="stars-container"></div>
+
+<div id="game-wrap" id="game-wrap">
+  <canvas id="game-canvas" width="360" height="640"></canvas>
+
+  <!-- HUD -->
+  <div id="hud">
+    <a class="btn-back" href="../../index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="12" height="12">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      홈
+    </a>
+    <div class="hud-right">
+      <div class="height-display" id="height-display">0 m</div>
+      <div class="record-display" id="record-display">최고: 0 m</div>
+    </div>
+  </div>
+
+  <!-- Charge gauge -->
+  <div id="charge-gauge">
+    <div id="charge-fill"></div>
+  </div>
+
+  <!-- Start screen -->
+  <div id="start-screen">
+    <div class="screen-title">로봇 점프!</div>
+    <div class="screen-sub">화면을 꾹 누르면 로봇이 차징해요!<br>손을 떼면 점프!</div>
+    <div class="how-to">꾹 누를수록 더 높이 점프!</div>
+    <button class="btn-start" onclick="startGame()">시작!</button>
+  </div>
+
+  <!-- Game over screen -->
+  <div id="gameover-screen">
+    <div class="screen-title">아이쿠!</div>
+    <div class="screen-stat" id="final-height">0 m 도달</div>
+    <div class="screen-stat" id="record-stat">최고 기록: 0 m</div>
+    <div class="btn-row">
+      <button class="btn-sec" onclick="goHome()">홈</button>
+      <button class="btn-start" onclick="startGame()">다시하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Stars
+(function(){
+  const c=document.getElementById('stars-container');
+  for(let i=0;i<55;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    const sz=Math.random()*2.5+0.8;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}vw;top:${Math.random()*100}vh;--dur:${2+Math.random()*4}s;--delay:${Math.random()*4}s;`;
+    c.appendChild(s);
+  }
+})();
+
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const W = 360, H = 640;
+
+// Game constants
+const GRAVITY = 0.45;
+const CAMERA_SCROLL_SPEED = 0.35; // pixels per frame downward push
+const MAX_CHARGE_TIME = 1200; // ms
+const MAX_JUMP_VY = -22;
+const MIN_JUMP_VY = -7;
+const ROBOT_W = 36, ROBOT_H = 44;
+const PLATFORM_H = 12;
+
+// Platform types
+const PT = {
+  NORMAL:    { id: 'normal',     color: '#64748b', label: '' },
+  MOVING:    { id: 'moving',     color: '#3b82f6', label: '→' },
+  CRUMBLE:   { id: 'crumble',   color: '#f97316', label: '!' },
+  CONVEYOR:  { id: 'conveyor',  color: '#eab308', label: '↔' },
+  SPRING:    { id: 'spring',    color: '#22c55e', label: '↑↑' },
+};
+
+// State
+let gameState = 'idle'; // idle | playing | dead
+let robot, platforms, cameraY, score, chargeStart, charging, frameId;
+let particles = [];
+let bestScore = parseInt(localStorage.getItem('rj_best') || '0');
+let bgStars = [];
+
+// Init background stars
+(function initBgStars() {
+  for (let i = 0; i < 40; i++) {
+    bgStars.push({
+      x: Math.random() * W,
+      y: Math.random() * H * 3,
+      r: Math.random() * 1.5 + 0.5,
+      op: Math.random() * 0.6 + 0.2,
+    });
+  }
+})();
+
+function createRobot() {
+  return {
+    x: W / 2 - ROBOT_W / 2,
+    y: H - 80 - ROBOT_H,
+    vx: 0,
+    vy: 0,
+    onGround: true,
+    squish: 1, // for charge animation
+    facing: 1, // 1 = right, -1 = left
+    batteryPct: 1,
+    trailPts: [],
+  };
+}
+
+function createPlatforms() {
+  const plats = [];
+  // Starting platform
+  plats.push({ x: W/2 - 60, y: H - 80, w: 120, h: PLATFORM_H, type: PT.NORMAL, moveDir: 1, crumbleTimer: 0, crumbled: false });
+
+  // Generate platforms going upward
+  let lastY = H - 80;
+  for (let i = 0; i < 80; i++) {
+    const y = lastY - (55 + Math.random() * 55);
+    const x = 20 + Math.random() * (W - 120);
+    const w = 60 + Math.random() * 60;
+    lastY = y;
+
+    // Choose type based on height
+    const abs = Math.abs(y);
+    let type;
+    if (abs < 500) {
+      type = PT.NORMAL;
+    } else if (abs < 1500) {
+      const r = Math.random();
+      type = r < 0.5 ? PT.NORMAL : r < 0.75 ? PT.MOVING : PT.CRUMBLE;
+    } else {
+      const r = Math.random();
+      if (r < 0.3) type = PT.MOVING;
+      else if (r < 0.5) type = PT.CRUMBLE;
+      else if (r < 0.65) type = PT.CONVEYOR;
+      else if (r < 0.75) type = PT.SPRING;
+      else type = PT.NORMAL;
+    }
+
+    plats.push({ x, y, w, h: PLATFORM_H, type, moveDir: 1, moveRange: 60 + Math.random() * 60,
+      origX: x, crumbleTimer: 0, crumbled: false });
+  }
+  return plats;
+}
+
+function startGame() {
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('gameover-screen').style.display = 'none';
+  gameState = 'playing';
+  robot = createRobot();
+  platforms = createPlatforms();
+  cameraY = 0;
+  score = 0;
+  chargeStart = 0;
+  charging = false;
+  particles = [];
+  if (frameId) cancelAnimationFrame(frameId);
+  updateRecordDisplay();
+  loop();
+}
+
+function stopGame() {
+  gameState = 'dead';
+  const m = Math.round(Math.abs(cameraY) / 10);
+  if (m > bestScore) {
+    bestScore = m;
+    localStorage.setItem('rj_best', bestScore);
+  }
+  document.getElementById('final-height').textContent = `${m} m 도달`;
+  document.getElementById('record-stat').textContent = `최고 기록: ${bestScore} m`;
+  document.getElementById('gameover-screen').style.display = 'flex';
+}
+
+function updateRecordDisplay() {
+  document.getElementById('record-display').textContent = `최고: ${bestScore} m`;
+}
+
+// Input handling
+const wrap = document.getElementById('game-wrap');
+
+wrap.addEventListener('mousedown', onPressStart);
+wrap.addEventListener('touchstart', onTouchPressStart, { passive: false });
+wrap.addEventListener('mouseup', onPressEnd);
+wrap.addEventListener('touchend', onTouchPressEnd);
+
+function onPressStart(e) {
+  if (gameState !== 'playing') return;
+  if (e.target.closest('.btn-back')) return;
+  if (!robot.onGround) return;
+  charging = true;
+  chargeStart = performance.now();
+}
+function onTouchPressStart(e) {
+  e.preventDefault();
+  if (gameState !== 'playing') return;
+  if (!robot.onGround) return;
+  charging = true;
+  chargeStart = performance.now();
+}
+function onPressEnd(e) {
+  if (!charging) return;
+  releaseJump();
+}
+function onTouchPressEnd(e) {
+  if (!charging) return;
+  releaseJump();
+}
+
+function releaseJump() {
+  if (!charging) return;
+  const held = performance.now() - chargeStart;
+  const t = Math.min(held / MAX_CHARGE_TIME, 1);
+  robot.vy = MIN_JUMP_VY + (MAX_JUMP_VY - MIN_JUMP_VY) * t;
+  robot.vy -= 2; // extra kick
+  robot.onGround = false;
+  robot.squish = 1;
+  charging = false;
+  document.getElementById('charge-fill').style.height = '0%';
+
+  // Trail burst
+  for (let i = 0; i < 8; i++) {
+    particles.push({
+      x: robot.x + ROBOT_W / 2,
+      y: robot.y + ROBOT_H,
+      vx: (Math.random() - 0.5) * 4,
+      vy: 2 + Math.random() * 3,
+      life: 1, decay: 0.04, size: 4 + Math.random() * 4,
+      color: ['#a855f7','#06b6d4','#ec4899'][Math.floor(Math.random()*3)],
+    });
+  }
+}
+
+// Main loop
+let lastTime = 0;
+function loop(ts = 0) {
+  const dt = Math.min(ts - lastTime, 33);
+  lastTime = ts;
+  update(dt);
+  render();
+  frameId = requestAnimationFrame(loop);
+}
+
+function update(dt) {
+  if (gameState !== 'playing') return;
+
+  // Charge visual
+  if (charging && robot.onGround) {
+    const held = performance.now() - chargeStart;
+    const t = Math.min(held / MAX_CHARGE_TIME, 1);
+    document.getElementById('charge-fill').style.height = `${t * 100}%`;
+    robot.squish = 1 - t * 0.35;
+    robot.batteryPct = t;
+  } else {
+    robot.batteryPct = 0;
+  }
+
+  // Physics
+  robot.vy += GRAVITY;
+  robot.x += robot.vx;
+  robot.y += robot.vy;
+  if (robot.vx > 0) robot.facing = 1;
+  if (robot.vx < 0) robot.facing = -1;
+  robot.vx *= 0.94;
+
+  // Camera scroll (slow downward push)
+  const screenY = robot.y - cameraY;
+  if (screenY < H * 0.35) {
+    cameraY = robot.y - H * 0.35;
+  }
+  // Gravity pull camera down slightly
+  cameraY += CAMERA_SCROLL_SPEED;
+
+  // Trail
+  robot.trailPts.push({ x: robot.x + ROBOT_W/2, y: robot.y + ROBOT_H/2 });
+  if (robot.trailPts.length > 12) robot.trailPts.shift();
+
+  // Boundary (walls)
+  if (robot.x < 0) { robot.x = 0; robot.vx = Math.abs(robot.vx) * 0.6; }
+  if (robot.x + ROBOT_W > W) { robot.x = W - ROBOT_W; robot.vx = -Math.abs(robot.vx) * 0.6; }
+
+  // Platform collision
+  robot.onGround = false;
+  platforms.forEach(p => {
+    if (p.crumbled) return;
+
+    // Update platform
+    if (p.type === PT.MOVING) {
+      p.x += p.moveDir * 1.4;
+      if (p.x < 10 || p.x + p.w > W - 10) p.moveDir *= -1;
+    }
+    if (p.type === PT.CRUMBLE && p.crumbleTimer > 0) {
+      p.crumbleTimer -= 16;
+      if (p.crumbleTimer <= 0) p.crumbled = true;
+    }
+
+    // Check landing
+    const prevY = robot.y - robot.vy;
+    const wasAbove = prevY + ROBOT_H <= p.y + (p.crumbled ? 0 : 2);
+    const nowOverlap = robot.x + ROBOT_W > p.x && robot.x < p.x + p.w &&
+      robot.y + ROBOT_H >= p.y && robot.y + ROBOT_H <= p.y + PLATFORM_H + 14;
+
+    if (robot.vy >= 0 && wasAbove && nowOverlap) {
+      robot.y = p.y - ROBOT_H;
+      robot.onGround = true;
+
+      if (p.type === PT.SPRING) {
+        robot.vy = MAX_JUMP_VY * 1.1;
+        spawnPlatformParticles(p, '#22c55e');
+      } else {
+        robot.vy = 0;
+        if (p.type === PT.CRUMBLE && p.crumbleTimer === 0) {
+          p.crumbleTimer = 1200;
+        }
+        if (p.type === PT.CONVEYOR) {
+          robot.vx += p.moveDir * 2.5;
+          p.moveDir = Math.sign(p.x - W/2) || 1;
+        }
+      }
+    }
+  });
+
+  // Generate more platforms if needed
+  const topPlatY = Math.min(...platforms.filter(p=>!p.crumbled).map(p=>p.y));
+  if (topPlatY > cameraY - 200) {
+    let y = topPlatY - (55 + Math.random() * 50);
+    for (let i = 0; i < 5; i++) {
+      y -= 55 + Math.random() * 50;
+      const x = 20 + Math.random() * (W - 120);
+      const w = 55 + Math.random() * 65;
+      const r = Math.random();
+      let type = r < 0.35 ? PT.MOVING : r < 0.55 ? PT.CRUMBLE : r < 0.65 ? PT.CONVEYOR : r < 0.72 ? PT.SPRING : PT.NORMAL;
+      platforms.push({ x, y, w, h: PLATFORM_H, type, moveDir: 1, moveRange: 60 + Math.random() * 60,
+        origX: x, crumbleTimer: 0, crumbled: false });
+    }
+  }
+
+  // Remove far-below platforms
+  platforms = platforms.filter(p => p.y < cameraY + H + 200);
+
+  // Particles
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.12; p.life -= p.decay;
+  });
+
+  // Height display
+  const meters = Math.round(Math.abs(cameraY) / 10);
+  document.getElementById('height-display').textContent = `${meters} m`;
+
+  // Death check: robot falls below camera bottom
+  if (robot.y - cameraY > H + 60) {
+    stopGame();
+  }
+}
+
+function spawnPlatformParticles(p, color) {
+  for (let i = 0; i < 10; i++) {
+    particles.push({
+      x: p.x + Math.random() * p.w, y: p.y - cameraY,
+      vx: (Math.random()-0.5)*4, vy: -(Math.random()*4+2),
+      life:1, decay:0.04, size:3+Math.random()*4, color,
+    });
+  }
+}
+
+// Render
+function render() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  const grd = ctx.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0, '#020010');
+  grd.addColorStop(1, '#0a0118');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+
+  // BG stars (scroll slowly)
+  bgStars.forEach(s => {
+    const sy = ((s.y - cameraY * 0.2) % (H * 3) + H * 3) % (H * 3) - H;
+    ctx.beginPath();
+    ctx.arc(s.x, sy, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${s.op})`;
+    ctx.fill();
+  });
+
+  // Platforms
+  platforms.forEach(p => {
+    const sy = p.y - cameraY;
+    if (sy < -20 || sy > H + 20) return;
+    if (p.crumbled) return;
+
+    const t = p.type;
+    const alpha = p.type === PT.CRUMBLE && p.crumbleTimer > 0
+      ? Math.min(1, p.crumbleTimer / 800)
+      : 1;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.roundRect(p.x + 3, sy + 6, p.w, PLATFORM_H, 6);
+    ctx.fill();
+
+    // Platform body
+    ctx.fillStyle = t.color;
+    ctx.shadowColor = t.color;
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.roundRect(p.x, sy, p.w, PLATFORM_H, 6);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Sheen line
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath();
+    ctx.roundRect(p.x + 4, sy + 2, p.w - 8, 3, 2);
+    ctx.fill();
+
+    // Label / arrows
+    if (t === PT.SPRING) {
+      // Spring coils
+      ctx.strokeStyle = '#bbf7d0';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(p.x + 8, sy);
+      ctx.lineTo(p.x + 8, sy - 8);
+      ctx.moveTo(p.x + p.w - 8, sy);
+      ctx.lineTo(p.x + p.w - 8, sy - 8);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    if (t === PT.CONVEYOR) {
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = '8px Nunito, sans-serif';
+      const arrows = p.moveDir > 0 ? '→→→' : '←←←';
+      ctx.fillText(arrows, p.x + 4, sy + 9);
+    }
+    if (t === PT.MOVING) {
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillRect(p.x, sy, 4, PLATFORM_H);
+      ctx.fillRect(p.x + p.w - 4, sy, 4, PLATFORM_H);
+    }
+
+    ctx.restore();
+  });
+
+  // Trail
+  if (robot.trailPts.length > 2) {
+    ctx.save();
+    for (let i = 1; i < robot.trailPts.length; i++) {
+      const t = i / robot.trailPts.length;
+      const p0 = robot.trailPts[i-1];
+      const p1 = robot.trailPts[i];
+      const sy0 = p0.y - cameraY;
+      const sy1 = p1.y - cameraY;
+      ctx.strokeStyle = `rgba(168,85,247,${t * 0.4})`;
+      ctx.lineWidth = t * 4;
+      ctx.beginPath();
+      ctx.moveTo(p0.x, sy0);
+      ctx.lineTo(p1.x, sy1);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Particles
+  particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = p.color;
+    ctx.shadowColor = p.color;
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y - cameraY, p.size * p.life, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // Robot
+  drawRobot();
+}
+
+function drawRobot() {
+  const rx = robot.x;
+  const ry = robot.y - cameraY;
+  const sq = robot.squish;
+  const w = ROBOT_W;
+  const h = ROBOT_H;
+
+  ctx.save();
+  ctx.translate(rx + w/2, ry + h/2);
+  ctx.scale(1, sq); // squish on charge
+
+  const hw = w/2, hh = h/2;
+
+  // Body glow
+  ctx.shadowColor = '#a855f7';
+  ctx.shadowBlur = 16;
+
+  // Body
+  ctx.fillStyle = '#1e1b4b';
+  ctx.strokeStyle = '#a855f7';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(-hw, -hh + 8, w, h - 8, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Head
+  ctx.fillStyle = '#312e81';
+  ctx.strokeStyle = '#818cf8';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(-hw + 3, -hh, w - 6, 20, 5);
+  ctx.fill();
+  ctx.stroke();
+
+  // Antenna
+  ctx.strokeStyle = '#c4b5fd';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, -hh);
+  ctx.lineTo(0, -hh - 10);
+  ctx.stroke();
+  ctx.fillStyle = '#ec4899';
+  ctx.beginPath();
+  ctx.arc(0, -hh - 12, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eyes
+  ctx.fillStyle = '#06b6d4';
+  ctx.shadowColor = '#06b6d4';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.ellipse(-7, -hh + 9, 4, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(7, -hh + 9, 4, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Eye shine
+  ctx.fillStyle = 'white';
+  ctx.beginPath(); ctx.arc(-6, -hh + 7, 1.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(8, -hh + 7, 1.5, 0, Math.PI * 2); ctx.fill();
+
+  // Battery gauge on chest
+  const bx = -hw + 6, by = -hh + 22, bw = w - 12, bh = 7;
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(bx, by, bw, bh, 3);
+  ctx.fill(); ctx.stroke();
+
+  if (charging && robot.onGround) {
+    const pct = Math.min((performance.now() - chargeStart) / MAX_CHARGE_TIME, 1);
+    const gradient = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+    gradient.addColorStop(0, '#a855f7');
+    gradient.addColorStop(1, '#06b6d4');
+    ctx.fillStyle = gradient;
+    ctx.shadowColor = '#a855f7';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.roundRect(bx + 1, by + 1, (bw - 2) * pct, bh - 2, 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  // Arms
+  ctx.strokeStyle = '#a855f7';
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  const armY = -hh + 26;
+  ctx.beginPath();
+  ctx.moveTo(-hw, armY);
+  ctx.lineTo(-hw - 10, armY + (charging ? -10 : 10));
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(hw, armY);
+  ctx.lineTo(hw + 10, armY + (charging ? -10 : 10));
+  ctx.stroke();
+
+  // Legs
+  ctx.lineWidth = 6;
+  const legY = hh;
+  ctx.beginPath();
+  ctx.moveTo(-8, legY - 6);
+  ctx.lineTo(-8, legY + 6);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(8, legY - 6);
+  ctx.lineTo(8, legY + 6);
+  ctx.stroke();
+
+  // Feet
+  ctx.fillStyle = '#7c3aed';
+  ctx.beginPath(); ctx.roundRect(-13, legY + 3, 12, 6, 3); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(3, legY + 3, 12, 6, 3); ctx.fill();
+
+  ctx.restore();
+}
+
+function goHome() { window.location.href = '../../index.html'; }
+
+// Record display
+updateRecordDisplay();
+</script>
+</body>
+</html>
