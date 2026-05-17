@@ -258,8 +258,8 @@ const ctx = canvas.getContext('2d');
 const W = 360, H = 640;
 
 // Game constants
-const AUTO_VX = 1.25;
-const GRAVITY = 0.45;
+const AUTO_VX = 0.85;
+const GRAVITY = 0.40;
 const CAMERA_SCROLL_SPEED = 0.35; // pixels per frame downward push
 const MAX_CHARGE_TIME = 1200; // ms
 const MAX_JUMP_VY = -22;
@@ -320,15 +320,15 @@ function floorOfY(y) {
 
 // 층(1~)에 따른 난이도 파라미터 — 초기·동적 생성 공통 사용
 function diffParams(floorEst) {
-  const d = Math.min(Math.max(floorEst, 1), 12); // 12층에서 상한
-  const gap = 48 + d * 4.5 + Math.random() * 28;          // 1층 ~52~80 → 12층 ~102~130
-  const w   = Math.max(50, 122 - d * 5) + Math.random() * 22; // 1층 ~117~139 → 12층 ~62~84
+  const d = Math.min(Math.max(floorEst, 1), 10);
+  const gap = 34 + d * 3.4 + Math.random() * 20;
+  const w   = Math.max(70, 156 - d * 6) + Math.random() * 26;
   let type;
-  if (d <= 2) {
+  if (d <= 3) {
     // 1~2층: 거의 일반블록 (입문 난이도)
-    type = Math.random() < 0.88 ? PT.NORMAL : PT.MOVING;
+    type = Math.random() < 0.93 ? PT.NORMAL : PT.MOVING;
   } else {
-    const normalThresh = Math.max(0.08, 0.58 - d * 0.04);
+    const normalThresh = Math.max(0.14, 0.64 - d * 0.035);
     const r = Math.random();
     if (r < normalThresh) type = PT.NORMAL;
     else if (r < normalThresh + 0.25) type = PT.MOVING;
@@ -466,7 +466,7 @@ function update(dt) {
   const k = Math.min(dt / 16.667, 2.5);
 
   // Auto movement (공중에선 수평 드리프트 줄여 발판 놓침 방지)
-  robot.vx = robot.facing * AUTO_VX * (robot.onGround ? 1 : 0.55);
+  robot.vx = robot.facing * AUTO_VX * (robot.onGround ? 1 : 0.4);
 
   // Walk animation frame
   if (robot.onGround) walkFrame += 2.5;
@@ -527,8 +527,8 @@ function update(dt) {
     // Check landing
     const prevY = robot.y - stepDY;
     const wasAbove = prevY + ROBOT_H <= p.y + (p.crumbled ? 0 : 2);
-    const nowOverlap = robot.x + ROBOT_W > p.x && robot.x < p.x + p.w &&
-      robot.y + ROBOT_H >= p.y && robot.y + ROBOT_H <= p.y + PLATFORM_H + 14;
+    const nowOverlap = robot.x + ROBOT_W > p.x - 8 && robot.x < p.x + p.w + 8 &&
+      robot.y + ROBOT_H >= p.y && robot.y + ROBOT_H <= p.y + PLATFORM_H + 22;
 
     if (robot.vy >= 0 && wasAbove && nowOverlap) {
       robot.y = p.y - ROBOT_H;
