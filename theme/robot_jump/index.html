@@ -440,8 +440,13 @@ let lastTime = 0;
 function loop(ts = 0) {
   const dt = Math.min(ts - lastTime, 33);
   lastTime = ts;
-  update(dt);
-  render();
+  try {
+    update(dt);
+    render();
+  } catch (e) {
+    console.error('loop error (skipped):', e);
+  }
+  // 예외가 나도 루프는 절대 멈추지 않음 (게임 프리즈 방지)
   frameId = requestAnimationFrame(loop);
 }
 
@@ -565,11 +570,11 @@ function update(dt) {
   platforms = platforms.filter(p => p.isGround || p.y < cameraY + H + 200);
 
   // Particles
-  particles = particles.filter(p => p.life > 0);
   particles.forEach(p => {
     p.x += p.vx; p.y += p.vy;
     p.vy += 0.12; p.life -= p.decay;
   });
+  particles = particles.filter(p => p.life > 0);
 
   if (gameState === 'playing') {
     // Height display
@@ -826,7 +831,7 @@ function render() {
     ctx.shadowColor = p.color;
     ctx.shadowBlur = 6;
     ctx.beginPath();
-    ctx.arc(p.x, p.y - cameraY, p.size * p.life, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y - cameraY, Math.max(0, p.size * p.life), 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   });
