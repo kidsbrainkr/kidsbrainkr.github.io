@@ -258,7 +258,7 @@ const ctx = canvas.getContext('2d');
 const W = 360, H = 640;
 
 // Game constants
-const AUTO_VX = 2.5;
+const AUTO_VX = 1.25;
 const GRAVITY = 0.45;
 const CAMERA_SCROLL_SPEED = 0.35; // pixels per frame downward push
 const MAX_CHARGE_TIME = 1200; // ms
@@ -354,7 +354,8 @@ function startGame() {
   gameState = 'playing';
   robot = createRobot();
   platforms = createPlatforms();
-  cameraY = robot.y - H * 0.7;
+  // 로봇이 화면 하단에 위치 (맨땅이 거의 안 보이게)
+  cameraY = robot.y - H + ROBOT_H + 20;
   score = 0;
   chargeStart = 0;
   charging = false;
@@ -477,13 +478,12 @@ function update(dt) {
   // Camera scroll (playing only)
   if (gameState === 'playing') {
     const screenY = robot.y - cameraY;
-    // 위로 올라갈 때: 즉시 스냅
-    if (screenY < H * 0.4) {
-      cameraY = robot.y - H * 0.4;
-    }
-    // 아래로 떨어질 때: 부드럽게 따라옴 (로봇이 화면 아래 60% 아래로 가면)
-    else if (screenY > H * 0.65) {
-      cameraY += (robot.y - H * 0.65 - cameraY) * 0.08;
+    if (robot.vy <= 0 && screenY < H * 0.42) {
+      // 올라갈 때: 즉시 스냅
+      cameraY = robot.y - H * 0.42;
+    } else if (robot.vy > 0 && screenY > H * 0.58) {
+      // 떨어질 때: 빠른 lerp로 추적 (로봇 화면 밖 방지)
+      cameraY += (robot.y - H * 0.58 - cameraY) * 0.18;
     }
   }
 
@@ -573,7 +573,7 @@ function update(dt) {
     document.getElementById('height-display').textContent = `${floorNum}층`;
 
     // Death check: robot falls below camera bottom
-    if (robot.y - cameraY > H + 40) {
+    if (robot.y - cameraY > H + 100) {
       stopGame();
     }
   }
