@@ -264,6 +264,7 @@ const CAMERA_SCROLL_SPEED = 0.35; // pixels per frame downward push
 const MAX_CHARGE_TIME = 1200; // ms
 const MAX_JUMP_VY = -22;
 const MIN_JUMP_VY = -7;
+const MAX_FALL_VY = 15; // 낙하 속도 상한 (카메라 이탈·터널링 방지)
 const ROBOT_W = 36, ROBOT_H = 44;
 const PLATFORM_H = 12;
 const FLOOR_HEIGHT = 200; // 200px 올라갈 때마다 1층
@@ -447,8 +448,11 @@ function loop(ts = 0) {
 function update(dt) {
   if (gameState === 'dead') return;
 
-  // Auto movement (always active, idle and playing)
-  robot.vx = robot.facing * AUTO_VX;
+  // Frame-rate normalization (60fps 기준 — 고주사율에서 동일 속도)
+  const k = Math.min(dt / 16.667, 2.5);
+
+  // Auto movement (공중에선 수평 드리프트 줄여 발판 놓침 방지)
+  robot.vx = robot.facing * AUTO_VX * (robot.onGround ? 1 : 0.55);
 
   // Walk animation frame
   if (robot.onGround) walkFrame += 2.5;
@@ -466,10 +470,12 @@ function update(dt) {
     }
   }
 
-  // Physics
-  robot.vy += GRAVITY;
-  robot.x += robot.vx;
-  robot.y += robot.vy;
+  // Physics (프레임 정규화 + 낙하 속도 상한)
+  robot.vy += GRAVITY * k;
+  if (robot.vy > MAX_FALL_VY) robot.vy = MAX_FALL_VY;
+  robot.x += robot.vx * k;
+  const stepDY = robot.vy * k;
+  robot.y += stepDY;
 
   // Boundary (walls) — reverse direction on hit
   if (robot.x <= 0) { robot.x = 0; robot.facing = 1; }
@@ -478,12 +484,10 @@ function update(dt) {
   // Camera scroll (playing only)
   if (gameState === 'playing') {
     const screenY = robot.y - cameraY;
-    if (robot.vy <= 0 && screenY < H * 0.42) {
-      // 올라갈 때: 즉시 스냅
-      cameraY = robot.y - H * 0.42;
-    } else if (robot.vy > 0 && screenY > H * 0.58) {
-      // 떨어질 때: 빠른 lerp로 추적 (로봇 화면 밖 방지)
-      cameraY += (robot.y - H * 0.58 - cameraY) * 0.18;
+    if (robot.vy <= 0 && screenY < H * 0.45) {
+      // 올라갈 때만 위로 스냅. 떨어질 땐 카메라 고정 →
+      // 로봇이 화면 아래로 떨어지는 게 끝까지 보임 (Doodle Jump 방식)
+      cameraY = robot.y - H * 0.45;
     }
   }
 
@@ -498,16 +502,16 @@ function update(dt) {
 
     // Update platform
     if (p.type === PT.MOVING) {
-      p.x += p.moveDir * 1.4;
+      p.x += p.moveDir * 1.4 * k;
       if (p.x < 10 || p.x + p.w > W - 10) p.moveDir *= -1;
     }
     if (p.type === PT.CRUMBLE && p.crumbleTimer > 0) {
-      p.crumbleTimer -= 16;
+      p.crumbleTimer -= dt;
       if (p.crumbleTimer <= 0) p.crumbled = true;
     }
 
     // Check landing
-    const prevY = robot.y - robot.vy;
+    const prevY = robot.y - stepDY;
     const wasAbove = prevY + ROBOT_H <= p.y + (p.crumbled ? 0 : 2);
     const nowOverlap = robot.x + ROBOT_W > p.x && robot.x < p.x + p.w &&
       robot.y + ROBOT_H >= p.y && robot.y + ROBOT_H <= p.y + PLATFORM_H + 14;
@@ -573,7 +577,7 @@ function update(dt) {
     document.getElementById('height-display').textContent = `${floorNum}층`;
 
     // Death check: robot falls below camera bottom
-    if (robot.y - cameraY > H + 100) {
+    if (robot.y - cameraY > H + ROBOT_H + 10) {
       stopGame();
     }
   }
