@@ -313,36 +313,45 @@ function createRobot() {
   };
 }
 
+// 발판의 월드 y → 추정 층 (FLOOR_HEIGHT 기준, 게임 내 floorNum과 일관)
+function floorOfY(y) {
+  return Math.max(1, Math.floor((H - 60 - y) / FLOOR_HEIGHT) + 1);
+}
+
+// 층(1~)에 따른 난이도 파라미터 — 초기·동적 생성 공통 사용
+function diffParams(floorEst) {
+  const d = Math.min(Math.max(floorEst, 1), 12); // 12층에서 상한
+  const gap = 48 + d * 4.5 + Math.random() * 28;          // 1층 ~52~80 → 12층 ~102~130
+  const w   = Math.max(50, 122 - d * 5) + Math.random() * 22; // 1층 ~117~139 → 12층 ~62~84
+  let type;
+  if (d <= 2) {
+    // 1~2층: 거의 일반블록 (입문 난이도)
+    type = Math.random() < 0.88 ? PT.NORMAL : PT.MOVING;
+  } else {
+    const normalThresh = Math.max(0.08, 0.58 - d * 0.04);
+    const r = Math.random();
+    if (r < normalThresh) type = PT.NORMAL;
+    else if (r < normalThresh + 0.25) type = PT.MOVING;
+    else if (r < normalThresh + 0.45) type = PT.CRUMBLE;
+    else if (r < normalThresh + 0.60) type = PT.CONVEYOR;
+    else if (r < normalThresh + 0.70) type = PT.SPRING;
+    else type = PT.NORMAL;
+  }
+  return { gap, w, type };
+}
+
 function createPlatforms() {
   const plats = [];
   // Full-width ground floor
   plats.push({ x: 0, y: H - 60, w: W, h: 60, type: PT.NORMAL, moveDir: 1, crumbleTimer: 0, crumbled: false, isGround: true });
 
-  // Generate platforms going upward
+  // Generate platforms going upward (층 기반 난이도 곡선 적용)
   let lastY = H - 60;
   for (let i = 0; i < 80; i++) {
-    const y = lastY - (55 + Math.random() * 55);
-    const x = 20 + Math.random() * (W - 120);
-    const w = 60 + Math.random() * 60;
+    const { gap, w, type } = diffParams(floorOfY(lastY));
+    const y = lastY - gap;
+    const x = 20 + Math.random() * (W - 40 - w);
     lastY = y;
-
-    // Choose type based on height
-    const abs = Math.abs(y);
-    let type;
-    if (abs < 500) {
-      type = PT.NORMAL;
-    } else if (abs < 1500) {
-      const r = Math.random();
-      type = r < 0.5 ? PT.NORMAL : r < 0.75 ? PT.MOVING : PT.CRUMBLE;
-    } else {
-      const r = Math.random();
-      if (r < 0.3) type = PT.MOVING;
-      else if (r < 0.5) type = PT.CRUMBLE;
-      else if (r < 0.65) type = PT.CONVEYOR;
-      else if (r < 0.75) type = PT.SPRING;
-      else type = PT.NORMAL;
-    }
-
     plats.push({ x, y, w, h: PLATFORM_H, type, moveDir: 1, moveRange: 60 + Math.random() * 60,
       origX: x, crumbleTimer: 0, crumbled: false });
   }
@@ -544,23 +553,11 @@ function update(dt) {
   // Generate more platforms if needed
   const topPlatY = Math.min(...platforms.filter(p=>!p.crumbled).map(p=>p.y));
   if (topPlatY > cameraY - 200) {
-    const diffMod = Math.min(floorNum, 12);
-    let y = topPlatY - (55 + Math.random() * 50);
+    let y = topPlatY;
     for (let i = 0; i < 5; i++) {
-      const gap = 55 + diffMod * 4 + Math.random() * 35;
+      const { gap, w, type } = diffParams(floorOfY(y));
       y -= gap;
-      const x = 20 + Math.random() * (W - 120);
-      const w = Math.max(45, 110 - diffMod * 4) + Math.random() * 25;
-      const r = Math.random();
-      // 난이도가 높을수록 특수 블록 비율 증가
-      const normalThresh = Math.max(0.05, 0.5 - diffMod * 0.03);
-      let type;
-      if (r < normalThresh) type = PT.NORMAL;
-      else if (r < normalThresh + 0.25) type = PT.MOVING;
-      else if (r < normalThresh + 0.45) type = PT.CRUMBLE;
-      else if (r < normalThresh + 0.58) type = PT.CONVEYOR;
-      else if (r < normalThresh + 0.66) type = PT.SPRING;
-      else type = PT.NORMAL;
+      const x = 20 + Math.random() * (W - 40 - w);
       platforms.push({ x, y, w, h: PLATFORM_H, type, moveDir: 1, moveRange: 60 + Math.random() * 60,
         origX: x, crumbleTimer: 0, crumbled: false });
     }
