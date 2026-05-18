@@ -838,268 +838,159 @@ function render() {
   drawRobot();
 }
 
+// 안드로이드봇(Bugdroid) 스타일 캐릭터
+const BOT_G  = '#3DDC84'; // 안드로이드 그린
+const BOT_GD = '#23A35C'; // 음영/외곽
+const BOT_GL = '#8CF0BC'; // 하이라이트
+
+function botLimb(px, py, len, wid, ang) {
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.rotate(ang);
+  ctx.fillStyle = BOT_G;
+  ctx.strokeStyle = BOT_GD;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.roundRect(-wid / 2, 0, wid, len, wid / 2);
+  ctx.fill(); ctx.stroke();
+  // 길이방향 하이라이트
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.beginPath();
+  ctx.roundRect(-wid / 2 + 1.2, 2, wid * 0.32, len - 4, wid * 0.16);
+  ctx.fill();
+  ctx.restore();
+}
+
 function drawRobot() {
-  const rx = robot.x + ROBOT_W / 2;  // 중심 x
-  const ry = robot.y - cameraY + ROBOT_H / 2;  // 중심 y (camera 보정)
-  const dir = robot.facing; // 1=오른쪽, -1=왼쪽
-  const jumping = robot.vy < -1;
+  const rx = robot.x + ROBOT_W / 2;
+  const ry = robot.y - cameraY + ROBOT_H / 2;
+  const dir = robot.facing;            // 1=오른쪽, -1=왼쪽
+  const rising  = robot.vy < -1;
+  const falling = robot.vy > 1;
+  const air = !robot.onGround;
   const charging_state = charging && robot.onGround;
   const sq = robot.squish;
 
-  // 걷기 사이클 (sin 파동)
-  const walk = Math.sin(walkFrame * 0.18) * (jumping ? 0 : 1);
+  const walk = air ? 0 : Math.sin(walkFrame * 0.18);
+  const bob  = (!air && !charging_state) ? Math.abs(Math.sin(walkFrame * 0.18)) * 1.6 : 0;
+
+  // 팔다리 포즈 (정면 기준, +각도 = 앞쪽=진행방향)
+  let legA1, legA2, armA1, armA2;
+  if (air) {
+    if (rising) { legA1 = -0.55; legA2 = -0.30; armA1 = -2.5; armA2 = -2.2; }
+    else        { legA1 =  0.42; legA2 =  0.22; armA1 = -0.7; armA2 = -0.95; }
+  } else if (charging_state) {
+    legA1 = 0.6; legA2 = -0.6; armA1 = 1.0; armA2 = 1.15;     // 웅크림(앞으로 점프 준비)
+  } else {
+    legA1 = walk * 0.6;  legA2 = -walk * 0.6;                 // 다리 교차
+    armA1 = -walk * 0.5; armA2 =  walk * 0.5;                 // 팔 반대 위상
+  }
 
   ctx.save();
   ctx.translate(rx, ry);
 
-  // ── 몸 전체 squish (차징 시 납작)
-  ctx.scale(1, sq);
-
-  // ── 그림자
+  // ── 그림자 (방향/기울임/스쿼시 영향 없음, 땅에 고정)
   ctx.save();
-  ctx.scale(1, 1/sq); // 그림자는 squish 무시
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
   ctx.beginPath();
-  ctx.ellipse(0, ROBOT_H/2 + 2, 18, 5, 0, 0, Math.PI*2);
+  ctx.ellipse(0, ROBOT_H / 2 + 2, air ? 13 : 17, 4.5, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
-  // ── 다리 (2개, 위상 반대)
-  const legR_angle = jumping ? 0.3 : walk * 0.45;
-  const legL_angle = jumping ? -0.3 : -walk * 0.45;
+  // 진행 방향으로 미러 + 살짝 기울임 → 자연스러운 좌우 걷기
+  ctx.scale(1, sq);                       // 차징 시 납작
+  ctx.scale(dir, 1);                      // 바라보는 방향
+  const lean = air ? (rising ? -0.05 : 0.04) : 0.05 + walk * 0.03;
+  ctx.rotate(lean);
+  ctx.translate(0, -bob);                 // 걸을 때 위아래 바운스
 
-  // 다리 길이, 두께
-  const legLen = 14, legW = 7;
+  // ── 다리 (엉덩이서 회전)
+  botLimb(-4.5, 7, 13, 7, legA1);
+  botLimb( 4.5, 7, 13, 7, legA2);
 
-  // 왼쪽 다리
-  ctx.save();
-  ctx.translate(-6, 10);
-  ctx.rotate(legL_angle);
-  ctx.fillStyle = '#0369a1';
-  ctx.strokeStyle = '#075985';
-  ctx.lineWidth = 1;
+  // ── 팔 (어깨서 회전)
+  botLimb(-12, -3, 12, 6, armA1);
+  botLimb( 12, -3, 12, 6, armA2);
+
+  // ── 몸통 (둥근 캡슐)
+  const bx = -11, by = -6, bw = 22, bh = 19;
+  ctx.fillStyle = BOT_G;
+  ctx.strokeStyle = BOT_GD;
+  ctx.lineWidth = 1.4;
   ctx.beginPath();
-  ctx.roundRect(-legW/2, 0, legW, legLen, 3);
+  ctx.roundRect(bx, by, bw, bh, 8);
   ctx.fill(); ctx.stroke();
-  // 발
-  ctx.fillStyle = '#0ea5e9';
+  // 몸통 하이라이트
+  ctx.fillStyle = BOT_GL;
+  ctx.globalAlpha = 0.45;
   ctx.beginPath();
-  ctx.ellipse(legL_angle > 0 ? 3 : -3, legLen, 7, 4, 0, 0, Math.PI*2);
+  ctx.roundRect(bx + 3, by + 3, 6, bh - 7, 3);
   ctx.fill();
-  ctx.restore();
+  ctx.globalAlpha = 1;
 
-  // 오른쪽 다리
-  ctx.save();
-  ctx.translate(6, 10);
-  ctx.rotate(legR_angle);
-  ctx.fillStyle = '#0369a1';
-  ctx.strokeStyle = '#075985';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.roundRect(-legW/2, 0, legW, legLen, 3);
-  ctx.fill(); ctx.stroke();
-  // 발
-  ctx.fillStyle = '#0ea5e9';
-  ctx.beginPath();
-  ctx.ellipse(legR_angle > 0 ? 3 : -3, legLen, 7, 4, 0, 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
+  // ── 머리 (돔 + 안테나)
+  const headCY = by - 3;   // 돔 평평한 밑면 y
+  const headR = 12;
 
-  // ── 몸통 (3D 박스 느낌)
-  const bw = 28, bh = 20, bx = -bw/2, by = -6;
-  const sideW = 8; // 측면 너비
-
-  // 측면 패널 (dir에 따라 방향 결정)
-  const sideX = dir > 0 ? bx + bw : bx - sideW;
-  ctx.fillStyle = '#0369a1';
-  ctx.strokeStyle = '#075985';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(sideX, by + 3);
-  ctx.lineTo(sideX + sideW * dir, by - 1);
-  ctx.lineTo(sideX + sideW * dir, by + bh - 2);
-  ctx.lineTo(sideX, by + bh);
-  ctx.closePath();
-  ctx.fill(); ctx.stroke();
-
-  // 몸통 정면
-  ctx.fillStyle = '#38bdf8';
-  ctx.strokeStyle = '#0ea5e9';
-  ctx.lineWidth = 1.5;
-  ctx.shadowColor = '#38bdf8';
-  ctx.shadowBlur = 10;
-  ctx.beginPath();
-  ctx.roundRect(bx, by, bw, bh, 5);
-  ctx.fill(); ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  // 몸통 하이라이트 (왼쪽 위 밝은 선)
-  ctx.fillStyle = 'rgba(255,255,255,0.25)';
-  ctx.beginPath();
-  ctx.roundRect(bx + 3, by + 3, bw - 6, 5, 2);
-  ctx.fill();
-
-  // 가슴 하트
-  const hx = 0, hy = by + 10;
-  const hs = charging_state ? 5.5 : 4;
-  ctx.fillStyle = charging_state ? '#fde047' : '#f43f5e';
-  ctx.shadowColor = charging_state ? '#fde047' : '#f43f5e';
-  ctx.shadowBlur = charging_state ? 10 : 4;
-  ctx.beginPath();
-  ctx.moveTo(hx, hy + hs * 0.5);
-  ctx.bezierCurveTo(hx, hy, hx - hs, hy, hx - hs, hy - hs * 0.5);
-  ctx.bezierCurveTo(hx - hs, hy - hs * 1.2, hx, hy - hs * 0.9, hx, hy - hs * 0.5);
-  ctx.bezierCurveTo(hx, hy - hs * 0.9, hx + hs, hy - hs * 1.2, hx + hs, hy - hs * 0.5);
-  ctx.bezierCurveTo(hx + hs, hy, hx, hy, hx, hy + hs * 0.5);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-
-  // ── 팔 (다리와 반대 위상)
-  const armSwing = jumping ? 0.6 : -walk * 0.5;
-  const armLen = 12, armW = 6;
-
-  // 왼쪽 팔
-  ctx.save();
-  ctx.translate(bx - 2, by + 5);
-  ctx.rotate(-armSwing - 0.2);
-  ctx.fillStyle = '#0ea5e9';
-  ctx.strokeStyle = '#0369a1';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.roundRect(-armW/2, 0, armW, armLen, 3);
-  ctx.fill(); ctx.stroke();
-  // 손
-  ctx.fillStyle = '#7dd3fc';
-  ctx.beginPath();
-  ctx.arc(0, armLen, 3.5, 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-
-  // 오른쪽 팔
-  ctx.save();
-  ctx.translate(bx + bw + 2, by + 5);
-  ctx.rotate(armSwing + 0.2);
-  ctx.fillStyle = '#0ea5e9';
-  ctx.strokeStyle = '#0369a1';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.roundRect(-armW/2, 0, armW, armLen, 3);
-  ctx.fill(); ctx.stroke();
-  // 손
-  ctx.fillStyle = '#7dd3fc';
-  ctx.beginPath();
-  ctx.arc(0, armLen, 3.5, 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-
-  // ── 머리 (3D 박스)
-  const hw = 30, hh = 24, hx2 = -hw/2, hy2 = by - hh - 2;
-  const hsideW = 7;
-
-  // 머리 측면
-  const hsideX = dir > 0 ? hx2 + hw : hx2 - hsideW;
-  ctx.fillStyle = '#0369a1';
-  ctx.strokeStyle = '#075985';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(hsideX, hy2 + 3);
-  ctx.lineTo(hsideX + hsideW * dir, hy2 - 1);
-  ctx.lineTo(hsideX + hsideW * dir, hy2 + hh - 2);
-  ctx.lineTo(hsideX, hy2 + hh);
-  ctx.closePath();
-  ctx.fill(); ctx.stroke();
-
-  // 머리 윗면 (3D 상단)
-  ctx.fillStyle = '#7dd3fc';
-  ctx.strokeStyle = '#38bdf8';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(hx2, hy2);
-  ctx.lineTo(hx2 + hw, hy2);
-  ctx.lineTo(hx2 + hw + hsideW * dir, hy2 - 4);
-  ctx.lineTo(hx2 + hsideW * dir, hy2 - 4);
-  ctx.closePath();
-  ctx.fill(); ctx.stroke();
-
-  // 머리 정면
-  ctx.fillStyle = '#38bdf8';
-  ctx.strokeStyle = '#0ea5e9';
-  ctx.lineWidth = 1.5;
-  ctx.shadowColor = '#38bdf8';
-  ctx.shadowBlur = 8;
-  ctx.beginPath();
-  ctx.roundRect(hx2, hy2, hw, hh, 5);
-  ctx.fill(); ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  // 눈 2개
-  const eyeY = hy2 + 9;
-  [[-8, 1], [8, -1]].forEach(([ex]) => {
-    // 흰자
-    ctx.fillStyle = 'white';
-    ctx.beginPath();
-    ctx.ellipse(ex, eyeY, 5.5, jumping ? 7 : 6, 0, 0, Math.PI*2);
-    ctx.fill();
-    // 동공 (방향에 따라 살짝 이동)
-    ctx.fillStyle = '#1e3a5f';
-    ctx.beginPath();
-    ctx.ellipse(ex + dir * 1.2, eyeY + (jumping ? 1 : 0), 3, jumping ? 4 : 3.5, 0, 0, Math.PI*2);
-    ctx.fill();
-    // 하이라이트
-    ctx.fillStyle = 'white';
-    ctx.beginPath();
-    ctx.arc(ex - 1.5, eyeY - 2, 1.5, 0, Math.PI*2);
-    ctx.fill();
-  });
-
-  // 귀 볼트 양쪽
-  [-hw/2 - 2, hw/2 + 2].forEach(ex => {
-    ctx.fillStyle = '#0369a1';
-    ctx.strokeStyle = '#075985';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(ex, hy2 + hh/2, 4, 0, Math.PI*2);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#7dd3fc';
-    ctx.beginPath();
-    ctx.arc(ex, hy2 + hh/2, 2, 0, Math.PI*2);
-    ctx.fill();
-  });
-
-  // 입 (표정)
-  ctx.strokeStyle = '#1e3a5f';
+  // 안테나 2개 (바깥쪽으로)
+  ctx.strokeStyle = BOT_GD;
   ctx.lineWidth = 2;
   ctx.lineCap = 'round';
+  [[-5.5, -1], [5.5, 1]].forEach(([axBase, s]) => {
+    const tx = axBase + s * 4, ty = headCY - headR - 7;
+    ctx.beginPath();
+    ctx.moveTo(axBase, headCY - headR + 2);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+    ctx.fillStyle = BOT_G;
+    ctx.beginPath();
+    ctx.arc(tx, ty, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 돔 머리 (위 반원 + 평평한 밑면)
+  ctx.fillStyle = BOT_G;
+  ctx.strokeStyle = BOT_GD;
+  ctx.lineWidth = 1.4;
   ctx.beginPath();
-  if (jumping) {
-    // 놀란 O
-    ctx.arc(0, hy2 + hh - 7, 4, 0, Math.PI*2);
-    ctx.stroke();
-  } else if (charging_state) {
-    // 힘준 일자
-    ctx.moveTo(-6, hy2 + hh - 6);
-    ctx.lineTo(6, hy2 + hh - 6);
-    ctx.stroke();
-  } else {
-    // 웃음 U
-    ctx.arc(0, hy2 + hh - 9, 5, 0.2, Math.PI - 0.2);
+  ctx.arc(0, headCY, headR, Math.PI, 2 * Math.PI);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  // 돔 하이라이트
+  ctx.fillStyle = BOT_GL;
+  ctx.globalAlpha = 0.4;
+  ctx.beginPath();
+  ctx.ellipse(-4, headCY - 5, 4, 6, -0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // 눈 2개 (진행방향으로 시선 이동)
+  const eyeY = headCY - 6;
+  const gaze = rising ? -1 : (falling ? 1.4 : 1.1); // 바라보는 쪽(미러됨)
+  [-4.5, 4.5].forEach(ex => {
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(ex, eyeY, 2.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#173a2a';
+    ctx.beginPath();
+    ctx.arc(ex + gaze, eyeY + (rising ? -0.6 : 0.4), 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 살짝 미소 (점프 중엔 생략 — 안드로이드봇 미니멀)
+  if (!air) {
+    ctx.strokeStyle = '#173a2a';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    if (charging_state) {
+      ctx.moveTo(-3, eyeY + 6.5);
+      ctx.lineTo(3, eyeY + 6.5);
+    } else {
+      ctx.arc(0, eyeY + 4.5, 2.6, 0.15, Math.PI - 0.15);
+    }
     ctx.stroke();
   }
-
-  // 안테나
-  ctx.strokeStyle = '#bae6fd';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, hy2 - 4);
-  ctx.lineTo(0, hy2 - 14);
-  ctx.stroke();
-  ctx.fillStyle = '#fde047';
-  ctx.shadowColor = '#fde047';
-  ctx.shadowBlur = 8;
-  ctx.beginPath();
-  ctx.arc(0, hy2 - 16, 4, 0, Math.PI*2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
 
   ctx.restore();
 }
