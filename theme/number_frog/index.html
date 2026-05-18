@@ -4,16 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>개구리 숫자 점프</title>
+  <script src='https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js'></script>
+  <link rel='stylesheet' href='../../assets/game-common.css'>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      background: #060e1f;
+    body.game-body {
+      background: var(--game-bg);
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      font-family: 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      font-family: var(--game-font);
+      color: var(--game-text);
       user-select: none;
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
@@ -27,6 +31,7 @@
       height: 600px;
       overflow: hidden;
       border-radius: 24px;
+      background: var(--game-bg);
       box-shadow: 0 0 80px rgba(0, 180, 255, 0.15), 0 20px 60px rgba(0,0,0,0.7);
     }
 
@@ -112,40 +117,42 @@
     #hud {
       position: absolute;
       top: 0; left: 0; right: 0;
-      height: 50px;
+      min-height: 58px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 16px;
+      padding: 8px 16px;
       z-index: 100;
+      border-radius: 24px 24px 0 0;
     }
 
     #btn-back {
-      background: rgba(255,255,255,0.1);
-      border: 1.5px solid rgba(255,255,255,0.2);
-      color: #fff;
-      font-size: 13px;
-      font-weight: 700;
-      padding: 6px 14px;
-      border-radius: 20px;
-      cursor: pointer;
+      flex: 0 0 auto;
       text-decoration: none;
-      transition: background 0.2s;
     }
-    #btn-back:hover { background: rgba(255,255,255,0.2); }
+
+    .header-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      flex: 1;
+      min-width: 0;
+    }
 
     #counter {
-      font-size: 18px;
+      font-size: 15px;
       font-weight: 800;
-      color: #a8d8ff;
+      color: var(--game-text);
       letter-spacing: 1px;
-      text-shadow: 0 0 12px rgba(100,180,255,0.6);
+      text-shadow: 0 0 12px var(--game-accent-glow);
     }
 
     #hearts {
       display: flex;
       gap: 5px;
       align-items: center;
+      flex: 0 0 auto;
     }
     .heart {
       font-size: 22px;
@@ -216,7 +223,7 @@
       height: 100px;
       transform: translate(-50%, -50%);
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(100,255,150,0.5) 0%, transparent 70%);
+      background: radial-gradient(circle, color-mix(in srgb, var(--game-success) 55%, transparent) 0%, transparent 70%);
       opacity: 0;
       pointer-events: none;
       z-index: -1;
@@ -307,8 +314,8 @@
       animation: wrongFlash 0.4s ease-out forwards;
     }
     @keyframes wrongFlash {
-      0% { opacity: 0.8; background: rgba(255,60,60,0.6); transform: translate(-50%,-50%) scale(0.5); }
-      50% { opacity: 0.5; background: rgba(255,60,60,0.3); transform: translate(-50%,-50%) scale(1); }
+      0% { opacity: 0.8; background: color-mix(in srgb, var(--game-error) 60%, transparent); transform: translate(-50%,-50%) scale(0.5); }
+      50% { opacity: 0.5; background: color-mix(in srgb, var(--game-error) 30%, transparent); transform: translate(-50%,-50%) scale(1); }
       100% { opacity: 0; background: transparent; transform: translate(-50%,-50%) scale(1.4); }
     }
 
@@ -331,10 +338,10 @@
     }
 
     #win-screen {
-      background: radial-gradient(ellipse at center, rgba(0,60,30,0.97) 0%, rgba(0,20,10,0.98) 100%);
+      background: radial-gradient(ellipse at center, color-mix(in srgb, var(--game-success) 20%, rgba(0,0,0,0.97)) 0%, rgba(0,20,10,0.98) 100%);
     }
     #fail-screen {
-      background: radial-gradient(ellipse at center, rgba(40,0,0,0.97) 0%, rgba(10,0,0,0.98) 100%);
+      background: radial-gradient(ellipse at center, color-mix(in srgb, var(--game-error) 22%, rgba(0,0,0,0.97)) 0%, rgba(10,0,0,0.98) 100%);
     }
 
     .overlay-title {
@@ -343,12 +350,12 @@
       letter-spacing: 2px;
       text-shadow: 0 0 30px currentColor;
     }
-    #win-screen .overlay-title { color: #7dffb0; }
-    #fail-screen .overlay-title { color: #ff7070; }
+    #win-screen .overlay-title { color: var(--game-success); }
+    #fail-screen .overlay-title { color: var(--game-error); }
 
     .overlay-msg {
       font-size: 20px;
-      color: rgba(255,255,255,0.8);
+      color: var(--game-text);
       text-align: center;
     }
 
@@ -375,8 +382,12 @@
     }
     .overlay-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
     .overlay-btn:active { transform: scale(0.95); }
-    .btn-replay { background: linear-gradient(135deg, #43e97b, #38f9d7); color: #003320; }
-    .btn-home { background: rgba(255,255,255,0.12); color: #fff; border: 1.5px solid rgba(255,255,255,0.25); }
+    .btn-replay { background: linear-gradient(135deg, var(--game-success), color-mix(in srgb, var(--game-success) 65%, #fff)); color: var(--game-text); }
+    .btn-home { background: var(--game-card-bg); color: var(--game-text); border: 1.5px solid var(--game-border); }
+
+    body > .game-mascot:not(img) {
+      display: none;
+    }
 
     /* stars during win */
     .win-star {
@@ -391,7 +402,7 @@
     }
   </style>
 </head>
-<body>
+<body class="game-body">
 
 <div id="game-wrap">
   <!-- Sky -->
@@ -404,9 +415,12 @@
   </div>
 
   <!-- HUD -->
-  <div id="hud">
-    <a id="btn-back" href="../../index.html">← 홈</a>
-    <div id="counter">1 / 12</div>
+  <div id="hud" class="game-header">
+    <a id="btn-back" class="game-back-btn" href="../../index.html" aria-label="홈으로">←</a>
+    <div class="header-center">
+      <div class="game-title">개구리 숫자 점프</div>
+      <div id="counter">1 / 12</div>
+    </div>
     <div id="hearts">
       <span class="heart" id="h1">❤️</span>
       <span class="heart" id="h2">❤️</span>
@@ -423,8 +437,8 @@
     <svg class="overlay-frog" id="win-frog" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"></svg>
     <div class="overlay-msg">연잎을 모두 건넜어요!<br>숫자 순서를 잘 알고 있네요!</div>
     <div class="overlay-btns">
-      <button class="overlay-btn btn-replay" onclick="startGame()">다시 하기</button>
-      <button class="overlay-btn btn-home" onclick="location.href='../../index.html'">홈으로</button>
+      <button class="overlay-btn game-btn btn-replay" onclick="startGame()">다시 하기</button>
+      <button class="overlay-btn game-btn btn-home" onclick="location.href='../../index.html'">홈으로</button>
     </div>
   </div>
 
@@ -435,10 +449,12 @@
     <div class="overlay-msg">하트를 모두 잃었어요 😢<br>다시 도전해봐요!</div>
     <div id="fail-hearts" style="font-size:26px;">🤍🤍🤍</div>
     <div class="overlay-btns">
-      <button class="overlay-btn btn-replay" onclick="startGame()">다시 하기</button>
-      <button class="overlay-btn btn-home" onclick="location.href='../../index.html'">홈으로</button>
+      <button class="overlay-btn game-btn btn-replay" onclick="startGame()">다시 하기</button>
+      <button class="overlay-btn game-btn btn-home" onclick="location.href='../../index.html'">홈으로</button>
     </div>
   </div>
+
+  <img class='game-mascot' src='../../assets/mascot-nettori.svg' alt='넷토리'>
 </div>
 
 <script>
@@ -629,6 +645,11 @@ let frogX = 400, frogY = 540;
 let isAnimating = false;
 const TOTAL = 12;
 
+function playGameSound(type) {
+  const sound = window.GameSound || (typeof GameSound !== 'undefined' && GameSound);
+  if (sound && sound[type]) sound[type]();
+}
+
 function startGame() {
   // Reset state
   nextTarget = 1;
@@ -716,6 +737,7 @@ function onPadClick(num) {
 
 function handleCorrect(num) {
   isAnimating = true;
+  playGameSound('correct');
 
   const pad = document.getElementById(`pad-${num}`);
   const pos = padPositions[num - 1];
@@ -759,6 +781,7 @@ function handleCorrect(num) {
 
 function handleWrong(num) {
   const pad = document.getElementById(`pad-${num}`);
+  playGameSound('wrong');
 
   // Shake pad
   pad.classList.add('wrong');
@@ -844,6 +867,8 @@ function createWrongFlash(x, y) {
    ════════════════════════════════════════════ */
 
 function showWin() {
+  playGameSound('complete');
+
   const frog = document.getElementById('frog');
   if (frog) {
     frog.classList.add('happy');
@@ -890,5 +915,6 @@ function showFail() {
    ════════════════════════════════════════════ */
 startGame();
 </script>
+<script src='../../assets/game-engine.js'></script>
 </body>
 </html>

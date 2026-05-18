@@ -537,6 +537,19 @@
       "icon": "⭐",
       "tip": "매일 아침 도우미를 뽑는 시간을 아이들이 매우 기다릴 거예요!",
       "isNew": false
+    },
+    {
+      "id": "number_frog",
+      "title": "개구리 숫자 점프",
+      "age": [4, 5],
+      "area": "사고력",
+      "desc": "숫자 순서대로 연잎을 밟아 개구리를 건너게 해요.",
+      "tag": "수 개념",
+      "path": "theme/number_frog/index.html",
+      "icon": "🐸",
+      "tip": "1부터 차례로 짚어주며 수 순서를 함께 말해보세요.",
+      "isNew": true,
+      "isTheme": true
     }
   ]
 }
