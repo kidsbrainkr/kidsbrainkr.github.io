@@ -419,3 +419,44 @@ const Game = {
     });
   },
 };
+
+/* ═══════════════════════════════════════════════════════════════
+   11. 안전 게임 루프 — 프레임레이트 독립 + 크래시 방지
+   ───────────────────────────────────────────────────────────────
+   문제: rAF 루프에서 (1) 매 프레임 위치를 더하면 120Hz에서 2배 빨라짐
+        (2) 콜백이 1회 예외를 던지면 rAF 재등록이 안 돼 게임이 영구 정지
+   사용: const loop = GameLoop.start(dt => { player.x += SPEED_PX_PER_SEC * dt; render(); });
+        loop.stop();  // 종료
+   - update(dtSec, info) 로 호출. dtSec는 초 단위(예 0.016).
+   - 큰 점프(탭 복귀 등)는 maxDeltaMs 로 clamp.
+   - update 예외가 나도 루프는 절대 멈추지 않음(콘솔 경고 후 계속).
+   ═══════════════════════════════════════════════════════════════ */
+const GameLoop = {
+  start(update, opts) {
+    opts = opts || {};
+    const maxDeltaMs = opts.maxDeltaMs || 50;
+    let raf = 0, last = 0, running = true, frames = 0;
+    const tick = (now) => {
+      if (!running) return;
+      if (!last) last = now;
+      let dtMs = now - last;
+      last = now;
+      if (dtMs < 0) dtMs = 0;
+      if (dtMs > maxDeltaMs) dtMs = maxDeltaMs; // 탭 복귀 등 폭주 방지
+      frames++;
+      try {
+        update(dtMs / 1000, { dtMs, frames, now });
+      } catch (e) {
+        console.error('[GameLoop] update error (skipped):', e);
+      }
+      raf = requestAnimationFrame(tick); // 예외 나도 항상 재등록
+    };
+    raf = requestAnimationFrame(tick);
+    return {
+      stop() { running = false; cancelAnimationFrame(raf); },
+      pause() { running = false; cancelAnimationFrame(raf); },
+      resume() { if (!running) { running = true; last = 0; raf = requestAnimationFrame(tick); } },
+    };
+  },
+};
+if (typeof window !== 'undefined') window.GameLoop = GameLoop;

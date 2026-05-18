@@ -512,15 +512,21 @@ function easeVelocity(v, max) {
   return Math.max(-max, Math.min(max, v));
 }
 
-function moveTarget(t) {
+function moveTarget(t, now) {
   if (!gameRunning) return;
+
+  // 프레임레이트 정규화 (60fps 기준) — 120Hz에서 2배 빨라지는 버그 방지
+  if (now === undefined) now = performance.now();
+  if (t.lastT === undefined) t.lastT = now;
+  const k = Math.min((now - t.lastT) / 16.667, 3);
+  t.lastT = now;
 
   // Speed increases over time
   const elapsed = GAME_DURATION - timeLeft;
   const speedMult = 1 + elapsed * 0.04;
 
-  t.x += t.vx * speedMult;
-  t.y += t.vy * speedMult;
+  t.x += t.vx * speedMult * k;
+  t.y += t.vy * speedMult * k;
 
   // Bounce off walls with slight randomization
   const margin = t.size / 2 + 5;
@@ -535,7 +541,7 @@ function moveTarget(t) {
   t.el.style.left = t.x + 'px';
   t.el.style.top = t.y + 'px';
 
-  t.animFrame = requestAnimationFrame(() => moveTarget(t));
+  t.animFrame = requestAnimationFrame((ts) => moveTarget(t, ts));
 }
 
 /* ════════════════════════════ TARGET CREATE ════════════════════ */
