@@ -259,12 +259,12 @@ const W = 360, H = 640;
 
 // Game constants
 const AUTO_VX = 0.85;
-const GRAVITY = 0.40;
+const GRAVITY = 0.50;
 const CAMERA_SCROLL_SPEED = 0.35; // pixels per frame downward push
 const MAX_CHARGE_TIME = 1200; // ms
-const MAX_JUMP_VY = -22;
-const MIN_JUMP_VY = -7;
-const MAX_FALL_VY = 15; // 낙하 속도 상한 (카메라 이탈·터널링 방지)
+const MAX_JUMP_VY = -25;
+const MIN_JUMP_VY = -9;
+const MAX_FALL_VY = 24; // 낙하 속도 상한 (자연스러운 포물선 유지)
 const ROBOT_W = 36, ROBOT_H = 44;
 const PLATFORM_H = 12;
 const FLOOR_HEIGHT = 200; // 200px 올라갈 때마다 1층
@@ -469,7 +469,8 @@ function update(dt) {
   robot.vx = robot.facing * AUTO_VX * (robot.onGround ? 1 : 0.4);
 
   // Walk animation frame
-  if (robot.onGround) walkFrame += 2.5;
+  // 걷기 애니메이션: 실제 이동거리에 비례 (프레임 보정)
+  if (robot.onGround) walkFrame += Math.abs(robot.vx) * k * 1.7;
 
   // Charge visual (playing only)
   if (gameState === 'playing') {
