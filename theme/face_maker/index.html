@@ -4,16 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>표정 만들기 — 쑥쑥 놀이터</title>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <script src='https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js'></script>
+  <link rel='stylesheet' href='../../assets/game-common.css'>
   <style>
     :root{
-      --bg:#0a0118;--card:rgba(255,255,255,0.06);--card-border:rgba(255,255,255,0.12);
-      --purple:#a855f7;--pink:#ec4899;--green:#22c55e;--red:#ef4444;--yellow:#fbbf24;
-      --text:#f0e8ff;--text-dim:rgba(240,232,255,0.55);
+      --bg:var(--game-bg);--card:var(--game-card-bg);--card-border:var(--game-border);
+      --purple:var(--game-accent);--pink:#ec4899;--green:var(--game-success);--red:var(--game-error);--yellow:#fbbf24;
+      --text:var(--game-text);--text-dim:var(--game-text-sub);
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     body{
-      font-family:'Nunito','Apple SD Gothic Neo',sans-serif;
+      font-family:var(--game-font);
       background:var(--bg);color:var(--text);
       min-height:100vh;display:flex;align-items:center;justify-content:center;
       user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
@@ -24,17 +26,12 @@
     @keyframes twinkle{0%,100%{opacity:0.15;transform:scale(1);}50%{opacity:1;transform:scale(1.4);}}
     #game-wrap{
       position:relative;z-index:1;width:800px;height:600px;
-      background:linear-gradient(160deg,#110228 0%,#0a0118 60%,#050010 100%);
+      background:var(--game-bg);
       border-radius:28px;box-shadow:0 0 80px rgba(168,85,247,0.2),0 20px 60px rgba(0,0,0,0.7);
       overflow:hidden;display:flex;flex-direction:column;
     }
-    .hud{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;flex-shrink:0;}
-    .btn-back{
-      display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--card);
-      border:1px solid var(--card-border);border-radius:50px;color:var(--text-dim);
-      font-family:inherit;font-size:0.82rem;font-weight:700;cursor:pointer;text-decoration:none;transition:background 0.2s;
-    }
-    .btn-back:hover{background:rgba(255,255,255,0.1);}
+    .hud{justify-content:space-between;flex-shrink:0;}
+    .hud .game-title{flex:1;text-align:center;}
     .hud-right{display:flex;align-items:center;gap:12px;}
     .round-pill{font-size:0.85rem;font-weight:700;color:var(--text-dim);background:var(--card);border:1px solid var(--card-border);border-radius:50px;padding:6px 14px;}
     .hearts{display:flex;gap:6px;}
@@ -135,7 +132,7 @@
     .btn-home{background:var(--card);border:2px solid var(--card-border);color:var(--text-dim);}
   </style>
 </head>
-<body>
+<body class="game-body">
 <div id="stars"></div>
 <div id="game-wrap">
   <div id="flash"></div>
@@ -145,13 +142,9 @@
     <button class="msg-ok" onclick="nextRound()">다음!</button>
   </div>
 
-  <div class="hud">
-    <a href="../../index.html" class="btn-back">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-      </svg>
-      홈
-    </a>
+  <div class="hud game-header">
+    <a href="../../index.html" class="game-back-btn" aria-label="홈으로">←</a>
+    <div class="game-title">표정 만들기</div>
     <div class="hud-right">
       <div class="round-pill" id="round-pill">1 / 6</div>
       <div class="hearts" id="hearts"></div>
@@ -217,6 +210,7 @@
     </div>
   </div>
 </div>
+<img class="game-mascot" src="../../assets/mascot-nettori.svg" alt="넷토리">
 
 <script>
 // Stars
@@ -229,6 +223,11 @@
     c.appendChild(s);
   }
 })();
+
+function playGameSound(type) {
+  const s = window.GameSound || (typeof GameSound !== 'undefined' && GameSound);
+  if (s && s[type]) s[type]();
+}
 
 // Parts library
 const PARTS = {
@@ -371,15 +370,17 @@ function checkFace(){
   if(selected.mouth===emo.mouth) matches++;
 
   if(matches>=2){
+    playGameSound('correct');
     score++;
     flashScreen('green');
     spawnParticles();
     const fb=document.getElementById('feedback-msg');
     document.getElementById('msg-title').textContent=`잘 했어요! (${matches}/3 맞아요)`;
-    document.getElementById('msg-title').style.color='#22c55e';
+    document.getElementById('msg-title').style.color='var(--game-success)';
     document.getElementById('msg-sub').textContent=emo.msg;
     fb.classList.add('show');
   } else {
+    playGameSound('wrong');
     hearts--;
     flashScreen('red');
     shakeWrap();
@@ -403,6 +404,7 @@ function nextRound(){
 }
 
 function showResult(){
+  playGameSound('complete');
   const sc=document.getElementById('result-screen');
   const stars=document.getElementById('result-stars');
   const scoreEl=document.getElementById('result-score');
@@ -449,5 +451,6 @@ function spawnParticles(big=false){
 
 initGame();
 </script>
+<script src='../../assets/game-engine.js'></script>
 </body>
 </html>

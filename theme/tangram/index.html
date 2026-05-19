@@ -4,22 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>탕그램 퍼즐 — 쑥쑥 놀이터</title>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <script src='https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js'></script>
+  <link rel='stylesheet' href='../../assets/game-common.css'>
   <style>
     :root {
-      --bg: #0a0118;
-      --purple: #a855f7;
+      --bg: var(--game-bg);
+      --purple: var(--game-accent);
       --pink: #ec4899;
-      --grad: linear-gradient(135deg, #a855f7, #ec4899);
-      --text: #f0e8ff;
-      --text-dim: rgba(240,232,255,0.55);
-      --correct: #22c55e;
-      --card: rgba(255,255,255,0.06);
-      --card-border: rgba(255,255,255,0.1);
+      --grad: linear-gradient(135deg, var(--game-accent), #ec4899);
+      --text: var(--game-text);
+      --text-dim: var(--game-text-sub);
+      --correct: var(--game-success);
+      --card: var(--game-card-bg);
+      --card-border: var(--game-border);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Nunito', 'Apple SD Gothic Neo', sans-serif;
+      font-family: var(--game-font);
       background: var(--bg);
       color: var(--text);
       display: flex; align-items: center; justify-content: center;
@@ -38,15 +40,13 @@
     #game-wrap {
       position: relative; width: 800px; height: 600px; border-radius: 24px;
       overflow: hidden;
-      background: radial-gradient(ellipse at 50% 30%, #1a0533 0%, #0a0118 70%);
+      background: var(--game-bg);
       box-shadow: 0 0 80px rgba(168,85,247,.2), 0 20px 60px rgba(0,0,0,.7);
       z-index: 1;
     }
     #hud {
       position: absolute; top:0; left:0; right:0; height:52px;
-      display:flex; align-items:center; justify-content:space-between;
       padding:0 20px; z-index:50;
-      background:rgba(10,1,24,.7); backdrop-filter:blur(8px);
     }
     .hud-btn {
       background:rgba(255,255,255,.1); border:1.5px solid rgba(255,255,255,.2);
@@ -189,12 +189,13 @@
     .btn-secondary:hover{background:rgba(255,255,255,.14);color:var(--text);}
   </style>
 </head>
-<body>
+<body class="game-body">
 <div class="stars-layer" id="starsLayer"></div>
 <div id="game-wrap">
   <div id="flash-overlay"></div>
-  <div id="hud">
-    <a class="hud-btn" href="../../index.html">← 홈</a>
+  <div id="hud" class="game-header">
+    <a class="game-back-btn" href="../../index.html" aria-label="홈으로">←</a>
+    <div class="game-title">탕그램 퍼즐</div>
     <div id="round-display">라운드 <span id="round-num">1</span> / 5</div>
     <button class="hud-btn purple" onclick="showHint()">힌트</button>
   </div>
@@ -224,6 +225,7 @@
     </div>
   </div>
 </div>
+<img class="game-mascot" src="../../assets/mascot-nettori.svg" alt="넷토리">
 <script>
 /* ═══ STARS ═══ */
 (function(){
@@ -235,6 +237,11 @@
     l.appendChild(s);
   }
 })();
+
+function playGameSound(type) {
+  const s = window.GameSound || (typeof GameSound !== 'undefined' && GameSound);
+  if (s && s[type]) s[type]();
+}
 
 /* ═══ PUZZLE DATA ═══ */
 // All positions in a 340x340 board coordinate space
@@ -439,6 +446,7 @@ function spawnParticles(x,y){
 }
 
 function onComplete(){
+  playGameSound('correct');
   const fl=document.getElementById('flash-overlay');fl.className='gf';setTimeout(()=>fl.className='',600);
   const co=document.getElementById('complete-overlay');co.classList.add('active');
   setTimeout(()=>{
@@ -461,6 +469,7 @@ function loadRound(r){
 }
 
 function showResults(){
+  playGameSound('complete');
   const stars=totalHints===0?3:totalHints<=2?2:1;
   const msgs=['탕그램 천재! 힌트 없이 전부 완성!','훌륭해요! 모든 퍼즐을 완성했어요!','대단해요! 5개 퍼즐을 모두 완성했어요!'];
   document.getElementById('result-msg').textContent=msgs[3-stars];
@@ -479,5 +488,6 @@ function startGame(){
 }
 startGame();
 </script>
+<script src='../../assets/game-engine.js'></script>
 </body>
 </html>

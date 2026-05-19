@@ -4,17 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>반대말 게임 — 쑥쑥 놀이터</title>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <script src='https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js'></script>
+  <link rel='stylesheet' href='../../assets/game-common.css'>
   <style>
     :root {
-      --bg:#0a0118;--card:rgba(255,255,255,0.06);--card-border:rgba(255,255,255,0.12);
-      --purple:#a855f7;--pink:#ec4899;--grad:linear-gradient(135deg,#a855f7,#ec4899);
-      --text:#f0e8ff;--text-dim:rgba(240,232,255,0.55);
-      --correct:#22c55e;--wrong:#ef4444;
+      --bg:var(--game-bg);--card:var(--game-card-bg);--card-border:var(--game-border);
+      --purple:var(--game-accent);--pink:#ec4899;--grad:linear-gradient(135deg,var(--game-accent),#ec4899);
+      --text:var(--game-text);--text-dim:var(--game-text-sub);
+      --correct:var(--game-success);--wrong:var(--game-error);
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     body{
-      font-family:'Nunito','Apple SD Gothic Neo',sans-serif;
+      font-family:var(--game-font);
       background:var(--bg);color:var(--text);
       min-height:100vh;display:flex;align-items:center;justify-content:center;
       user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;overflow:hidden;
@@ -26,16 +28,11 @@
 
     #game-area{
       position:relative;z-index:1;width:800px;height:600px;
-      background:rgba(10,1,24,0.9);border:1px solid var(--card-border);
+      background:var(--game-bg);border:1px solid var(--card-border);
       border-radius:28px;overflow:hidden;display:flex;flex-direction:column;
     }
-    .hud{display:flex;justify-content:space-between;align-items:center;padding:14px 20px 10px;flex-shrink:0;}
-    .btn-back{
-      display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
-      background:var(--card);border:1px solid var(--card-border);border-radius:50px;
-      color:var(--text-dim);font-family:inherit;font-size:0.82rem;font-weight:700;
-      cursor:pointer;text-decoration:none;
-    }
+    .hud{justify-content:space-between;flex-shrink:0;}
+    .hud .game-title{flex:1;text-align:center;}
     .progress-dots{display:flex;gap:5px;}
     .dot{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.2);transition:all 0.3s;}
     .dot.correct{background:var(--correct);border-color:var(--correct);}
@@ -72,11 +69,11 @@
     }
     #timer-bar{
       height:100%;width:100%;
-      background:linear-gradient(90deg,#22c55e,#a855f7);
+      background:linear-gradient(90deg,var(--game-success),var(--game-accent));
       border-radius:6px;
       transition:none;
     }
-    #timer-bar.warning{background:linear-gradient(90deg,#f97316,#ef4444);}
+    #timer-bar.warning{background:linear-gradient(90deg,#f97316,var(--game-error));}
 
     /* 단어 카드 */
     #word-card{
@@ -142,16 +139,12 @@
     @keyframes flashAnim{0%{opacity:1;}100%{opacity:0;}}
   </style>
 </head>
-<body>
+<body class="game-body">
 <div class="stars" id="stars"></div>
 <div id="game-area">
-  <div class="hud">
-    <a href="../../index.html" class="btn-back">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      홈
-    </a>
+  <div class="hud game-header">
+    <a href="../../index.html" class="game-back-btn" aria-label="홈으로">←</a>
+    <div class="game-title">반대말 게임</div>
     <div class="progress-dots" id="progress-dots"></div>
     <div class="streak-display" id="streak-display"></div>
   </div>
@@ -202,6 +195,7 @@
     </div>
   </div>
 </div>
+<img class="game-mascot" src="../../assets/mascot-nettori.svg" alt="넷토리">
 
 <script>
 // 별 생성
@@ -214,6 +208,11 @@
     el.appendChild(s);
   }
 })();
+
+function playGameSound(type) {
+  const s = window.GameSound || (typeof GameSound !== 'undefined' && GameSound);
+  if (s && s[type]) s[type]();
+}
 
 // ── 반대말 데이터 ──
 const PAIRS = [
@@ -362,13 +361,14 @@ function startTimer(){
 }
 
 function timeOut(){
+  playGameSound('wrong');
   answered=true;
   streak=0;
   document.getElementById('streak-display').textContent='';
   document.getElementById(`dot-${currentRound}`).classList.add('wrong');
   document.querySelectorAll('.choice-btn').forEach(b=>{if(b.dataset.correct==='true')b.classList.add('correct');});
   document.getElementById('feedback-area').textContent='시간 초과! 더 빨리 골라봐요!';
-  document.getElementById('feedback-area').style.color='#ef4444';
+  document.getElementById('feedback-area').style.color='var(--game-error)';
   flashEl(false);
   charAnimation(false);
   setTimeout(next,1200);
@@ -380,26 +380,28 @@ function handleChoice(btn, choice){
   clearInterval(timerInterval);
 
   if(choice.isCorrect){
+    playGameSound('correct');
     btn.classList.add('correct');
     correctCount++;
     streak++;
     if(streak>maxStreak) maxStreak=streak;
     document.getElementById(`dot-${currentRound}`).classList.add('correct');
     document.getElementById('feedback-area').textContent=streak>=3?`${streak}연속! 대단해요!`:'정답!';
-    document.getElementById('feedback-area').style.color='#22c55e';
+    document.getElementById('feedback-area').style.color='var(--game-success)';
     document.getElementById('streak-display').textContent=streak>=2?`${streak}연속`:'' ;
     flashEl(true);
     spawnParticles();
     charAnimation(true);
     drawCharacter(Math.min(Math.floor(streak/2),4));
   } else {
+    playGameSound('wrong');
     btn.classList.add('wrong');
     document.querySelectorAll('.choice-btn').forEach(b=>{if(b.dataset.correct==='true')b.classList.add('correct');});
     streak=0;
     document.getElementById('streak-display').textContent='';
     document.getElementById(`dot-${currentRound}`).classList.add('wrong');
     document.getElementById('feedback-area').textContent=`아쉬워요! 정답은 "${rounds[currentRound].opp}"이에요`;
-    document.getElementById('feedback-area').style.color='#ef4444';
+    document.getElementById('feedback-area').style.color='var(--game-error)';
     flashEl(false);
     charAnimation(false);
     drawCharacter(0);
@@ -441,6 +443,7 @@ function spawnParticles(){
 }
 
 function showResult(){
+  playGameSound('complete');
   showScreen('result-screen');
   document.getElementById('result-score').textContent=`${correctCount} / ${TOTAL_ROUNDS}`;
   document.getElementById('streak-best').textContent=maxStreak>=3?`최고 연속: ${maxStreak}번!`:'';
@@ -461,5 +464,6 @@ function showResult(){
 document.getElementById('start-btn').addEventListener('click',startGame);
 document.getElementById('retry-btn').addEventListener('click',startGame);
 </script>
+<script src='../../assets/game-engine.js'></script>
 </body>
 </html>

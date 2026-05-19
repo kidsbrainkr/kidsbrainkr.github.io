@@ -4,23 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>순서 맞추기 — 쑥쑥 놀이터</title>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <script src='https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js'></script>
+  <link rel='stylesheet' href='../../assets/game-common.css'>
   <style>
     :root {
-      --bg: #0a0118;
-      --card: rgba(255,255,255,0.06);
-      --card-border: rgba(255,255,255,0.12);
-      --purple: #a855f7;
+      --bg: var(--game-bg);
+      --card: var(--game-card-bg);
+      --card-border: var(--game-border);
+      --purple: var(--game-accent);
       --pink: #ec4899;
       --yellow: #fbbf24;
-      --green: #22c55e;
-      --red: #ef4444;
-      --text: #f0e8ff;
-      --text-dim: rgba(240,232,255,0.55);
+      --green: var(--game-success);
+      --red: var(--game-error);
+      --text: var(--game-text);
+      --text-dim: var(--game-text-sub);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Nunito', 'Apple SD Gothic Neo', sans-serif;
+      font-family: var(--game-font);
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -44,24 +46,14 @@
     #game-wrap {
       position: relative; z-index: 1;
       width: 800px; height: 600px;
-      background: linear-gradient(160deg, #110228 0%, #0a0118 60%, #050010 100%);
+      background: var(--game-bg);
       border-radius: 28px;
       box-shadow: 0 0 80px rgba(168,85,247,0.2), 0 20px 60px rgba(0,0,0,0.7);
       overflow: hidden;
       display: flex; flex-direction: column;
     }
-    .hud {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 16px 24px 8px; flex-shrink: 0;
-    }
-    .btn-back {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 16px; background: var(--card);
-      border: 1px solid var(--card-border); border-radius: 50px;
-      color: var(--text-dim); font-family: inherit; font-size: 0.82rem;
-      font-weight: 700; cursor: pointer; text-decoration: none; transition: background 0.2s;
-    }
-    .btn-back:hover { background: rgba(255,255,255,0.1); }
+    .hud { justify-content: space-between; flex-shrink: 0; }
+    .hud .game-title{flex:1;text-align:center;}
     .hud-right { display: flex; align-items: center; gap: 12px; }
     .round-pill {
       font-size: 0.85rem; font-weight: 700; color: var(--text-dim);
@@ -215,19 +207,15 @@
     .btn-home{background:var(--card);border:2px solid var(--card-border);color:var(--text-dim);}
   </style>
 </head>
-<body>
+<body class="game-body">
 
 <div id="stars"></div>
 <div id="game-wrap">
   <div id="flash"></div>
 
-  <div class="hud">
-    <a href="../../index.html" class="btn-back">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-      </svg>
-      홈
-    </a>
+  <div class="hud game-header">
+    <a href="../../index.html" class="game-back-btn" aria-label="홈으로">←</a>
+    <div class="game-title">순서 맞추기</div>
     <div class="hud-right">
       <div class="round-pill" id="round-pill">1 / 6</div>
       <div class="hearts" id="hearts"></div>
@@ -259,6 +247,7 @@
     </div>
   </div>
 </div>
+<img class="game-mascot" src="../../assets/mascot-nettori.svg" alt="넷토리">
 
 <script>
 // Stars
@@ -271,6 +260,11 @@
     c.appendChild(s);
   }
 })();
+
+function playGameSound(type) {
+  const s = window.GameSound || (typeof GameSound !== 'undefined' && GameSound);
+  if (s && s[type]) s[type]();
+}
 
 // SVG drawers — size param = visual scale reference (1=smallest,5=largest)
 function svgAnt(sc=1){ return `<svg width="${24+sc*6}" height="${24+sc*6}" viewBox="0 0 36 36"><circle cx="18" cy="28" r="5" fill="#1c1917"/><ellipse cx="18" cy="18" rx="4" ry="5" fill="#1c1917"/><circle cx="18" cy="10" r="5" fill="#1c1917"/><line x1="8" y1="20" x2="2" y2="16" stroke="#1c1917" stroke-width="2"/><line x1="8" y1="22" x2="1" y2="22" stroke="#1c1917" stroke-width="2"/><line x1="8" y1="24" x2="2" y2="28" stroke="#1c1917" stroke-width="2"/><line x1="28" y1="20" x2="34" y2="16" stroke="#1c1917" stroke-width="2"/><line x1="28" y1="22" x2="35" y2="22" stroke="#1c1917" stroke-width="2"/><line x1="28" y1="24" x2="34" y2="28" stroke="#1c1917" stroke-width="2"/><path d="M15 10 Q18 5 21 10" stroke="#1c1917" stroke-width="1.5" fill="none"/></svg>`; }
@@ -525,6 +519,7 @@ function checkAnswer(){
   });
 
   if(correct){
+    playGameSound('correct');
     score++;
     flashScreen('green');
     // Animate slots in order
@@ -539,6 +534,7 @@ function checkAnswer(){
       else { round++; loadRound(); }
     },1600);
   } else {
+    playGameSound('wrong');
     hearts--;
     flashScreen('red');
     shakeWrap();
@@ -551,6 +547,7 @@ function checkAnswer(){
 }
 
 function showResult(){
+  playGameSound('complete');
   const sc=document.getElementById('result-screen');
   const stars=document.getElementById('result-stars');
   const scoreEl=document.getElementById('result-score');
@@ -613,5 +610,6 @@ function spawnParticles(big=false){
 
 initGame();
 </script>
+<script src='../../assets/game-engine.js'></script>
 </body>
 </html>

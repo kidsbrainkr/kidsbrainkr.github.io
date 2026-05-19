@@ -460,3 +460,10 @@ const GameLoop = {
   },
 };
 if (typeof window !== 'undefined') window.GameLoop = GameLoop;
+if (typeof window !== 'undefined') {
+  if (typeof GameSound !== 'undefined') window.GameSound = GameSound;
+  if (typeof GameAnim !== 'undefined') window.GameAnim = GameAnim;
+  if (typeof GameParticle !== 'undefined') window.GameParticle = GameParticle;
+  if (typeof GameIdle !== 'undefined') window.GameIdle = GameIdle;
+  if (typeof GameTheme !== 'undefined') window.GameTheme = GameTheme;
+}
